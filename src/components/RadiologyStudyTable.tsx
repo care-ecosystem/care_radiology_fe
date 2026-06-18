@@ -21,6 +21,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showReportSelectModal, setShowReportSelectModal] = useState(false);
   const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
   const [reportSelectList, setReportSelectList] = useState<any[]>([]);
+  const [reportSelectMode, setReportSelectMode] = useState<"edit" | "preview">("edit");
   const handleInfoClick = async (study: DicomStudy) => {
     try {
       setSelectedStudy(study);
@@ -46,11 +47,23 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     };
   }, []);
 
-  const handlePreview = (studyId: string) => {
-    window.open(
-      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyId}/preview`,
-      "_blank"
-    );
+  const handlePreview = async (studyId: string) => {
+    const res = await apis.studyReport.fetchByStudy(studyId);
+    const reports: any[] = res?.results ?? [];
+
+    if (reports.length <= 1) {
+      const query = reports.length === 1 ? `?reportId=${reports[0].external_id}` : "";
+      window.open(
+        `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyId}/preview${query}`,
+        "_blank"
+      );
+      return;
+    }
+
+    setReportSelectStudyId(studyId);
+    setReportSelectList(reports);
+    setReportSelectMode("preview");
+    setShowReportSelectModal(true);
   }
 
   const handleViewStudy = (studyUid: string) => {
@@ -69,14 +82,22 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
     setReportSelectStudyId(studyId);
     setReportSelectList(reports);
+    setReportSelectMode("edit");
     setShowReportSelectModal(true);
   };
 
   const handleReportSelect = (reportId: string) => {
     setShowReportSelectModal(false);
-    navigate(
-      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
-    );
+    if (reportSelectMode === "preview") {
+      window.open(
+        `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}/preview?reportId=${reportId}`,
+        "_blank"
+      );
+    } else {
+      navigate(
+        `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
+      );
+    }
   };
 
   return (
@@ -204,9 +225,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                         <button
                           onClick={() => handleReportSelect(report.external_id)}
                           className="text-gray-600 hover:text-purple-600"
-                          title="Edit this report"
+                          title={reportSelectMode === "preview" ? "View report" : "Edit report"}
                         >
-                          <Pencil size={16} />
+                          {reportSelectMode === "preview" ? <FileText size={18} /> : <Pencil size={18} />}
                         </button>
                       </TableCell>
                     </TableRow>

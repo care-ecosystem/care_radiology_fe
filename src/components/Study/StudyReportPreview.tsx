@@ -47,24 +47,29 @@ export default function StudyReportPreview({ studyUid }: Props) {
   const { t: basetranslate } = useTranslation();
 
   useEffect(() => {
-     const fetchData = async () => {
-    try {
-      //Fetch report
-      const reportRes = await apis.studyReport.fetchByStudy(studyUid);
-      if (reportRes?.results?.length > 0) {
-        const r = reportRes.results[0];
-        setReport({
-          technique: r.technique || "",
-          findings: r.findings || "",
-          impression: r.impression || "",
-        });
-        setUser(r.created_by || null); // or reported_by
-        setPatient(r.patient || null);
+    const fetchData = async () => {
+      try {
+        const reportId = new URLSearchParams(window.location.search).get("reportId");
+        const reportRes = await apis.studyReport.fetchByStudy(studyUid);
+        const results: any[] = reportRes?.results ?? [];
+
+        const r = reportId
+          ? (results.find((rep) => rep.external_id === reportId) ?? results[0])
+          : results[0];
+
+        if (r) {
+          setReport({
+            technique: r.technique || "",
+            findings: r.findings || "",
+            impression: r.impression || "",
+          });
+          setUser(r.created_by || null);
+          setPatient(r.patient || null);
+        }
+      } catch (err) {
+        console.error("Failed to load preview data", err);
       }
-    } catch (err) {
-      console.error("Failed to load preview data", err);
-    }
-  };
+    };
 
     fetchData();
   }, [studyUid]);
