@@ -21,11 +21,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showReportSelectModal, setShowReportSelectModal] = useState(false);
   const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
   const [reportSelectList, setReportSelectList] = useState<any[]>([]);
-  const [lookupMaps, setLookupMaps] = useState<{
-    modalities: Record<string, string>;
-    bodyParts: Record<string, string>;
-    scanProtocols: Record<string, string>;
-  }>({ modalities: {}, bodyParts: {}, scanProtocols: {} });
   const handleInfoClick = async (study: DicomStudy) => {
     try {
       setSelectedStudy(study);
@@ -73,21 +68,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
       navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${studyId}${query}`);
       return;
     }
-
-    const [modalityRes, bodyPartRes, scanProtocolRes] = await Promise.all([
-      apis.modality.fetchAll(),
-      apis.bodyPart.fetchAll(),
-      apis.scanProtocol.fetchAll(),
-    ]);
-
-    const toMap = (items: any[]) =>
-      Object.fromEntries(items.map((i) => [i.external_id, i.display_name]));
-
-    setLookupMaps({
-      modalities: toMap(modalityRes.results ?? []),
-      bodyParts: toMap(bodyPartRes.results ?? []),
-      scanProtocols: toMap(scanProtocolRes.results ?? []),
-    });
 
     setReportSelectStudyId(studyId);
     setReportSelectList(reports);
@@ -201,9 +181,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                   {reportSelectList.map((report, index) => (
                     <TableRow key={report.external_id}>
                       <TableCell className="px-4 text-gray-500 text-sm">{index + 1}</TableCell>
-                      <TableCell className="px-4">{lookupMaps.modalities[report.modality_id] || "—"}</TableCell>
-                      <TableCell className="px-4">{lookupMaps.bodyParts[report.body_part_id] || "—"}</TableCell>
-                      <TableCell className="px-4">{lookupMaps.scanProtocols[report.scan_protocol_id] || "—"}</TableCell>
+                      <TableCell className="px-4">{report.modality || "—"}</TableCell>
+                      <TableCell className="px-4">{report.body_part || "—"}</TableCell>
+                      <TableCell className="px-4">{report.scan_protocol || "—"}</TableCell>
                       <TableCell className="px-4">
                         {report.created_date || report.created_datetime || report.created_at
                           ? format(new Date(report.created_date ?? report.created_datetime ?? report.created_at), "dd MMM yyyy, hh:mm aa")
