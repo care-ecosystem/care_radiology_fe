@@ -319,17 +319,28 @@ export default function DicomReport({
     const findingsContent = findingsRef.current?.root.innerHTML;
     const impressionContent = impressionRef.current?.root.innerHTML;
     try {
-      const res = (await apis.studyReport.create({
-        study: studyUid,
-        modality: selectedModality,
-        body_part: selectedBodyPart,
-        scan_protocol: selectedScanProtocol,
-        technique: techniqueContent,
-        findings: findingsContent,
-        impression: impressionContent,
-      })) as { external_id: string };
-      if (res?.external_id) {
-        setStudyReportId(res.external_id);
+      if (studyReportId) {
+        await apis.studyReport.update(studyReportId, {
+          modality: selectedModality,
+          body_part: selectedBodyPart,
+          scan_protocol: selectedScanProtocol,
+          technique: techniqueContent,
+          findings: findingsContent,
+          impression: impressionContent,
+        });
+      } else {
+        const res = (await apis.studyReport.create({
+          study: studyUid,
+          modality: selectedModality,
+          body_part: selectedBodyPart,
+          scan_protocol: selectedScanProtocol,
+          technique: techniqueContent,
+          findings: findingsContent,
+          impression: impressionContent,
+        })) as { external_id: string };
+        if (res?.external_id) {
+          setStudyReportId(res.external_id);
+        }
       }
       toast.success(t("radiology_report_saved_successfully!"));
       setReportExists(true);

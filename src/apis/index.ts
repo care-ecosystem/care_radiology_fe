@@ -242,6 +242,23 @@ export const apis = {
         results: res.results || [],
       };
     },
+
+    update: async (
+      reportId: string,
+      payload: {
+        modality: string;
+        body_part: string;
+        scan_protocol: string;
+        technique?: string;
+        findings?: string;
+        impression?: string;
+      },
+    ) => {
+      return await request(`/api/care_radiology/study_report/${reportId}/`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+    },
   },
 
   studyReportAudit: {
