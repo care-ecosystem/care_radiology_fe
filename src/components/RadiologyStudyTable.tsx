@@ -235,18 +235,23 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                 </TableBody>
               </Table>
             </div>
-            <div className="flex justify-end pt-4 border-t mt-4">
-              <button
-                onClick={() => {
-                  setShowReportSelectModal(false);
-                  navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}`);
-                }}
-                className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
-              >
-                <Plus size={15} />
-                New Report
-              </button>
-            </div>
+            {
+              reportSelectMode === "edit" &&
+              (
+                <div className="flex justify-end pt-4 border-t mt-4">
+                  <button
+                    onClick={() => {
+                      setShowReportSelectModal(false);
+                      navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}`);
+                    }}
+                    className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus size={15} />
+                    New Report
+                  </button>
+                </div>
+              )
+            }
           </div>
         </div>
       )}
