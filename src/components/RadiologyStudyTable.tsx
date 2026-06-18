@@ -66,7 +66,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
   const handleEditReport = async (studyId: string) => {
     const res = await apis.studyReport.fetchByStudy(studyId);
-    const reports: any[] = res.results ?? [];
+    const reports: any[] = res?.results ?? [];
 
     if (reports.length <= 1) {
       const query = reports.length === 1 ? `?reportId=${reports[0].external_id}` : "";
