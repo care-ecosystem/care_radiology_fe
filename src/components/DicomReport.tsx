@@ -17,12 +17,10 @@ import { RadiologyServiceRequest } from "@/types/ServiceRequest";
 
 export default function DicomReport({
   facilityId,
-  patientId,
   serviceRequestId,
   studyUid,
 }: {
   facilityId: string;
-  patientId: string;
   serviceRequestId: string;
   studyUid: string;
 }) {

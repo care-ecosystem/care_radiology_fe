@@ -4,7 +4,7 @@ import DicomReport from "./components/DicomReport";
 import StudyReportPreview from "./components/Study/StudyReportPreview";
 
 const routes = {
-  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/uploader":
+  "/facility/:facilityId/patient/:patientId/service_requests/:serviceRequestId/radiology/uploader":
     ({
       facilityId,
       patientId,
@@ -26,19 +26,16 @@ const routes = {
     ),
   "/facility/:facilityId/service_requests/:serviceRequestId/radiology/report/:studyid":
     ({ 
-      facilityId, 
-      patientId, 
+      facilityId,
       serviceRequestId, 
       studyid 
     }: { 
       facilityId: string;
-      patientId: string;
       serviceRequestId: string;
       studyid: string;
     }) => (
       <DicomReport 
         facilityId={facilityId} 
-        patientId={patientId}
         serviceRequestId={serviceRequestId}
         studyUid={studyid}
       ></DicomReport>

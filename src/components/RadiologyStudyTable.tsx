@@ -212,13 +212,13 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                       <TableCell className="px-4">{report.body_part || "—"}</TableCell>
                       <TableCell className="px-4">{report.scan_protocol || "—"}</TableCell>
                       <TableCell className="px-4">
-                        {report.created_date || report.created_datetime || report.created_at
-                          ? format(new Date(report.created_date ?? report.created_datetime ?? report.created_at), "dd MMM yyyy, hh:mm aa")
+                        {report.created_datetime
+                          ? format(new Date(report.created_datetime), "dd MMM yyyy, hh:mm aa")
                           : "—"}
                       </TableCell>
                       <TableCell className="px-4">
-                        {report.modified_date || report.last_modified_datetime || report.updated_at
-                          ? format(new Date(report.modified_date ?? report.last_modified_datetime ?? report.updated_at), "dd MMM yyyy, hh:mm aa")
+                        {report.last_modified_datetime
+                          ? format(new Date(report.last_modified_datetime), "dd MMM yyyy, hh:mm aa")
                           : "—"}
                       </TableCell>
                       <TableCell className="px-4 text-right">
