@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "./ui/table";
 import { navigate } from "raviger";
-import { Eye, FileText, Info, X, Pencil, Plus } from "lucide-react";
+import { Eye, FileText, Info, X, Pencil, Plus, FilePlusIcon } from "lucide-react";
 import { format } from "date-fns";
 import React from "react";
 import { apis } from "@/apis";
@@ -35,28 +35,26 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     }
   };
 
-  const {facilityId, patientId, serviceRequestId} = useMemo(() => {
+  const {facilityId, serviceRequestId} = useMemo(() => {
     const path = window.location.pathname;
     const facilityMatch = path.match(/\/facility\/([^/]+)/);
-    const patientMatch = path.match(/\/patient\/([^/]+)/);
     const serviceRequestMatch = path.match(/\/service_requests?\/([^/]+)/);
 
     return {
       facilityId: facilityMatch?.[1] ?? ":facilityId",
-      patientId: patientMatch?.[1] ?? ":patientId",
       serviceRequestId: serviceRequestMatch?.[1] ?? ":serviceRequestId",
     };
   }, []);
 
   const handlePreview = (studyId: string) => {
     window.open(
-      `/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${studyId}/preview`,
+      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyId}/preview`,
       "_blank"
     );
   }
 
   const handleViewStudy = (studyUid: string) => {
-    navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`);
+    navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`);
   }
 
   const handleEditReport = async (studyId: string) => {
@@ -65,7 +63,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
     if (reports.length <= 1) {
       const query = reports.length === 1 ? `?reportId=${reports[0].external_id}` : "";
-      navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${studyId}${query}`);
+      navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyId}${query}`);
       return;
     }
 
@@ -77,7 +75,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const handleReportSelect = (reportId: string) => {
     setShowReportSelectModal(false);
     navigate(
-      `/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
+      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
     );
   };
 
@@ -132,13 +130,21 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                       <Info size={18} />
                     </button>
                     <button
-                          onClick={() => handleEditReport(study.external_id)
-                          }
-                          className="text-gray-600 hover:text-purple-600"
-                          title="Edit Report"
+                      onClick={() => navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${study.external_id}`)}
+                      className="text-gray-600 hover:text-green-600"
+                      title="New Report"
                     >
-                          <Pencil size={18} />
+                      <FilePlusIcon size={18} />
                     </button>
+                    {study.has_report &&
+                      <button
+                            onClick={() => handleEditReport(study.external_id)}
+                            className="text-gray-600 hover:text-purple-600"
+                            title="Edit Report"
+                      >
+                            <Pencil size={18} />
+                      </button>
+                    }
                   </div>
                 </TableCell>
               </TableRow>
@@ -212,7 +218,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               <button
                 onClick={() => {
                   setShowReportSelectModal(false);
-                  navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}`);
+                  navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}`);
                 }}
                 className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
               >

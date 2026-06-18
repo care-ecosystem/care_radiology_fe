@@ -343,8 +343,9 @@ export default function DicomReport({
   };
 
   const handlePreview = () => {
+    const query = studyReportId ? `?reportId=${studyReportId}` : "";
     window.open(
-      `/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${studyUid}/preview`,
+      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyUid}/preview${query}`,
       "_blank",
     );
   };

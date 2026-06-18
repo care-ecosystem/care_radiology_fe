@@ -54,7 +54,7 @@ export default function DicomUploader({
           (f) => f?.study_uid && f?.study_uid != ""
         )?.study_uid;
         if (!studyUid) return;
-        const link = `/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`;
+        const link = `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`;
         if (link) {
           setSuccessfulLink(link);
           toast.success(

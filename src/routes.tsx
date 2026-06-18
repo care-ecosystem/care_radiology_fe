@@ -4,7 +4,7 @@ import DicomReport from "./components/DicomReport";
 import StudyReportPreview from "./components/Study/StudyReportPreview";
 
 const routes = {
-  "/facility/:facilityId/patient/:patientId/service_requests/:serviceRequestId/radiology/uploader":
+  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/uploader":
     ({
       facilityId,
       patientId,
@@ -20,11 +20,11 @@ const routes = {
         serviceRequestId={serviceRequestId}
       ></DicomUploader>
     ),
-  "/facility/:facilityId/patient/:patientId/service_requests/:serviceRequestId/radiology/view/:studyid":
+  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/view/:studyid":
     ({ studyid }: { studyid: string }) => (
       <DicomViewer studyUid={studyid}></DicomViewer>
     ),
-  "/facility/:facilityId/patient/:patientId/service_requests/:serviceRequestId/radiology/report/:studyid":
+  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/report/:studyid":
     ({ 
       facilityId, 
       patientId, 
@@ -43,7 +43,7 @@ const routes = {
         studyUid={studyid}
       ></DicomReport>
     ),
-  "/facility/:facilityId/patient/:patientId/service_requests/:serviceRequestId/radiology/report/:studyid/preview":
+  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/report/:studyid/preview":
     ({ studyid }: { studyid: string }) => (
       <StudyReportPreview studyUid={studyid}></StudyReportPreview>
     ),
