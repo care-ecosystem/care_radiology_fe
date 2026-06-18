@@ -9,14 +9,23 @@ import {
   TableRow,
 } from "./ui/table";
 import { navigate } from "raviger";
-import { Eye, FileText, Info, X, Pencil } from "lucide-react";
+import { Eye, FileText, Info, X, Pencil, Plus } from "lucide-react";
 import { format } from "date-fns";
 import React from "react";
+import { apis } from "@/apis";
 
 type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
 export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
+  const [showReportSelectModal, setShowReportSelectModal] = useState(false);
+  const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
+  const [reportSelectList, setReportSelectList] = useState<any[]>([]);
+  const [lookupMaps, setLookupMaps] = useState<{
+    modalities: Record<string, string>;
+    bodyParts: Record<string, string>;
+    scanProtocols: Record<string, string>;
+  }>({ modalities: {}, bodyParts: {}, scanProtocols: {} });
   const handleInfoClick = async (study: DicomStudy) => {
     try {
       setSelectedStudy(study);
@@ -55,9 +64,42 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`);
   }
 
-  const handleEditReport = (studyId: string) => {
-    navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${studyId}`);
-  }
+  const handleEditReport = async (studyId: string) => {
+    const res = await apis.studyReport.fetchByStudy(studyId);
+    const reports: any[] = res.results ?? [];
+
+    if (reports.length <= 1) {
+      const query = reports.length === 1 ? `?reportId=${reports[0].external_id}` : "";
+      navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${studyId}${query}`);
+      return;
+    }
+
+    const [modalityRes, bodyPartRes, scanProtocolRes] = await Promise.all([
+      apis.modality.fetchAll(),
+      apis.bodyPart.fetchAll(),
+      apis.scanProtocol.fetchAll(),
+    ]);
+
+    const toMap = (items: any[]) =>
+      Object.fromEntries(items.map((i) => [i.external_id, i.display_name]));
+
+    setLookupMaps({
+      modalities: toMap(modalityRes.results ?? []),
+      bodyParts: toMap(bodyPartRes.results ?? []),
+      scanProtocols: toMap(scanProtocolRes.results ?? []),
+    });
+
+    setReportSelectStudyId(studyId);
+    setReportSelectList(reports);
+    setShowReportSelectModal(true);
+  };
+
+  const handleReportSelect = (reportId: string) => {
+    setShowReportSelectModal(false);
+    navigate(
+      `/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
+    );
+  };
 
   return (
     <React.Fragment>
@@ -124,6 +166,83 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
           </TableBody>
         </Table>
       </div>
+
+      {showReportSelectModal && (
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-[760px] relative p-5 flex flex-col max-h-[80vh]">
+            <button
+              className="absolute top-3 right-3 text-gray-600 hover:text-red-600"
+              onClick={() => setShowReportSelectModal(false)}
+            >
+              <X size={20} />
+            </button>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                Multiple Reports Found
+              </h3>
+              <p className="text-sm text-gray-500">
+                Select a report to edit, or create a new one.
+              </p>
+            </div>
+            <div className="rounded-md border overflow-auto flex-1">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-100">
+                    <TableHead className="px-4">#</TableHead>
+                    <TableHead className="px-4">Modality</TableHead>
+                    <TableHead className="px-4">Body Part</TableHead>
+                    <TableHead className="px-4">Scan Protocol</TableHead>
+                    <TableHead className="px-4">Created</TableHead>
+                    <TableHead className="px-4">Last Modified</TableHead>
+                    <TableHead className="px-4 text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportSelectList.map((report, index) => (
+                    <TableRow key={report.external_id}>
+                      <TableCell className="px-4 text-gray-500 text-sm">{index + 1}</TableCell>
+                      <TableCell className="px-4">{lookupMaps.modalities[report.modality_id] || "—"}</TableCell>
+                      <TableCell className="px-4">{lookupMaps.bodyParts[report.body_part_id] || "—"}</TableCell>
+                      <TableCell className="px-4">{lookupMaps.scanProtocols[report.scan_protocol_id] || "—"}</TableCell>
+                      <TableCell className="px-4">
+                        {report.created_date || report.created_datetime || report.created_at
+                          ? format(new Date(report.created_date ?? report.created_datetime ?? report.created_at), "dd MMM yyyy, hh:mm aa")
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="px-4">
+                        {report.modified_date || report.last_modified_datetime || report.updated_at
+                          ? format(new Date(report.modified_date ?? report.last_modified_datetime ?? report.updated_at), "dd MMM yyyy, hh:mm aa")
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="px-4 text-right">
+                        <button
+                          onClick={() => handleReportSelect(report.external_id)}
+                          className="text-gray-600 hover:text-purple-600"
+                          title="Edit this report"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex justify-end pt-4 border-t mt-4">
+              <button
+                onClick={() => {
+                  setShowReportSelectModal(false);
+                  navigate(`/facility/${facilityId}/patient/${patientId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}`);
+                }}
+                className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+              >
+                <Plus size={15} />
+                New Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && selectedStudy && (
         <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50">

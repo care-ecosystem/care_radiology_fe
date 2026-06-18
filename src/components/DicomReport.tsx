@@ -109,9 +109,19 @@ export default function DicomReport({
     const init = async () => {
       try {
         // STUDY REPORT FIRST
+        const reportId = new URLSearchParams(window.location.search).get("reportId");
+
+        if (!reportId) {
+          setInitialLoaded(true);
+          return;
+        }
+
         const reportRes = await apis.studyReport.fetchByStudy(studyUid);
-        if (reportRes && reportRes?.results?.length > 0) {
-          const r = reportRes.results[0];
+        const allReports: any[] = reportRes?.results ?? [];
+        const targetReport = allReports.find((r) => r.external_id === reportId);
+
+        if (targetReport) {
+          const r = targetReport;
           setStudyReportId(r.external_id);
           setSelectedModality(r.modality_id);
           setSelectedBodyPart(r.body_part_id);
