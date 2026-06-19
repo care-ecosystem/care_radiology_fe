@@ -24,10 +24,8 @@ export interface BodyPart {
 export interface ScanProtocol {
   external_id: string;
   display_name: string;
-  modality_id: string;
-  modality: string; // external_id of ModalityType
-  body_part_id: string;
-  body_part: string; // external_id of BodyPart
+  modality: string;
+  body_part: string;
   coding: Coding[];
 }
 
@@ -174,9 +172,12 @@ export const apis = {
   },
 
   scanProtocol: {
-    fetchAll: async (): Promise<PaginatedResponse<ScanProtocol>> => {
+    fetchAll: async (params?: {
+      modality?: string;
+      body_part?: string;
+    }): Promise<PaginatedResponse<ScanProtocol>> => {
       return await request<PaginatedResponse<ScanProtocol>>(
-        "/api/care_radiology/scan_protocol/",
+        `/api/care_radiology/scan_protocol/${queryString(params ?? {})}`,
       );
     },
 

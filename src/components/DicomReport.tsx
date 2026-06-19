@@ -24,12 +24,8 @@ export default function DicomReport({
   serviceRequestId: string;
   studyUid: string;
 }) {
-  const [modalities, setModalities] = useState<any[]>([]);
-  const [bodyParts, setBodyParts] = useState<any[]>([]);
   const [scanProtocols, setScanProtocols] = useState<any[]>([]);
-  const [initialLoaded, setInitialLoaded] = useState(false);
 
-  const [modalType, setModalType] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
 
@@ -37,8 +33,6 @@ export default function DicomReport({
   const [selectedBodyPart, setSelectedBodyPart] = useState("");
   const [selectedScanProtocol, setSelectedScanProtocol] = useState("");
 
-  const [loadingModalities, setLoadingModalities] = useState(false);
-  const [loadingBodyParts, setLoadingBodyParts] = useState(false);
   const [loadingScanProtocols, setLoadingScanProtocols] = useState(false);
 
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
@@ -84,15 +78,41 @@ export default function DicomReport({
           throw new Error("No service request exist for given studyUid");
         }
 
-        const patientData = relevantServiceRequest.service_request.encounter.patient;
-        const requesterData = relevantServiceRequest.service_request.requester;
-        const departmentData = relevantServiceRequest.service_request.encounter.organizations;
-        const dicomStudyData = relevantServiceRequest.dicom_study;
+        const sr = relevantServiceRequest.service_request;
+        setPatient(sr.encounter.patient);
+        setRequester(sr.requester);
+        setDepartments(sr.encounter.organizations ?? []);
+        setDicomStudy(relevantServiceRequest.dicom_study);
+        setSelectedModality(sr.code!.display);
+        if (!sr.body_site?.display) {
+          toast.error(t("radiology_service_request_missing_config"), { id: "missing-body-site" });
+        } else {
+          setSelectedBodyPart(sr.body_site.display);
+        }
 
-        setPatient(patientData);
-        setRequester(requesterData);
-        setDepartments(departmentData ?? []);
-        setDicomStudy(dicomStudyData);
+        // Load existing report if reportId is in the URL
+        const reportId = new URLSearchParams(window.location.search).get("reportId");
+        if (reportId) {
+          try {
+            const reportRes = await apis.studyReport.fetchByStudy(studyUid);
+            const allReports: any[] = reportRes?.results ?? [];
+            const targetReport = allReports.find((r) => r.external_id === reportId);
+            if (targetReport) {
+              setStudyReportId(targetReport.external_id);
+              setSelectedScanProtocol(targetReport.scan_protocol_id);
+              techniqueRef.current?.clipboard.dangerouslyPasteHTML(targetReport.technique || "");
+              findingsRef.current?.clipboard.dangerouslyPasteHTML(targetReport.findings || "");
+              impressionRef.current?.clipboard.dangerouslyPasteHTML(targetReport.impression || "");
+              setReportExists(true);
+            }
+          } catch (err) {
+            if ((err as APIError).status === 403) {
+              toast.error((err as APIError).message);
+            } else {
+              console.error("Failed to load report", err);
+            }
+          }
+        }
       } catch (err) {
         console.error("Service Request fetch failed", err);
       }
@@ -101,68 +121,6 @@ export default function DicomReport({
     fetchRadiologyServiceRequest();
   }, [serviceRequestId]);
 
-  useEffect(() => {
-    if (modalities.length === 0 || initialLoaded) return;
-
-    const init = async () => {
-      try {
-        // STUDY REPORT FIRST
-        const reportId = new URLSearchParams(window.location.search).get("reportId");
-
-        if (!reportId) {
-          setInitialLoaded(true);
-          return;
-        }
-
-        const reportRes = await apis.studyReport.fetchByStudy(studyUid);
-        const allReports: any[] = reportRes?.results ?? [];
-        const targetReport = allReports.find((r) => r.external_id === reportId);
-
-        if (targetReport) {
-          const r = targetReport;
-          setStudyReportId(r.external_id);
-          setSelectedModality(r.modality_id);
-          setSelectedBodyPart(r.body_part_id);
-          setSelectedScanProtocol(r.scan_protocol_id);
-          techniqueRef.current?.clipboard.dangerouslyPasteHTML(
-            r.technique || "",
-          );
-          findingsRef.current?.clipboard.dangerouslyPasteHTML(r.findings || "");
-          impressionRef.current?.clipboard.dangerouslyPasteHTML(
-            r.impression || "",
-          );
-          setReportExists(true);
-          setInitialLoaded(true);
-          return;
-        }
-
-        //  DICOM STUDY SECOND
-        const ds = await apis.dicom.fetchOne(studyUid);
-        if (ds?.study_modality_id) {
-          const matched = modalities.find(
-            (m) => m.external_id === ds.study_modality_id,
-          );
-          if (matched) {
-            setSelectedModality(matched.external_id);
-          }
-          setInitialLoaded(true);
-          return;
-        }
-
-        // EMPTY STATE THIRD
-        setSelectedModality("");
-        setSelectedBodyPart("");
-        setSelectedScanProtocol("");
-        setInitialLoaded(true);
-      } catch (err) {
-        if ((err as APIError).status == 403) {
-          return toast.error((err as APIError).message);
-        }
-        console.error("Init failed", err);
-      }
-    };
-    init();
-  }, [modalities]);
 
   useEffect(() => {
     if (!selectedModality || !selectedBodyPart || !selectedScanProtocol) {
@@ -178,8 +136,8 @@ export default function DicomReport({
         const res = (await apis.template.fetchAll()) as { results: any[] };
         const match = res.results.find(
           (t) =>
-            t.modality_id === selectedModality &&
-            t.body_part_id === selectedBodyPart &&
+            t.modality === selectedModality &&
+            t.body_part === selectedBodyPart &&
             t.scan_protocol_id === selectedScanProtocol,
         );
         if (match) {
@@ -201,61 +159,17 @@ export default function DicomReport({
     }
   }, [showAuditPopup, studyReportId]);
 
-  // Fetch all modalities
-  useEffect(() => {
-    const fetchModalities = async () => {
-      try {
-        setLoadingModalities(true);
-        const data = await apis.modality.fetchAll();
-        setModalities(data.results);
-      } catch (err) {
-        console.error("Failed to load modality types", err);
-      } finally {
-        setLoadingModalities(false);
-      }
-    };
-    fetchModalities();
-  }, []);
-
-  // Fetch BodyParts based on selected modality
-  useEffect(() => {
-    if (!selectedModality) return;
-    const fetchBodyParts = async () => {
-      try {
-        setLoadingBodyParts(true);
-        const data = await apis.bodyPart.fetchAll();
-        //FILTER BY ID
-        const filtered = data.results.filter(
-          (bp: any) => bp.modality_id === selectedModality,
-        );
-        setBodyParts(filtered);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingBodyParts(false);
-      }
-    };
-    fetchBodyParts();
-  }, [selectedModality]);
-
-  // Fetch ScanProtocols based on selected modality & body_part
+  // Fetch scan protocols using display name values from the service request
   useEffect(() => {
     if (!selectedModality || !selectedBodyPart) return;
     const fetchScanProtocols = async () => {
       try {
         setLoadingScanProtocols(true);
-        const data = await apis.scanProtocol.fetchAll();
-        // FILTER BY IDs
-        const filtered = data.results.filter(
-          (sp) =>
-            sp.modality_id === selectedModality &&
-            sp.body_part_id === selectedBodyPart,
-        );
-        setScanProtocols(filtered);
-        // auto-select ONLY for fresh flow
-        /* if (!selectedScanProtocol && filtered.length > 0) {
-          setSelectedScanProtocol(filtered[0].external_id);
-        } */
+        const data = await apis.scanProtocol.fetchAll({
+          modality: selectedModality,
+          body_part: selectedBodyPart,
+        });
+        setScanProtocols(data.results);
       } catch (err) {
         console.error("Failed to load scan protocols", err);
       } finally {
@@ -380,27 +294,14 @@ export default function DicomReport({
     }
   };
 
-  // Placeholder handlers for buttons (can be expanded later)
-  const handleAdd = (type: string) => {
-    setModalType(type);
+  const handleAdd = () => {
     setEditItem(null);
     setModalOpen(true);
   };
 
-  const handleEdit = (type: string) => {
-    let item = null;
-    if (type === "modality") {
-      item = modalities.find((m) => m.external_id === selectedModality);
-    } else if (type === "bodypart") {
-      item = bodyParts.find((bp) => bp.external_id === selectedBodyPart);
-    } else if (type === "scanprotocol") {
-      item = scanProtocols.find(
-        (sp) => sp.external_id === selectedScanProtocol,
-      );
-    }
-    if (!item)
-      return toast.warning(t("radiology_please_select_an_item_to_edit"));
-    setModalType(type);
+  const handleEdit = () => {
+    const item = scanProtocols.find((sp) => sp.external_id === selectedScanProtocol);
+    if (!item) return toast.warning(t("radiology_please_select_an_item_to_edit"));
     setEditItem(item);
     setModalOpen(true);
   };
@@ -452,96 +353,36 @@ export default function DicomReport({
           <div className="w-[360px] min-w-[360px] max-w-[360px] border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden">
             {/* Modality Section */}
             <div className="w-full min-w-0">
-              <div className="flex justify-between items-center mb-2 gap-2">
-                <h4 className="font-medium text-sm text-gray-700 truncate flex-1">
-                  {t("radiology_modality_type")}{" "}
-                  <span className="text-red-500">*</span>
-                </h4>
-                <div className="flex gap-1 shrink-0">
-                  <Plus
-                    size={16}
-                    className="cursor-pointer hover:text-green-600"
-                    onClick={() => handleAdd("modality")}
-                  />
-                  <Pencil
-                    size={16}
-                    className="cursor-pointer hover:text-green-600"
-                    onClick={() => handleEdit("modality")}
-                  />
-                </div>
-              </div>
-              {loadingModalities ? (
-                <div className="text-sm text-gray-500">
-                  {t("radiology_loading")}
-                </div>
-              ) : (
-                <select
-                  value={selectedModality}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSelectedModality(value);
-                    //RESET DEPENDENTS
-                    setSelectedBodyPart("");
-                    setSelectedScanProtocol("");
-                    setBodyParts([]);
-                    setScanProtocols([]);
-                    setInitialLoaded(false);
-                  }}
-                  className="w-full max-w-full border border-gray-300 rounded-md text-sm p-2.5 bg-white focus:border-green-500 focus:ring-1 focus:ring-green-500"
-                >
-                  <option value="">{t("radiology_select_modality")}</option>
-                  {modalities.map((mod) => (
-                    <option key={mod.external_id} value={mod.external_id}>
-                      {mod.display_name}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
+                {t("radiology_modality_type")}{" "}
+                <span className="text-red-500">*</span>
+              </h4>
+              <select
+                value={selectedModality}
+                disabled
+                className="w-full max-w-full border border-gray-300 rounded-md text-sm p-2.5 bg-gray-100 text-gray-700 cursor-not-allowed"
+              >
+                {selectedModality && (
+                  <option value={selectedModality}>{selectedModality}</option>
+                )}
+              </select>
             </div>
 
             {/* Body Part Section */}
             <div className="w-full min-w-0">
-              <div className="flex justify-between items-center mb-2 gap-2">
-                <h4 className="font-medium text-sm text-gray-700 truncate flex-1">
-                  {t("radiology_body_part")}{" "}
-                  <span className="text-red-500">*</span>
-                </h4>
-                <div className="flex gap-1 shrink-0">
-                  <Plus
-                    size={16}
-                    className="cursor-pointer hover:text-green-600"
-                    onClick={() => handleAdd("bodypart")}
-                  />
-                  <Pencil
-                    size={16}
-                    className="cursor-pointer hover:text-green-600"
-                    onClick={() => handleEdit("bodypart")}
-                  />
-                </div>
-              </div>
-              {loadingBodyParts ? (
-                <div className="text-sm text-gray-500">
-                  {t("radiology_loading")}
-                </div>
-              ) : (
-                <select
-                  value={selectedBodyPart}
-                  onChange={(e) => {
-                    setSelectedBodyPart(e.target.value);
-                    setSelectedScanProtocol("");
-                    setScanProtocols([]);
-                    setInitialLoaded(false);
-                  }}
-                  className="w-full max-w-full border border-gray-300 rounded-md text-sm p-2.5 bg-white focus:border-green-500 focus:ring-1 focus:ring-green-500"
-                >
-                  <option value="">{t("radiology_select")} Body Part</option>
-                  {bodyParts.map((bp) => (
-                    <option key={bp.external_id} value={bp.external_id}>
-                      {bp.display_name}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
+                {t("radiology_body_part")}{" "}
+                <span className="text-red-500">*</span>
+              </h4>
+              <select
+                value={selectedBodyPart}
+                disabled
+                className="w-full max-w-full border border-gray-300 rounded-md text-sm p-2.5 bg-gray-100 text-gray-700 cursor-not-allowed"
+              >
+                {selectedBodyPart && (
+                  <option value={selectedBodyPart}>{selectedBodyPart}</option>
+                )}
+              </select>
             </div>
 
             {/* Scan Protocol Section */}
@@ -554,12 +395,12 @@ export default function DicomReport({
                   <Plus
                     size={16}
                     className="cursor-pointer hover:text-green-600"
-                    onClick={() => handleAdd("scanprotocol")}
+                    onClick={handleAdd}
                   />
                   <Pencil
                     size={16}
                     className="cursor-pointer hover:text-green-600"
-                    onClick={() => handleEdit("scanprotocol")}
+                    onClick={handleEdit}
                   />
                 </div>
               </div>
@@ -687,7 +528,6 @@ export default function DicomReport({
                   findingsRef.current?.setText("");
                   impressionRef.current?.setText("");
                   setShowTemplatePrompt(false);
-                  setInitialLoaded(true);
                 }}
               >
                 {t("radiology_start_fresh")}
@@ -695,25 +535,14 @@ export default function DicomReport({
 
               <Button
                 variant="outline"
-                onClick={() => {
-                  // Keep whatever user already typed
-                  setShowTemplatePrompt(false);
-                  setInitialLoaded(true);
-                }}
+                onClick={() => setShowTemplatePrompt(false)}
               >
                 {t("radiology_use_existing")}
               </Button>
 
               <Button
-                onClick={async () => {
+                onClick={() => {
                   if (!templateData) return;
-                  //  IMPORTANT: Use id fields
-                  setSelectedModality(templateData.modality_id);
-                  // wait for body parts to load
-                  await new Promise((r) => setTimeout(r, 300));
-                  setSelectedBodyPart(templateData.body_part_id);
-                  // wait for scan protocols
-                  await new Promise((r) => setTimeout(r, 300));
                   setSelectedScanProtocol(templateData.scan_protocol_id);
                   techniqueRef.current?.clipboard.dangerouslyPasteHTML(
                     templateData.technique || "",
@@ -725,7 +554,6 @@ export default function DicomReport({
                     templateData.impression || "",
                   );
                   setShowTemplatePrompt(false);
-                  setInitialLoaded(true);
                 }}
               >
                 {t("radiology_use_template")}
@@ -766,49 +594,19 @@ export default function DicomReport({
       )}
       <EditAddModal
         open={modalOpen}
-        type={modalType}
         editData={editItem}
         prefillData={{
-          modality_id: selectedModality,
-          body_part_id: selectedBodyPart,
+          modality: selectedModality,
+          body_part: selectedBodyPart,
         }}
         onClose={() => setModalOpen(false)}
         onSuccess={async (savedItem: any) => {
-          // reload data after add/edit
-          if (modalType === "modality") {
-            const r = await apis.modality.fetchAll();
-            setModalities(r.results);
-            if (savedItem?.external_id) {
-              setSelectedModality(savedItem.external_id);
-              if (!editItem) {
-                setSelectedBodyPart("");
-                setSelectedScanProtocol("");
-                setScanProtocols([]);
-              }
-              setInitialLoaded(true);
-            }
-          }
-          if (modalType === "bodypart") {
-            const r = await apis.bodyPart.fetchAll();
-            setBodyParts(
-              r.results.filter((bp) => bp.modality_id === selectedModality),
-            );
-            if (savedItem?.external_id) {
-              setSelectedBodyPart(savedItem.external_id);
-              if (!editItem) {
-                setSelectedScanProtocol("");
-              }
-            }
-          }
-          if (modalType === "scanprotocol") {
-            const r = await apis.scanProtocol.fetchAll();
-            setScanProtocols(
-              r.results.filter(
-                (sp) =>
-                  sp.modality_id === selectedModality &&
-                  sp.body_part_id === selectedBodyPart,
-              ),
-            );
+          {
+            const r = await apis.scanProtocol.fetchAll({
+              modality: selectedModality,
+              body_part: selectedBodyPart,
+            });
+            setScanProtocols(r.results);
             if (savedItem?.external_id) {
               setSelectedScanProtocol(savedItem.external_id);
             }
