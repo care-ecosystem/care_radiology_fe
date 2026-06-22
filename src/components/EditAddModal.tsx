@@ -81,47 +81,37 @@ export default function EditAddModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Name Field */}
-        <div className="mt-3">
-          <label className="text-sm font-medium">{t("radiology_name")}</label>
-          <Input
-            className="mt-1"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t("radiology_enter_name")}
-          />
-        </div>
+        <div className="w-full min-w-0 flex flex-col gap-3">
+          {/* Name Field */}
+          <div>
+            <label className="text-sm font-medium">{t("radiology_name")}</label>
+            <Input
+              className="mt-1"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("radiology_enter_name")}
+            />
+          </div>
 
-        {/* Modality — readonly, derived from service request */}
-        <div className="mt-3">
-          <label className="text-sm font-medium">
-            {t("radiology_modality_type")}
-          </label>
-          <select
-            className="border w-full p-2 rounded-md mt-1 bg-gray-100 cursor-not-allowed"
-            value={selectedModality}
-            disabled
-          >
-            {selectedModality && (
-              <option value={selectedModality}>{selectedModality}</option>
-            )}
-          </select>
-        </div>
+          {/* Modality — readonly, derived from service request */}
+          <div>
+            <label className="text-sm font-medium">
+              {t("radiology_modality_type")}
+            </label>
+            <div className="mt-1 flex h-9 w-full items-center rounded-md border border-gray-300 bg-gray-100 px-3 text-sm">
+              <span className="truncate text-gray-500">{selectedModality || "-"}</span>
+            </div>
+          </div>
 
-        {/* Body Part — readonly, derived from service request */}
-        <div className="mt-3">
-          <label className="text-sm font-medium">
-            {t("radiology_body_part")}
-          </label>
-          <select
-            className="border w-full p-2 rounded-md mt-1 bg-gray-100 cursor-not-allowed"
-            value={selectedBodyPart}
-            disabled
-          >
-            {selectedBodyPart && (
-              <option value={selectedBodyPart}>{selectedBodyPart}</option>
-            )}
-          </select>
+          {/* Body Part — readonly, derived from service request */}
+          <div>
+            <label className="text-sm font-medium">
+              {t("radiology_body_part")}
+            </label>
+            <div className="mt-1 flex h-9 w-full items-center rounded-md border border-gray-300 bg-gray-100 px-3 text-sm">
+              <span className="truncate text-gray-500">{selectedBodyPart || "-"}</span>
+            </div>
+          </div>
         </div>
         <DialogFooter className="mt-5">
           <Button variant="outline" onClick={onClose}>

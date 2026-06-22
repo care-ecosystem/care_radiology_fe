@@ -51,9 +51,9 @@ export default function BodyPartSearch({
         <Button
           variant="outline"
           disabled={disabled}
-          className="w-full justify-between font-normal text-sm h-[38px] border-gray-300 bg-white"
+          className="w-full justify-between font-normal text-sm h-[38px] border-gray-300 bg-white !whitespace-normal"
         >
-          <span className={value ? "text-gray-900" : "text-gray-400"}>
+          <span className={`text-left truncate min-w-0 flex-1 ${value ? "text-gray-900" : "text-gray-400"}`}>
             {value || placeholder}
           </span>
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
