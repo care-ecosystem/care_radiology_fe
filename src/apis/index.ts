@@ -57,7 +57,7 @@ export const apis = {
       return await request<any>(
         `/api/care_radiology/dicom/studies/${queryString({
           patientId: query?.patient ?? "",
-        })}`
+        })}`,
       );
     },
 
@@ -76,7 +76,7 @@ export const apis = {
         },
         {
           isFormdata: true,
-        }
+        },
       );
     },
 
@@ -91,9 +91,9 @@ export const apis = {
       return await request<any>(
         `/api/care_radiology/dicom/service-requests${queryString({
           serviceRequestId: query?.serviceRequestId ?? "",
-        })}`
-      )
-    }
+        })}`,
+      );
+    },
   },
 
   modality: {
@@ -120,10 +120,13 @@ export const apis = {
       id: string,
       payload: Partial<{ display_name: string; coding: Coding[] }>,
     ): Promise<ModalityType> => {
-      return await request<ModalityType>(`/api/care_radiology/modality_type/${id}/`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+      return await request<ModalityType>(
+        `/api/care_radiology/modality_type/${id}/`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      );
     },
 
     // DELETE /api/v1/modality_type/:external_id/
@@ -136,7 +139,9 @@ export const apis = {
 
   bodyPart: {
     fetchAll: async (): Promise<PaginatedResponse<BodyPart>> => {
-      return await request<PaginatedResponse<BodyPart>>("/api/care_radiology/body_part/");
+      return await request<PaginatedResponse<BodyPart>>(
+        "/api/care_radiology/body_part/",
+      );
     },
 
     create: async (payload: {
@@ -202,10 +207,13 @@ export const apis = {
         coding: Coding[];
       }>,
     ): Promise<ScanProtocol> => {
-      return await request<ScanProtocol>(`/api/care_radiology/scan_protocol/${id}/`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+      return await request<ScanProtocol>(
+        `/api/care_radiology/scan_protocol/${id}/`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      );
     },
 
     remove: async (id: string): Promise<void> => {
@@ -263,19 +271,30 @@ export const apis = {
   },
 
   studyReportAudit: {
-  fetchByStudyReport: async (studyReportUid: string) => {
-    const res: any = await request(
-      `/api/care_radiology/study-report-audits/?study_report=${studyReportUid}`,
-      {
-        method: "GET",
-      },
-    );
-    return {
-      ...res,
-      results: res.results || [],
-    };
+    fetchByStudyReport: async (studyReportUid: string) => {
+      const res: any = await request(
+        `/api/care_radiology/study-report-audits/?study_report=${studyReportUid}`,
+        {
+          method: "GET",
+        },
+      );
+      return {
+        ...res,
+        results: res.results || [],
+      };
+    },
   },
-},
+
+  valueset: {
+    expand: async (slug: string, search: string, count = 10) => {
+      return await request<{
+        results: { code: string; display: string; system: string }[];
+      }>(`/api/v1/valueset/${slug}/expand/`, {
+        method: "POST",
+        body: JSON.stringify({ count, search }),
+      });
+    },
+  },
 
   template: {
     create: async (payload: {
