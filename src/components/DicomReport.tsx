@@ -362,7 +362,7 @@ export default function DicomReport({
       <Card className="w-full border shadow-sm bg-white mx-6 mb-6">
         <div className="flex flex-row gap-0 w-full h-[80vh] overflow-hidden">
           {/* Left Sidebar */}
-          <div className="w-[360px] min-w-[360px] max-w-[360px] border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{width: "360px", maxWidth: "360px", minWidth: "360px"}}>
+          <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{width: "360px", maxWidth: "360px", minWidth: "360px"}}>
             {/* Modality Section */}
             <div className="w-full min-w-0">
               <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
