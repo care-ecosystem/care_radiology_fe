@@ -316,6 +316,8 @@ export default function DicomReport({
     setModalOpen(true);
   };
 
+  const canManageProtocol = !!(selectedBodyPart && !loadingScanProtocols);
+
   const patientAgeGender = patient
     ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
     : "-";
@@ -420,22 +422,22 @@ export default function DicomReport({
                 <div className="flex gap-1 shrink-0">
                   <Plus
                     size={16}
-                    className="cursor-pointer hover:text-green-600"
-                    onClick={handleAdd}
+                    className={canManageProtocol ? "cursor-pointer hover:text-green-600" : "text-gray-300 cursor-not-allowed pointer-events-none"}
+                    onClick={canManageProtocol ? handleAdd : undefined}
                   />
                   <Pencil
                     size={16}
-                    className="cursor-pointer hover:text-green-600"
-                    onClick={handleEdit}
+                    className={canManageProtocol ? "cursor-pointer hover:text-green-600" : "text-gray-300 cursor-not-allowed pointer-events-none"}
+                    onClick={canManageProtocol ? handleEdit : undefined}
                   />
                 </div>
               </div>
               <Select
                 value={selectedScanProtocol}
                 onValueChange={setSelectedScanProtocol}
-                disabled={!selectedBodyPart || loadingScanProtocols}
+                disabled={!canManageProtocol}
               >
-                <SelectTrigger className={`w-full ${(!selectedBodyPart || loadingScanProtocols) ? "disabled:opacity-100 bg-gray-200" : ""}`}>
+                <SelectTrigger className={`w-full ${!canManageProtocol ? "disabled:opacity-100 bg-gray-200" : ""}`}>
                   <SelectValue
                     placeholder={
                       loadingScanProtocols
