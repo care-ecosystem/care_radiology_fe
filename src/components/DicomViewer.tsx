@@ -10,10 +10,14 @@ export default function DicomViewer({
   studyUid,
   seriesUid,
   instanceUid,
+  embedded,
+  onClose,
 }: {
   studyUid: string;
   seriesUid?: string;
   instanceUid?: string;
+  embedded?: boolean;
+  onClose?: () => void;
 }) {
   const dicomViewerRef = useRef<HTMLIFrameElement>(null);
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
@@ -53,18 +57,20 @@ export default function DicomViewer({
           {t("dicom_viewer")}
         </CardTitle>
         <div className="flex gap-5 justify-end">
-          <Button
-            variant={"primary"}
-            onClick={() => {
-              goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
-            }}
-          >
-            Fullscreen
-          </Button>
+          {!embedded && (
+            <Button
+              variant={"primary"}
+              onClick={() => {
+                goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
+              }}
+            >
+              Fullscreen
+            </Button>
+          )}
           <Button
             variant={"outline"}
             color={"red"}
-            onClick={() => window.history.back()}
+            onClick={() => (embedded && onClose ? onClose() : window.history.back())}
           >
             Close
           </Button>

@@ -1,5 +1,6 @@
 import { DicomStudy } from "@/types/Dicom";
 import { FC, useMemo, useState } from "react";
+import DicomViewer from "./DicomViewer";
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
 export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
+  const [viewerStudyUid, setViewerStudyUid] = useState<string | null>(null);
   const [showReportSelectModal, setShowReportSelectModal] = useState(false);
   const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
   const [reportSelectList, setReportSelectList] = useState<any[]>([]);
@@ -67,7 +69,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   }
 
   const handleViewStudy = (studyUid: string) => {
-    navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`);
+    setViewerStudyUid(studyUid);
   }
 
   const handleEditReport = async (studyId: string) => {
@@ -252,6 +254,18 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                 </div>
               )
             }
+          </div>
+        </div>
+      )}
+
+      {viewerStudyUid && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[95vh] overflow-auto">
+            <DicomViewer
+              studyUid={viewerStudyUid}
+              embedded
+              onClose={() => setViewerStudyUid(null)}
+            />
           </div>
         </div>
       )}
