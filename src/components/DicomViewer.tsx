@@ -54,7 +54,7 @@ export default function DicomViewer({
     <Card className="shadow-sm border border-gray-200 bg-white">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-xl font-semibold text-gray-800">
-          {t("dicom_viewer")}
+          {t("dicom_study_viewer")}
         </CardTitle>
         <div className="flex gap-5 justify-end">
           {!embedded && (

@@ -14,9 +14,14 @@ import { Eye, FileText, Info, X, Pencil, Plus, FilePlusIcon } from "lucide-react
 import { format } from "date-fns";
 import React from "react";
 import { apis } from "@/apis";
+import { PLUGIN_SLUG } from "@/constants";
+import { useTranslation } from "react-i18next";
+import { Button } from "./ui/button";
 
 type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
 export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
+  const { t } = useTranslation(PLUGIN_SLUG);
+
   const [showModal, setShowModal] = useState(false);
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
   const [viewerStudyUid, setViewerStudyUid] = useState<string | null>(null);
@@ -138,13 +143,13 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                             <FileText size={18} />
                       </button>
                     }             
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={() => handleViewStudy(study.study_uid)}
-                      className="text-gray-600 hover:text-blue-600"
-                      title="View Study"
                     >
                       <Eye size={18} />
-                    </button>
+                      {t("dicom_view_study")}
+                    </Button>
                     <button
                       onClick={() => handleInfoClick(study)}
                       className="text-gray-600 hover:text-green-600"
