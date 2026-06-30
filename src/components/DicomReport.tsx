@@ -27,10 +27,12 @@ export default function DicomReport({
   facilityId,
   serviceRequestId,
   studyUid,
+  onClose,
 }: {
   facilityId: string;
   serviceRequestId: string;
   studyUid: string;
+  onClose?: () => void;
 }) {
   const [scanProtocols, setScanProtocols] = useState<any[]>([]);
 
@@ -59,11 +61,12 @@ export default function DicomReport({
   const [dicomStudy, setDicomStudy] = useState<any>(null);
   const [bodyPartMissing, setBodyPartMissing] = useState(false);
 
-  const { t: basetranslate } = useTranslation();
+  // const { t: basetranslate } = useTranslation();
   const { t } = useTranslation("care_radiology_fe");
   const techniqueRef = useRef<Quill | null>(null);
   const findingsRef = useRef<Quill | null>(null);
   const impressionRef = useRef<Quill | null>(null);
+  const isInModal = !!onClose;
 
   useEffect(() => {
     if (!serviceRequestId) return;
@@ -226,7 +229,13 @@ export default function DicomReport({
     return true;
   };
 
-  const handleCancel = () => window.history.back();
+  const handleCancel = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      window.history.back();
+    }
+  };
 
   const handleSave = async () => {
     if (reportExists) {
@@ -266,6 +275,10 @@ export default function DicomReport({
       }
       toast.success(t("radiology_report_saved_successfully!"));
       setReportExists(true);
+      
+      if (onClose) {
+        onClose();
+      }
     } catch (err) {
       if ((err as APIError).status == 403) {
         return toast.error((err as APIError).message);
@@ -318,25 +331,25 @@ export default function DicomReport({
 
   const canManageProtocol = !!(selectedBodyPart && !loadingScanProtocols);
 
-  const patientAgeGender = patient
-    ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
-    : "-";
+  // const patientAgeGender = patient
+  //   ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
+  //   : "-";
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className={`w-full h-full flex flex-col ${isInModal ? '' : ''}`}>
       {/* Page Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b">
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b flex-shrink-0">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
             {t("radiology_dicom_report")}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          {/* <p className="text-sm text-gray-600 mt-1">
             Reporting on study{" "}
             <span className="font-medium">ACC-2026-005821</span> · Patient{" "}
             <span className="font-medium">
               {patient?.name ?? "-"} {patientAgeGender}
             </span>
-          </p>
+          </p> */}
         </div>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-2 text-sm text-gray-500"></span>
@@ -349,7 +362,7 @@ export default function DicomReport({
       </div>
 
       {/* Patient Details Card */}
-      <div>
+      <div className="flex-shrink-0">
         <PatientDetails
           patient={patient}
           requester={requester}
@@ -359,187 +372,191 @@ export default function DicomReport({
       </div>
 
       {/* Main Report Card */}
-      <Card className="w-full border shadow-sm bg-white mx-6 mb-6">
-        <div className="flex flex-row gap-0 w-full h-[80vh] overflow-hidden">
-          {/* Left Sidebar */}
-          <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{width: "360px", maxWidth: "360px", minWidth: "360px"}}>
-            {/* Modality Section */}
-            <div className="w-full min-w-0">
-              <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
-                {t("radiology_modality_type")}{" "}
-                <span className="text-red-500">*</span>
-              </h4>
-              <Select value={selectedModality} disabled>
-                <SelectTrigger className="w-full disabled:opacity-100 bg-gray-100">
-                  <SelectValue placeholder="-" />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectedModality && (
-                    <SelectItem value={selectedModality}>
-                      {selectedModality}
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Body Part Section */}
-            <div className="w-full min-w-0">
-              <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
-                {t("radiology_body_part")}{" "}
-                <span className="text-red-500">*</span>
-              </h4>
-              {bodyPartMissing ? (
-                <div className="w-full">
-                  <BodyPartSearch
-                    value={selectedBodyPart}
-                    onChange={setSelectedBodyPart}
-                    placeholder={t("radiology_select") + " Body Part"}
-                  />
-                </div>
-              ) : (
-                <Select value={selectedBodyPart} disabled>
+      <div className={`w-full flex flex-col flex-1 overflow-hidden ${isInModal ? 'mx-0 mb-0' : 'mx-6 mb-6'}`}>
+        <Card className="w-full border shadow-sm bg-white flex flex-col h-full overflow-hidden">
+          {/* Content Area - Scrollable */}
+          <div className="flex flex-row gap-0 w-full flex-1 overflow-hidden">
+            {/* Left Sidebar - with scrollbar */}
+            <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{width: "360px", maxWidth: "360px", minWidth: "360px"}}>
+              {/* Modality Section */}
+              <div className="w-full min-w-0">
+                <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
+                  {t("radiology_modality_type")}{" "}
+                  <span className="text-red-500">*</span>
+                </h4>
+                <Select value={selectedModality} disabled>
                   <SelectTrigger className="w-full disabled:opacity-100 bg-gray-100">
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedBodyPart && (
-                      <SelectItem value={selectedBodyPart}>
-                        {selectedBodyPart}
+                    {selectedModality && (
+                      <SelectItem value={selectedModality}>
+                        {selectedModality}
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
-              )}
-            </div>
+              </div>
+
+            {/* Body Part Section */}
+              <div className="w-full min-w-0">
+                <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
+                  {t("radiology_body_part")}{" "}
+                  <span className="text-red-500">*</span>
+                </h4>
+                {bodyPartMissing ? (
+                  <div className="w-full">
+                    <BodyPartSearch
+                      value={selectedBodyPart}
+                      onChange={setSelectedBodyPart}
+                      placeholder={t("radiology_select") + " Body Part"}
+                    />
+                  </div>
+                ) : (
+                  <Select value={selectedBodyPart} disabled>
+                    <SelectTrigger className="w-full disabled:opacity-100 bg-gray-100">
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedBodyPart && (
+                        <SelectItem value={selectedBodyPart}>
+                          {selectedBodyPart}
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
 
             {/* Scan Protocol Section */}
-            <div className="w-full min-w-0">
-              <div className="flex justify-between items-center mb-2 gap-2">
-                <h4 className="font-medium text-sm text-gray-700 truncate flex-1">
-                  {t("radiology_scan_protocol")}
-                </h4>
-                <div className="flex gap-1 shrink-0">
-                  <Plus
-                    size={16}
-                    className={canManageProtocol ? "cursor-pointer hover:text-green-600" : "text-gray-300 cursor-not-allowed pointer-events-none"}
-                    onClick={canManageProtocol ? handleAdd : undefined}
-                  />
-                  <Pencil
-                    size={16}
-                    className={canManageProtocol ? "cursor-pointer hover:text-green-600" : "text-gray-300 cursor-not-allowed pointer-events-none"}
-                    onClick={canManageProtocol ? handleEdit : undefined}
-                  />
+              <div className="w-full min-w-0">
+                <div className="flex justify-between items-center mb-2 gap-2">
+                  <h4 className="font-medium text-sm text-gray-700 truncate flex-1">
+                    {t("radiology_scan_protocol")}
+                  </h4>
+                  <div className="flex gap-1 shrink-0">
+                    <Plus
+                      size={16}
+                      className={canManageProtocol ? "cursor-pointer hover:text-green-600" : "text-gray-300 cursor-not-allowed pointer-events-none"}
+                      onClick={canManageProtocol ? handleAdd : undefined}
+                    />
+                    <Pencil
+                      size={16}
+                      className={canManageProtocol ? "cursor-pointer hover:text-green-600" : "text-gray-300 cursor-not-allowed pointer-events-none"}
+                      onClick={canManageProtocol ? handleEdit : undefined}
+                    />
+                  </div>
                 </div>
+                <Select
+                  value={selectedScanProtocol}
+                  onValueChange={setSelectedScanProtocol}
+                  disabled={!canManageProtocol}
+                >
+                  <SelectTrigger className={`w-full ${!canManageProtocol ? "disabled:opacity-100 bg-gray-200" : ""}`}>
+                    <SelectValue
+                      placeholder={
+                        loadingScanProtocols
+                          ? t("radiology_loading")
+                          : t("radiology_select") + " Scan Protocol"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scanProtocols.map((sp) => (
+                      <SelectItem key={sp.external_id} value={sp.external_id}>
+                        {sp.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select
-                value={selectedScanProtocol}
-                onValueChange={setSelectedScanProtocol}
-                disabled={!canManageProtocol}
-              >
-                <SelectTrigger className={`w-full ${!canManageProtocol ? "disabled:opacity-100 bg-gray-200" : ""}`}>
-                  <SelectValue
-                    placeholder={
-                      loadingScanProtocols
-                        ? t("radiology_loading")
-                        : t("radiology_select") + " Scan Protocol"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {scanProtocols.map((sp) => (
-                    <SelectItem key={sp.external_id} value={sp.external_id}>
-                      {sp.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
-          </div>
 
           {/* Report Section */}
-          <div className="flex-1 p-6 bg-white overflow-y-auto">
-            <div className="flex flex-col gap-4 h-full">
-              {/* Scan Protocol Summary */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="font-medium text-gray-700 text-sm">
-                    {t("radiology_scan_protocol")} Summary
-                  </label>
-                  <span className="text-xs text-gray-500">
-                    Auto-derived from left panel
-                  </span>
+            <div className="flex-1 p-6 bg-white overflow-y-auto">
+              <div className="flex flex-col gap-4">
+                {/* Scan Protocol Summary */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-medium text-gray-700 text-sm">
+                      {t("radiology_scan_protocol")} Summary
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      Auto-derived from left panel
+                    </span>
+                  </div>
+                  <Input
+                    value={
+                      scanProtocols.find(
+                        (sp) => sp.external_id === selectedScanProtocol,
+                      )?.display_name || ""
+                    }
+                    readOnly
+                    className="bg-gray-100 border-gray-200"
+                  />
                 </div>
-                <Input
-                  value={
-                    scanProtocols.find(
-                      (sp) => sp.external_id === selectedScanProtocol,
-                    )?.display_name || ""
-                  }
-                  readOnly
-                  className="bg-gray-100 border-gray-200"
-                />
-              </div>
 
               {/* Technique */}
-              <div>
-                <label className="font-medium text-gray-700 text-sm">
-                  {t("radiology_technique")}
-                </label>
-                <div className="border rounded-md bg-white mt-1">
-                  <Editor ref={techniqueRef} height={130} />
-                </div>
-              </div>
-
-              {/* Findings */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
+                <div>
                   <label className="font-medium text-gray-700 text-sm">
-                    {t("radiology_findings")}{" "}
+                    {t("radiology_technique")}
+                  </label>
+                  <div className="border rounded-md bg-white mt-1">
+                    <Editor ref={techniqueRef} height={130} />
+                  </div>
+                </div>
+
+                {/* Findings */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-medium text-gray-700 text-sm">
+                      {t("radiology_findings")}{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                  </div>
+                  <div className="border rounded-md bg-white">
+                    <Editor ref={findingsRef} height={180} />
+                  </div>
+                </div>
+
+                {/* Impression */}
+                <div>
+                  <label className="font-medium text-gray-700 text-sm">
+                    {t("radiology_impression")}{" "}
                     <span className="text-red-500">*</span>
                   </label>
-                </div>
-                <div className="border rounded-md bg-white">
-                  <Editor ref={findingsRef} height={180} />
-                </div>
-              </div>
-
-              {/* Impression */}
-              <div>
-                <label className="font-medium text-gray-700 text-sm">
-                  {t("radiology_impression")}{" "}
-                  <span className="text-red-500">*</span>
-                </label>
-                <div className="border rounded-md bg-white mt-1">
-                  <Editor ref={impressionRef} height={130} />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex justify-between items-center gap-4 mt-auto">
-                <div className="flex justify-start gap-4">
-                  <Button variant="outline" onClick={handleSaveAsTemplate}>
-                    {t("radiology_save_as_template")}
-                  </Button>
-                  {canPreview && (
-                    <Button variant="outline" onClick={handlePreview}>
-                      {t("radiology_preview")}
-                    </Button>
-                  )}
-                </div>
-                <div className="flex justify-end gap-4">
-                  <Button variant="secondary" onClick={handleCancel}>
-                    {t("radiology_cancel")}
-                  </Button>
-                  <Button variant="primary" onClick={handleSave}>
-                    {t("radiology_save")}
-                  </Button>
+                  <div className="border rounded-md bg-white mt-1">
+                    <Editor ref={impressionRef} height={130} />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </Card>
+
+              {/* Buttons */}
+          <div className="border-t border-gray-200 bg-white p-6 flex justify-between items-center gap-4 flex-shrink-0">
+            <div className="flex justify-start gap-3">
+              <Button variant="outline" onClick={handleSaveAsTemplate}>
+                <Plus size={16} className="mr-2" />
+                {t("radiology_save_as_template")}
+              </Button>
+              {canPreview && (
+                <Button variant="outline" onClick={handlePreview}>
+                  {t("radiology_preview")}
+                </Button>
+              )}
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={handleCancel}>
+                {t("radiology_cancel")}
+              </Button>
+              <Button variant="default" onClick={handleSave}>
+                {t("radiology_save")}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {showTemplatePrompt && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
@@ -552,7 +569,7 @@ export default function DicomReport({
             </p>
             <div className="flex justify-end gap-3">
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={() => {
                   techniqueRef.current?.setText("");
                   findingsRef.current?.setText("");

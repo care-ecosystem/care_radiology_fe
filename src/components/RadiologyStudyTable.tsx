@@ -16,6 +16,7 @@ import React from "react";
 import { apis } from "@/apis";
 import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
+import DicomReport from "./DicomReport";
 import { Button } from "./ui/button";
 
 type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
@@ -29,14 +30,15 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
   const [reportSelectList, setReportSelectList] = useState<any[]>([]);
   const [reportSelectMode, setReportSelectMode] = useState<"edit" | "preview">("edit");
+  
+  // Report creation modal state
+  const [showReportCreationModal, setShowReportCreationModal] = useState(false);
+  const [reportCreationStudyId, setReportCreationStudyId] = useState<string>("");
+  const [isLoadingModal, setIsLoadingModal] = useState(false);
+
   const handleInfoClick = async (study: DicomStudy) => {
     try {
       setSelectedStudy(study);
-      // const response = await apis.dicom.fetchSeries({
-      //   studyId: study.id.toString(),
-      // });
-      // const data = response;
-      // setSeriesData(data);
       setShowModal(true);
     } catch (error) {
       console.error("Error fetching series info:", error);
@@ -93,6 +95,32 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     setShowReportSelectModal(true);
   };
 
+  // Handle "New Report" button click - Opens modal immediately
+  const handleNewReportClick = (studyId: string) => {
+    setReportCreationStudyId(studyId);
+    setShowReportCreationModal(true);
+    
+    setIsLoadingModal(true);
+    apis.studyReport.fetchByStudy(studyId)
+      .then((res) => {
+        const reports: any[] = res?.results ?? [];
+        
+        if (reports.length > 1) {
+          setShowReportCreationModal(false);
+          setReportSelectStudyId(studyId);
+          setReportSelectList(reports);
+          setReportSelectMode("edit");
+          setShowReportSelectModal(true);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching reports:", err);
+      })
+      .finally(() => {
+        setIsLoadingModal(false);
+      });
+  };
+
   const handleReportSelect = (reportId: string) => {
     setShowReportSelectModal(false);
     if (reportSelectMode === "preview") {
@@ -107,10 +135,15 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     }
   };
 
+  // Handle closing the report creation modal
+  const handleCloseReportModal = () => {
+    setShowReportCreationModal(false);
+    setReportCreationStudyId("");
+  };
+
   return (
     <React.Fragment>
       <div className={`${props.className ?? ''} rounded-md border`}>
-        {" "}
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-100">
@@ -122,7 +155,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
           </TableHeader>
           <TableBody>
             {props.studies.map((study: DicomStudy) => (
-              <TableRow>
+              <TableRow key={study.external_id}>
                 <TableCell>{study.study_description || "—"}</TableCell>
                 <TableCell>
                   {(study.study_date
@@ -133,45 +166,56 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                   {(study.study_modalities as string[])?.join(", ") || "—"}
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-3 items-center justify-end">
+                  <div className="flex gap-2 items-center justify-end flex-wrap">
                     {study.has_report && 
-                      <button
-                            onClick={() => handlePreview(study.external_id)}
-                            className="text-gray-600 hover:text-orange-600"
-                            title="View Report"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePreview(study.external_id)}
+                        className="text-xs h-auto py-1 px-2"
                       >
-                            <FileText size={18} />
-                      </button>
+                        <FileText size={16} className="mr-1" />
+                        View Report
+                      </Button>
                     }             
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() => handleViewStudy(study.study_uid)}
+                      className="text-xs h-auto py-1 px-2"
                     >
-                      <Eye size={18} />
+                      <Eye size={16} className="mr-1" />
                       {t("dicom_view_study")}
                     </Button>
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleInfoClick(study)}
-                      className="text-gray-600 hover:text-green-600"
-                      title="Study Info"
+                      className="text-xs h-auto py-1 px-2"
                     >
-                      <Info size={18} />
-                    </button>
-                    <button
-                      onClick={() => navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${study.external_id}`)}
-                      className="text-gray-600 hover:text-green-600"
-                      title="New Report"
+                      <Info size={16} className="mr-1" />
+                      Info
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNewReportClick(study.external_id)}
+                      className="text-xs h-auto py-1 px-2"
+                      disabled={isLoadingModal}
                     >
-                      <FilePlusIcon size={18} />
-                    </button>
+                      <FilePlusIcon size={16} className="mr-1" />
+                      New Report
+                    </Button>
                     {study.has_report &&
-                      <button
-                            onClick={() => handleEditReport(study.external_id)}
-                            className="text-gray-600 hover:text-purple-600"
-                            title="Edit Report"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditReport(study.external_id)}
+                        className="text-xs h-auto py-1 px-2"
                       >
-                            <Pencil size={18} />
-                      </button>
+                        <Pencil size={16} className="mr-1" />
+                        Edit Report
+                      </Button>
                     }
                   </div>
                 </TableCell>
@@ -182,7 +226,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
       </div>
 
       {showReportSelectModal && (
-        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-[760px] relative p-5 flex flex-col max-h-[80vh]">
             <button
               className="absolute top-3 right-3 text-gray-600 hover:text-red-600"
@@ -249,7 +293,8 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                   <button
                     onClick={() => {
                       setShowReportSelectModal(false);
-                      navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}`);
+                      setReportCreationStudyId(reportSelectStudyId);
+                      setShowReportCreationModal(true);
                     }}
                     className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
                   >
@@ -276,9 +321,8 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
       )}
 
       {showModal && selectedStudy && (
-        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-[400px] relative p-5">
-            {/* Close icon */}
             <button
               className="absolute top-3 right-3 text-gray-600 hover:text-red-600"
               onClick={() => setShowModal(false)}
@@ -286,7 +330,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               <X size={20} />
             </button>
 
-            {/* Header */}
             <h3 className="text-lg font-semibold text-gray-800 mb-2">
               {selectedStudy.study_description}{" "}
               {(selectedStudy.study_modalities as string[]).join(", ") || "—"}
@@ -306,7 +349,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               )}
             </div>
 
-            {/* Series box */}
             <div className="border rounded-lg p-3 bg-gray-50">
               {selectedStudy.study_series.length > 0 ? (
                 selectedStudy.study_series.map((series) => (
@@ -322,6 +364,20 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                 <p className="text-gray-500 text-sm">No series found</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Creation Modal */}
+      {showReportCreationModal && reportCreationStudyId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
+            <DicomReport
+              facilityId={facilityId}
+              serviceRequestId={serviceRequestId}
+              studyUid={reportCreationStudyId}
+              onClose={handleCloseReportModal}
+            />
           </div>
         </div>
       )}
