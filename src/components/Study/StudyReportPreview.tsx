@@ -139,6 +139,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           <SectionLayout title={t("radiology_technique")}>
             <div
               className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
               dangerouslySetInnerHTML={{ __html: report.technique }}
             />
           </SectionLayout>
@@ -147,6 +148,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           <SectionLayout title={t("radiology_findings")}>
             <div
               className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
               dangerouslySetInnerHTML={{ __html: report.findings }}
             />
           </SectionLayout>
@@ -155,6 +157,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           <SectionLayout title={t("radiology_impression")}>
             <div
               className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
               dangerouslySetInnerHTML={{ __html: report.impression }}
             />
           </SectionLayout>
