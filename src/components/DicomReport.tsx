@@ -336,7 +336,7 @@ export default function DicomReport({
   //   : "-";
 
   return (
-    <div className={`w-full h-full flex flex-col ${isInModal ? '' : ''}`}>
+    <div className="w-full h-full flex flex-col">
       {/* Page Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b flex-shrink-0">
         <div>
