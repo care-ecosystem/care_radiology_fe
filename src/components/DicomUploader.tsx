@@ -8,7 +8,7 @@ import {
   Eye,
 } from "lucide-react";
 import { navigate } from "raviger";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
@@ -33,12 +33,14 @@ export default function DicomUploader({
   serviceRequestId,
   embedded,
   onClose,
+  onUploadSuccess,
 }: {
   facilityId: string;
   patientId: string;
   serviceRequestId: string;
   embedded?: boolean;
   onClose?: () => void;
+  onUploadSuccess?: () => void;
 }) {
   const [files, setFiles] = useState<DicomFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,27 +53,6 @@ export default function DicomUploader({
 
   const { t } = useTranslation(PLUGIN_SLUG);
   const { t: baseTranslate } = useTranslation();
-
-  useEffect(() => {
-      if (isUploading == false) {
-        const studyUid = files.find(
-          (f) => f?.study_uid && f?.study_uid != ""
-        )?.study_uid;
-        if (!studyUid) return;
-        const link = `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`;
-        if (link) {
-          setSuccessfulLink(link);
-          toast.success(
-            <div className="flex gap-1">
-              <span>Files uploaded successfully.</span>
-              <a className="underline" href={link}>
-                View Study.
-              </a>
-            </div>
-          );
-        }
-      }
-  }, [isUploading, files]);
 
   const handleFolderSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
@@ -101,6 +82,7 @@ export default function DicomUploader({
     if (files.length === 0 || isUploading) return;
     setIsUploading(true);
     const counts = { success: 0, failed: 0 };
+    let uploadedStudyUid: string | undefined;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -117,18 +99,17 @@ export default function DicomUploader({
 
       try {
         const response = await apis.dicom.upload(formData);
-        counts[response.message.includes("success") ? "success" : "failed"] =
-          counts[
-            response.message.includes("success") ? "success" : "failed"
-          ] += 1;
+        const isSuccess = response.message.includes("success");
+        counts[isSuccess ? "success" : "failed"] += 1;
+        if (isSuccess && response.study_uid) {
+          uploadedStudyUid = response.study_uid;
+        }
         setFiles((prev) =>
           prev.map((f, index) =>
             index === i
               ? {
                   ...f,
-                  status: response.message.includes("success")
-                    ? "success"
-                    : "failed",
+                  status: isSuccess ? "success" : "failed",
                   study_uid: response.study_uid,
                 }
               : f
@@ -143,6 +124,24 @@ export default function DicomUploader({
 
     if (counts.failed) {
       toast.error(`${counts.failed} files failed. ${counts.success} uploaded.`);
+    }
+
+    if (uploadedStudyUid) {
+      try {
+        if (serviceRequestId) {
+          await apis.dicom.linkServiceRequest({
+            study_uid: uploadedStudyUid,
+            service_request_id: serviceRequestId,
+          });
+        }
+
+        const link = `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${uploadedStudyUid}`;
+        setSuccessfulLink(link);
+        onUploadSuccess?.();
+        toast.success("Files uploaded successfully");
+      } catch (_) {
+        toast.error("Failed to link study to the service request.");
+      }
     }
 
     setIsUploading(false);
@@ -164,6 +163,7 @@ export default function DicomUploader({
   const uploadedCount = files.filter((f) => f.status === "success").length;
   const failedCount = files.filter((f) => f.status === "failed").length;
   const pendingCount = files.filter((f) => f.status === "pending").length;
+  const isEmbeddedUploadDone = embedded && !!successfulLink && !isUploading;
 
   return (
     <div>
@@ -282,14 +282,14 @@ export default function DicomUploader({
             <Button
               onClick={() => goBack()}
               size="sm"
-              variant="outline"
+              variant={isEmbeddedUploadDone ? "primary" : "outline"}
               className="min-w-[100px]"
             >
-              {embedded && successfulLink && !isUploading
+              {isEmbeddedUploadDone
                 ? baseTranslate("done")
                 : baseTranslate("cancel")}
             </Button>
-            {successfulLink && !isUploading && !embedded && (
+            {!embedded && successfulLink && (
               <Button
                 onClick={() => navigate(successfulLink)}
                 disabled={isUploading || !successfulLink}
@@ -299,7 +299,7 @@ export default function DicomUploader({
                 View Study
               </Button>
             )}
-            {!(embedded && successfulLink && !isUploading) && (
+            {!isEmbeddedUploadDone && (
               <Button
                 onClick={handleSave}
                 disabled={

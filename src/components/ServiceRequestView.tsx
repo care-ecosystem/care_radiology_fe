@@ -51,11 +51,14 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
 
-  const handleUploaderClose = () => {
-    setShowUploader(false);
+  const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
       queryKey: ["radiologyservicerequest", serviceRequestId],
     });
+  };
+
+  const handleUploaderClose = () => {
+    setShowUploader(false);
   };
 
   return (
@@ -125,6 +128,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
               serviceRequestId={serviceRequestId}
               embedded
               onClose={handleUploaderClose}
+              onUploadSuccess={invalidateServiceRequestQueries}
             />
           </DialogContent>
         </Dialog>
