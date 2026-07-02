@@ -30,11 +30,15 @@ interface DicomFile {
 export default function DicomUploader({
   facilityId,
   patientId,
-  serviceRequestId
+  serviceRequestId,
+  embedded,
+  onClose,
 }: {
   facilityId: string;
   patientId: string;
   serviceRequestId: string;
+  embedded?: boolean;
+  onClose?: () => void;
 }) {
   const [files, setFiles] = useState<DicomFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -43,7 +47,7 @@ export default function DicomUploader({
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const goBack = () => window.history.back();
+  const goBack = () => (embedded && onClose ? onClose() : window.history.back());
 
   const { t } = useTranslation(PLUGIN_SLUG);
   const { t: baseTranslate } = useTranslation();
@@ -168,7 +172,7 @@ export default function DicomUploader({
           <CardTitle className="text-xl font-semibold text-gray-800">
             {t("dicom_uploader")}
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Button
               onClick={() => folderInputRef.current?.click()}
               disabled={isUploading}
@@ -281,9 +285,11 @@ export default function DicomUploader({
               variant="outline"
               className="min-w-[100px]"
             >
-              {baseTranslate("cancel")}
+              {embedded && successfulLink && !isUploading
+                ? baseTranslate("done")
+                : baseTranslate("cancel")}
             </Button>
-            {successfulLink && !isUploading && (
+            {successfulLink && !isUploading && !embedded && (
               <Button
                 onClick={() => navigate(successfulLink)}
                 disabled={isUploading || !successfulLink}
@@ -293,20 +299,22 @@ export default function DicomUploader({
                 View Study
               </Button>
             )}
-            <Button
-              onClick={handleSave}
-              disabled={
-                isUploading || files.every((f) => f.status !== "pending")
-              }
-              size="sm"
-              className="min-w-[100px]"
-            >
-              {isUploading ? "Uploading..." : baseTranslate("upload")}
-            </Button>
+            {!(embedded && successfulLink && !isUploading) && (
+              <Button
+                onClick={handleSave}
+                disabled={
+                  isUploading || files.every((f) => f.status !== "pending")
+                }
+                size="sm"
+                className="min-w-[100px]"
+              >
+                {isUploading ? "Uploading..." : baseTranslate("upload")}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
-      <Toaster />
+      {!embedded && <Toaster />}
     </div>
   );
 }
