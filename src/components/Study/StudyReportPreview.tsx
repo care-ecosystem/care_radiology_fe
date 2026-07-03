@@ -14,10 +14,10 @@ interface Props {
 
 function DetailRow({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="grid grid-cols-[10rem_auto_1fr] md:grid-cols-[8rem_auto_1fr] items-center">
-      <span className="text-gray-600">{label}</span>
-      <span className="text-gray-600">:</span>
-      <span className="font-semibold break-words">{value || "-"}</span>
+    <div className="grid grid-cols-10 items-center gap-x-2">
+      <span className="text-gray-600 col-span-4">{label}</span>
+      <span className="text-gray-600 col-span-1">:</span>
+      <span className="font-semibold break-words col-span-5">{value || "-"}</span>
     </div>
   );
 }
@@ -62,6 +62,9 @@ export default function StudyReportPreview({ studyUid }: Props) {
             technique: r.technique || "",
             findings: r.findings || "",
             impression: r.impression || "",
+            modality: r.modality || "",
+            body_part: r.body_part || "",
+            scan_protocol: r.scan_protocol || "",
           });
           setUser(r.created_by || null);
           setPatient(r.patient || null);
@@ -105,7 +108,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           </div>
 
           {/* Patient Details (CARE FE STYLE) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-8">
             {/* Left column */}
             <div className="space-y-3">
               <DetailRow
@@ -134,6 +137,33 @@ export default function StudyReportPreview({ studyUid }: Props) {
               />
             </div>
           </div>
+
+          <SectionLayout title={t("radiology_modality")}>
+            <div
+              className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
+            >
+              {report.modality}
+            </div>
+          </SectionLayout>
+
+          <SectionLayout title={t("radiology_body_part")}>
+            <div
+              className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
+            >
+              {report.body_part}
+            </div>
+          </SectionLayout>
+
+          <SectionLayout title={t("radiology_scan_protocol")}>
+            <div
+              className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
+            >
+              {report.scan_protocol}
+            </div>
+          </SectionLayout>
 
           {/* Technique */}
           <SectionLayout title={t("radiology_technique")}>
