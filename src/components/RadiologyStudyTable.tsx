@@ -1,5 +1,5 @@
 import { DicomStudy } from "@/types/Dicom";
-import { FC, useMemo, useState } from "react";
+import { FC, useMemo, useState, useEffect } from "react";
 import DicomViewer from "./DicomViewer";
 import {
   Table,
@@ -34,7 +34,20 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   // Report creation modal state
   const [showReportCreationModal, setShowReportCreationModal] = useState(false);
   const [reportCreationStudyId, setReportCreationStudyId] = useState<string>("");
-  const [isLoadingModal, setIsLoadingModal] = useState(false);
+
+  const [localStudies, setLocalStudies] = useState<DicomStudy[]>(props.studies);
+  useEffect(() => {
+    setLocalStudies(props.studies);
+  }, [props.studies]);
+
+  const handleReportSaved = (studyId: string) => {
+    setLocalStudies((prev) =>
+      prev.map((s) =>
+        s.external_id === studyId ? { ...s, has_report: true } : s
+      )
+    );
+  };
+
 
   const handleInfoClick = async (study: DicomStudy) => {
     try {
@@ -99,26 +112,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const handleNewReportClick = (studyId: string) => {
     setReportCreationStudyId(studyId);
     setShowReportCreationModal(true);
-    
-    setIsLoadingModal(true);
-    apis.studyReport.fetchByStudy(studyId)
-      .then((res) => {
-        const reports: any[] = res?.results ?? [];
-        
-        if (reports.length > 1) {
-          setShowReportCreationModal(false);
-          setReportSelectStudyId(studyId);
-          setReportSelectList(reports);
-          setReportSelectMode("edit");
-          setShowReportSelectModal(true);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching reports:", err);
-      })
-      .finally(() => {
-        setIsLoadingModal(false);
-      });
   };
 
   const handleReportSelect = (reportId: string) => {
@@ -154,7 +147,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {props.studies.map((study: DicomStudy) => (
+            {localStudies.map((study: DicomStudy) => (
               <TableRow key={study.external_id}>
                 <TableCell>{study.study_description || "—"}</TableCell>
                 <TableCell>
@@ -201,7 +194,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                       size="sm"
                       onClick={() => handleNewReportClick(study.external_id)}
                       className="text-xs h-auto py-1 px-2"
-                      disabled={isLoadingModal}
                     >
                       <FilePlusIcon size={16} className="mr-1" />
                       New Report
@@ -377,6 +369,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               serviceRequestId={serviceRequestId}
               studyUid={reportCreationStudyId}
               onClose={handleCloseReportModal}
+              onSaveSuccess={() => handleReportSaved(reportCreationStudyId)}
             />
           </div>
         </div>

@@ -20,19 +20,21 @@ import { useTranslation } from "react-i18next";
 import RadiologyAuditPopup from "./Common/RadiologyAuditPopup";
 import PatientDetails from "./Common/PatientDetails";
 import { APIError } from "@/apis/request";
-import { formatPatientAge } from "@/utils/formatPatientAge";
+// import { formatPatientAge } from "@/utils/formatPatientAge";
 import { RadiologyServiceRequest } from "@/types/ServiceRequest";
 
 export default function DicomReport({
   facilityId,
   serviceRequestId,
   studyUid,
+  onSaveSuccess,
   onClose,
 }: {
   facilityId: string;
   serviceRequestId: string;
   studyUid: string;
   onClose?: () => void;
+  onSaveSuccess?: () => void;
 }) {
   const [scanProtocols, setScanProtocols] = useState<any[]>([]);
 
@@ -275,6 +277,7 @@ export default function DicomReport({
       }
       toast.success(t("radiology_report_saved_successfully!"));
       setReportExists(true);
+      onSaveSuccess?.();
       
       if (onClose) {
         onClose();
