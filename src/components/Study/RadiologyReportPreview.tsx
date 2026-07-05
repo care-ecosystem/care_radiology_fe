@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { apis } from "@/apis";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Pencil, Printer } from "lucide-react";
+import { Pencil, Printer, ChevronDown } from "lucide-react";
+import KbdBadge from "@/components/ui/kbd-badge";
 import { format } from "date-fns";
 import PatientDetails from "@/components/Common/PatientDetails";
 import RadiologyAuditPopup from "@/components/Common/RadiologyAuditPopup";
@@ -121,13 +122,39 @@ export default function RadiologyReportPreview({
     );
   };
 
+  useEffect(() => {
+    if (!selectedReport) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape always closes, regardless of Shift, and even while typing
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+      if (isTyping) return;
+
+      if (e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        handlePrint();
+      } else if (e.shiftKey && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        handleEdit();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedReport, selectedId]);
+
   return (
     <div className="w-full h-full flex flex-col bg-white">
       <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
         <h1 className="text-2xl font-semibold text-gray-900">Radiology Report</h1>
-        <button className="text-gray-500 hover:text-red-600" onClick={onClose}>
-          <X size={20} />
-        </button>
       </div>
 
 
@@ -208,47 +235,55 @@ export default function RadiologyReportPreview({
             <Card className="p-6 flex flex-col gap-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-1">Modality</h4>
-                  <p className="text-sm text-gray-900 bg-gray-100 rounded-md px-3 py-2">
-                    {selectedReport.modality || "—"}
-                  </p>
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Modality</h4>
+                  <div className="flex items-center justify-between h-10 px-3 rounded-md border border-gray-200 bg-gray-100 text-sm text-gray-900">
+                    <span className="truncate">{selectedReport.modality || "—"}</span>
+                    <ChevronDown size={16} className="text-gray-400 shrink-0" />
+                  </div>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-1">
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">
                     Body Part <span className="text-red-500">*</span>
                   </h4>
-                  <p className="text-sm text-gray-900 bg-gray-100 rounded-md px-3 py-2">
-                    {selectedReport.body_part || "—"}
-                  </p>
+                  <div className="flex items-center justify-between h-10 px-3 rounded-md border border-gray-200 bg-gray-100 text-sm text-gray-900">
+                    <span className="truncate">{selectedReport.body_part || "—"}</span>
+                    <ChevronDown size={16} className="text-gray-400 shrink-0" />
+                  </div>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-1">Scan Protocol</h4>
-                  <p className="text-sm text-gray-900 bg-gray-100 rounded-md px-3 py-2">
-                    {selectedReport.scan_protocol || "—"}
-                  </p>
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Scan Protocol</h4>
+                  <div className="flex items-center justify-between h-10 px-3 rounded-md border border-gray-200 bg-gray-100 text-sm text-gray-900">
+                    <span className="truncate">{selectedReport.scan_protocol || "—"}</span>
+                    <ChevronDown size={16} className="text-gray-400 shrink-0" />
+                  </div>
                 </div>
               </div>
 
+
               <div>
-                <h4 className="font-medium text-sm text-gray-700 mb-1">Technique</h4>
+                <h4 className="font-medium text-gray-700 text-sm mb-1">Technique</h4>
                 <div
-                  className="break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-900 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
+                  className="border rounded-md bg-gray-50 mt-1 p-3 min-h-[80px] text-sm text-gray-500 cursor-not-allowed break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: selectedReport.technique || "—" }}
                 />
               </div>
 
               <div>
-                <h4 className="font-medium text-sm text-gray-700 mb-1">Findings</h4>
+                <h4 className="font-medium text-gray-700 text-sm mb-1">
+                  Findings
+                </h4>
                 <div
-                  className="break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-900 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
+                  className="border rounded-md bg-gray-50 p-3 min-h-[100px] text-sm text-gray-500 cursor-not-allowed break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: selectedReport.findings || "—" }}
                 />
               </div>
 
               <div>
-                <h4 className="font-medium text-sm text-gray-700 mb-1">Impression</h4>
+                <h4 className="font-medium text-gray-700 text-sm mb-1">
+                  Impression 
+                </h4>
                 <div
-                  className="break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-900 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
+                  className="border rounded-md bg-gray-50 mt-1 p-3 min-h-[80px] text-sm text-gray-500 cursor-not-allowed break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: selectedReport.impression || "—" }}
                 />
               </div>
@@ -259,16 +294,23 @@ export default function RadiologyReportPreview({
 
       {selectedReport && (
         <div className="border-t bg-white p-4 flex justify-end gap-3 flex-shrink-0">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+            <KbdBadge keys="shift+esc" />
+          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <Printer size={16} className="mr-2" />
             Print
+            <KbdBadge keys="shift+p" />
           </Button>
           <Button variant="default" onClick={handleEdit}>
             <Pencil size={16} className="mr-2" />
             Edit
-          </Button>
+            <KbdBadge keys="shift+e" variant="solid" />
+          </Button>``
         </div>
       )}
+
       <RadiologyAuditPopup
         open={showAuditPopup}
         onClose={() => setShowAuditPopup(false)}

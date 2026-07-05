@@ -104,22 +104,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     setViewerStudyUid(studyUid);
   }
 
-  const handleEditReport = async (studyId: string) => {
-    const res = await apis.studyReport.fetchByStudy(studyId);
-    const reports: any[] = res?.results ?? [];
-
-    if (reports.length <= 1) {
-      const query = reports.length === 1 ? `?reportId=${reports[0].external_id}` : "";
-      navigate(`/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyId}${query}`);
-      return;
-    }
-
-    setReportSelectStudyId(studyId);
-    setReportSelectList(reports);
-    setShowReportSelectModal(true);
-  };
-
-
   // Handle "New Report" button click - Opens modal immediately
   const handleNewReportClick = (studyId: string) => {
     setReportCreationStudyId(studyId);
@@ -204,17 +188,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                       <FilePlusIcon size={16} className="mr-1" />
                       New Report
                     </Button>
-                    {study.has_report &&
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditReport(study.external_id)}
-                        className="text-xs h-auto py-1 px-2"
-                      >
-                        <Pencil size={16} className="mr-1" />
-                        Edit Report
-                      </Button>
-                    }
                   </div>
                 </TableCell>
               </TableRow>
@@ -331,7 +304,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
       )}
 
       <Dialog open={showEditReportModal} onOpenChange={(open) => !open && handleCloseEditReportModal()}>
-        <DialogContent className="max-w-6xl w-full h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
+        <DialogContent
+          className="max-w-6xl w-full h-[85vh] flex flex-col p-0 overflow-hidden gap-0"
+          hideClose
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           {editReportStudyId && (
             <DicomReport
               facilityId={facilityId}

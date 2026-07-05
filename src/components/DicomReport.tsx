@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import Quill from "quill";
 import Editor from "./ui/quilleditor";
 import { Plus, Pencil, Info } from "lucide-react";
+import KbdBadge from "./ui/kbd-badge";
 import {
   Select,
   SelectContent,
@@ -351,6 +352,29 @@ export default function DicomReport({
 
   const canManageProtocol = !!(selectedBodyPart && !loadingScanProtocols);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === "Escape") {
+        e.preventDefault();
+        handleCancel();
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "enter") {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        handlePreview();
+        return;
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedModality, selectedBodyPart, selectedScanProtocol, reportExists, studyReportId]);
+
+
   // const patientAgeGender = patient
   //   ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
   //   : "-";
@@ -503,6 +527,7 @@ export default function DicomReport({
                 <div>
                   <label className="font-medium text-gray-700 text-sm">
                     {t("radiology_technique")}
+                    <span className="text-red-500">*</span>
                   </label>
                   <div className="border rounded-md bg-white mt-1">
                     <Editor ref={techniqueRef} height={130} />
@@ -546,15 +571,18 @@ export default function DicomReport({
               {canPreview && (
                 <Button variant="outline" onClick={handlePreview}>
                   {t("radiology_preview")}
+                  <KbdBadge keys="shift+p" />
                 </Button>
               )}
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={handleCancel}>
                 {t("radiology_cancel")}
+                <KbdBadge keys="shift+esc" />
               </Button>
               <Button variant="default" onClick={handleSave}>
                 {t("radiology_save")}
+                <KbdBadge keys="shift+enter" variant="solid" />
               </Button>
             </div>
           </div>
