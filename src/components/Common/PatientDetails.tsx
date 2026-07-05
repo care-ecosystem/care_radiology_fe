@@ -6,20 +6,25 @@ import { formatName } from "@/utils/auditUtils";
 import { DicomStudy } from "@/types/Dicom";
 import { formatPatientAge } from "@/utils/formatPatientAge";
 import { useTranslation } from "react-i18next";
+import { Info } from "lucide-react";
 
 interface PatientDetailsProps {
   patient: Patient | null;
   requester: User | null;
   dicomStudy: DicomStudy | null;
   departments: any[];
+  onInfoClick?: () => void;
 }
+
 
 export default function PatientDetails({
   patient,
   requester,
   dicomStudy,
-  departments
+  departments,
+  onInfoClick
 }: PatientDetailsProps) {
+
   const { t: basetranslate } = useTranslation();
 
   const doctorName = formatName(requester);
@@ -89,6 +94,13 @@ export default function PatientDetails({
             <span className="px-3 py-1 rounded-md bg-yellow-100 text-yellow-800 text-sm font-medium">
               Pending Report
             </span>
+            {onInfoClick && (
+              <Info
+                size={18}
+                className="ml-6 cursor-pointer text-gray-400 hover:text-green-600 "
+                onClick={onInfoClick}
+              />
+            )}
           </span>
         </div>
       </div>

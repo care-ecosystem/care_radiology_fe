@@ -18,6 +18,8 @@ import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
 import DicomReport from "./DicomReport";
 import { Button } from "./ui/button";
+import RadiologyReportPreview from "./Study/StudyReportPreview";
+
 
 type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
 export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
@@ -29,7 +31,10 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showReportSelectModal, setShowReportSelectModal] = useState(false);
   const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
   const [reportSelectList, setReportSelectList] = useState<any[]>([]);
-  const [reportSelectMode, setReportSelectMode] = useState<"edit" | "preview">("edit");
+
+  const [showPreviewPanel, setShowPreviewPanel] = useState(false);
+  const [previewStudyId, setPreviewStudyId] = useState<string>("");
+
   
   // Report creation modal state
   const [showReportCreationModal, setShowReportCreationModal] = useState(false);
@@ -69,23 +74,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     };
   }, []);
 
-  const handlePreview = async (studyId: string) => {
-    const res = await apis.studyReport.fetchByStudy(studyId);
-    const reports: any[] = res?.results ?? [];
-
-    if (reports.length <= 1) {
-      const query = reports.length === 1 ? `?reportId=${reports[0].external_id}` : "";
-      window.open(
-        `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyId}/preview${query}`,
-        "_blank"
-      );
-      return;
-    }
-
-    setReportSelectStudyId(studyId);
-    setReportSelectList(reports);
-    setReportSelectMode("preview");
-    setShowReportSelectModal(true);
+  const handlePreview = (studyId: string) => {
+    setPreviewStudyId(studyId);
+    setShowPreviewPanel(true);
   }
 
   const handleViewStudy = (studyUid: string) => {
@@ -104,9 +95,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
     setReportSelectStudyId(studyId);
     setReportSelectList(reports);
-    setReportSelectMode("edit");
     setShowReportSelectModal(true);
   };
+
 
   // Handle "New Report" button click - Opens modal immediately
   const handleNewReportClick = (studyId: string) => {
@@ -116,17 +107,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
   const handleReportSelect = (reportId: string) => {
     setShowReportSelectModal(false);
-    if (reportSelectMode === "preview") {
-      window.open(
-        `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}/preview?reportId=${reportId}`,
-        "_blank"
-      );
-    } else {
-      navigate(
-        `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
-      );
-    }
+    navigate(
+      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
+    );
   };
+
 
   // Handle closing the report creation modal
   const handleCloseReportModal = () => {
@@ -268,9 +253,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                         <button
                           onClick={() => handleReportSelect(report.external_id)}
                           className="text-gray-600 hover:text-purple-600"
-                          title={reportSelectMode === "preview" ? "View report" : "Edit report"}
+                          title="Edit report"
                         >
-                          {reportSelectMode === "preview" ? <FileText size={18} /> : <Pencil size={18} />}
+                          <Pencil size={18} />
                         </button>
                       </TableCell>
                     </TableRow>
@@ -278,24 +263,19 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                 </TableBody>
               </Table>
             </div>
-            {
-              reportSelectMode === "edit" &&
-              (
-                <div className="flex justify-end pt-4 border-t mt-4">
-                  <button
-                    onClick={() => {
-                      setShowReportSelectModal(false);
-                      setReportCreationStudyId(reportSelectStudyId);
-                      setShowReportCreationModal(true);
-                    }}
-                    className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
-                  >
-                    <Plus size={15} />
-                    New Report
-                  </button>
-                </div>
-              )
-            }
+            <div className="flex justify-end pt-4 border-t mt-4">
+              <button
+                onClick={() => {
+                  setShowReportSelectModal(false);
+                  setReportCreationStudyId(reportSelectStudyId);
+                  setShowReportCreationModal(true);
+                }}
+                className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+              >
+                <Plus size={15} />
+                New Report
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -307,6 +287,22 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               studyUid={viewerStudyUid}
               embedded
               onClose={() => setViewerStudyUid(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showPreviewPanel && previewStudyId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
+            <RadiologyReportPreview
+              studyId={previewStudyId}
+              serviceRequestId={serviceRequestId}
+              facilityId={facilityId}
+              onClose={() => {
+                setShowPreviewPanel(false);
+                setPreviewStudyId("");
+              }}
             />
           </div>
         </div>
