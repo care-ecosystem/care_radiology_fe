@@ -29,13 +29,16 @@ export default function DicomReport({
   studyUid,
   onSaveSuccess,
   onClose,
+  reportId,
 }: {
   facilityId: string;
   serviceRequestId: string;
   studyUid: string;
   onClose?: () => void;
   onSaveSuccess?: () => void;
+  reportId?: string;
 }) {
+
   const [scanProtocols, setScanProtocols] = useState<any[]>([]);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -55,6 +58,7 @@ export default function DicomReport({
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   const [studyReportId, setStudyReportId] = useState<string | null>(null);
+  const pendingScanProtocolIdRef = useRef<string | null>(null);
   const [showAuditPopup, setShowAuditPopup] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [patient, setPatient] = useState<any>(null);
@@ -95,25 +99,25 @@ export default function DicomReport({
         const sr = relevantServiceRequest.service_request;
         setPatient(sr.encounter.patient);
         setRequester(sr.requester);
-        setDepartments(sr.encounter.organizations ?? []);
+        setDepartments((sr.encounter.organizations as any[]) ?? []);
         setDicomStudy(relevantServiceRequest.dicom_study);
         setSelectedModality(sr.code!.display);
-        if (!sr.body_site?.display) {
-          setBodyPartMissing(true);
-        } else {
-          setSelectedBodyPart(sr.body_site.display);
-        }
 
-        // Load existing report if reportId is in the URL
-        const reportId = new URLSearchParams(window.location.search).get("reportId");
-        if (reportId) {
+        // Load existing report if reportId is provided as a prop or present in the URL
+        const targetReportId =
+          reportId ?? new URLSearchParams(window.location.search).get("reportId");
+
+        let reportBodyPart: string | undefined;
+
+        if (targetReportId) {
           try {
             const reportRes = await apis.studyReport.fetchByStudy(studyUid);
             const allReports: any[] = reportRes?.results ?? [];
-            const targetReport = allReports.find((r) => r.external_id === reportId);
+            const targetReport = allReports.find((r) => r.external_id === targetReportId);
             if (targetReport) {
               setStudyReportId(targetReport.external_id);
-              setSelectedScanProtocol(targetReport.scan_protocol_id);
+              reportBodyPart = targetReport.body_part;
+              pendingScanProtocolIdRef.current = targetReport.scan_protocol_id;
               techniqueRef.current?.clipboard.dangerouslyPasteHTML(targetReport.technique || "");
               findingsRef.current?.clipboard.dangerouslyPasteHTML(targetReport.findings || "");
               impressionRef.current?.clipboard.dangerouslyPasteHTML(targetReport.impression || "");
@@ -127,14 +131,21 @@ export default function DicomReport({
             }
           }
         }
+
+        // Prefer the saved report's body part; fall back to the service request's body site
+        const resolvedBodyPart = reportBodyPart || sr.body_site?.display;
+        if (!resolvedBodyPart) {
+          setBodyPartMissing(true);
+        } else {
+          setSelectedBodyPart(resolvedBodyPart);
+        }
       } catch (err) {
         console.error("Service Request fetch failed", err);
       }
     };
 
     fetchRadiologyServiceRequest();
-  }, [serviceRequestId]);
-
+  }, [serviceRequestId, reportId]);
 
   useEffect(() => {
     if (!selectedModality || !selectedBodyPart || !selectedScanProtocol) {
@@ -168,7 +179,8 @@ export default function DicomReport({
   useEffect(() => {
     if (showAuditPopup && studyReportId) {
       apis.studyReportAudit.fetchByStudyReport(studyReportId).then((res) => {
-        setAuditLogs(res.results || []);
+        const results: any[] = (res as any)?.results ?? [];
+        setAuditLogs(results);
       });
     }
   }, [showAuditPopup, studyReportId]);
@@ -178,13 +190,18 @@ export default function DicomReport({
     if (!selectedModality || !selectedBodyPart) return;
     const fetchScanProtocols = async () => {
       try {
-        setSelectedScanProtocol("");
         setLoadingScanProtocols(true);
         const data = await apis.scanProtocol.fetchAll({
           modality: selectedModality,
           body_part: selectedBodyPart,
         });
         setScanProtocols(data.results);
+        if (pendingScanProtocolIdRef.current) {
+          setSelectedScanProtocol(pendingScanProtocolIdRef.current);
+          pendingScanProtocolIdRef.current = null;
+        } else {
+          setSelectedScanProtocol("");
+        }
       } catch (err) {
         console.error("Failed to load scan protocols", err);
       } finally {
@@ -340,28 +357,10 @@ export default function DicomReport({
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Page Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {t("radiology_dicom_report")}
-          </h1>
-          {/* <p className="text-sm text-gray-600 mt-1">
-            Reporting on study{" "}
-            <span className="font-medium">ACC-2026-005821</span> · Patient{" "}
-            <span className="font-medium">
-              {patient?.name ?? "-"} {patientAgeGender}
-            </span>
-          </p> */}
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 text-sm text-gray-500"></span>
-          <Info
-            size={18}
-            className="cursor-pointer text-gray-400 hover:text-green-600 ml-2"
-            onClick={() => setShowAuditPopup(true)}
-          />
-        </div>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {t("radiology_dicom_report")}
+        </h1>
       </div>
 
       {/* Patient Details Card */}
@@ -371,6 +370,7 @@ export default function DicomReport({
           requester={requester}
           dicomStudy={dicomStudy}
           departments={departments}
+          onInfoClick={() => setShowAuditPopup(true)}
         />
       </div>
 

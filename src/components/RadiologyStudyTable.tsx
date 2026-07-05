@@ -17,8 +17,9 @@ import { apis } from "@/apis";
 import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
 import DicomReport from "./DicomReport";
+import RadiologyReportPreview from "@/components/Study/RadiologyReportPreview";
 import { Button } from "./ui/button";
-import RadiologyReportPreview from "./Study/StudyReportPreview";
+import { Dialog, DialogContent } from "./ui/dialog";
 
 
 type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
@@ -34,6 +35,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
   const [showPreviewPanel, setShowPreviewPanel] = useState(false);
   const [previewStudyId, setPreviewStudyId] = useState<string>("");
+
+  const [showEditReportModal, setShowEditReportModal] = useState(false);
+  const [editReportStudyId, setEditReportStudyId] = useState<string>("");
+  const [editReportId, setEditReportId] = useState<string>("");
+
 
   
   // Report creation modal state
@@ -78,6 +84,21 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     setPreviewStudyId(studyId);
     setShowPreviewPanel(true);
   }
+
+  const handleEditFromPreview = (studyId: string, reportId: string) => {
+    setShowPreviewPanel(false);
+    setPreviewStudyId("");
+    setEditReportStudyId(studyId);
+    setEditReportId(reportId);
+    setShowEditReportModal(true);
+  };
+
+  const handleCloseEditReportModal = () => {
+    setShowEditReportModal(false);
+    setEditReportStudyId("");
+    setEditReportId("");
+  };
+
 
   const handleViewStudy = (studyUid: string) => {
     setViewerStudyUid(studyUid);
@@ -303,10 +324,26 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                 setShowPreviewPanel(false);
                 setPreviewStudyId("");
               }}
+              onEdit={handleEditFromPreview}
             />
           </div>
         </div>
       )}
+
+      <Dialog open={showEditReportModal} onOpenChange={(open) => !open && handleCloseEditReportModal()}>
+        <DialogContent className="max-w-6xl w-full h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
+          {editReportStudyId && (
+            <DicomReport
+              facilityId={facilityId}
+              serviceRequestId={serviceRequestId}
+              studyUid={editReportStudyId}
+              reportId={editReportId}
+              onClose={handleCloseEditReportModal}
+              onSaveSuccess={() => handleReportSaved(editReportStudyId)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {showModal && selectedStudy && (
         <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
