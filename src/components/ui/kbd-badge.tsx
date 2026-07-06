@@ -2,7 +2,7 @@ import { ArrowBigUp, CornerDownLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type KbdBadgeProps = {
-  keys: "esc" | "p" | "e" | "shift+p" | "shift+enter" | "shift+e" | "shift+esc";
+  keys: "esc" | "p" | "e" | "w" | "shift+p" | "shift+enter" | "shift+e" | "shift+w" | "shift+esc";
   variant?: "light" | "solid";
   className?: string;
 };
@@ -23,6 +23,8 @@ export default function KbdBadge({ keys, variant = "light", className }: KbdBadg
         return "P";
       case "e":
         return "E";
+      case "w":
+        return "W";
       case "shift+p":
         return (
           <>
@@ -42,6 +44,13 @@ export default function KbdBadge({ keys, variant = "light", className }: KbdBadg
           <>
             <ArrowBigUp size={12} className={iconFill} />
             E
+          </>
+        );
+        case "shift+w":
+        return (
+          <>
+            <ArrowBigUp size={12} className={iconFill} />
+            W
           </>
         );
       case "shift+esc":

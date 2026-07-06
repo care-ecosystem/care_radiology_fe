@@ -76,77 +76,119 @@ export default function DicomReport({
   const isInModal = !!onClose;
 
   useEffect(() => {
-    if (!serviceRequestId) return;
+    const hasRealServiceRequestId = !!serviceRequestId && serviceRequestId !== ":serviceRequestId";
 
-    const fetchRadiologyServiceRequest = async () => {
-      try {
-        const radiologyServiceRequests: RadiologyServiceRequest[] =
-          await apis.servicerequest.fetch({
-            serviceRequestId,
-          });
+    const loadReportAndBodyPart = async (): Promise<{
+      reportBodyPart?: string;
+      reportModality?: string;
+      reportPatientId?: string;
+    }> => {
+      const targetReportId =
+        reportId ?? new URLSearchParams(window.location.search).get("reportId");
 
-        const relevantServiceRequest = radiologyServiceRequests.find(
-          (serviceRequest) => {
-            if (serviceRequest.dicom_study.external_id === studyUid) {
-              return true;
+      let reportBodyPart: string | undefined;
+      let reportModality: string | undefined;
+      let reportPatientId: string | undefined;
+
+      if (targetReportId) {
+        try {
+          const reportRes = await apis.studyReport.fetchByStudy(studyUid);
+          const allReports: any[] = reportRes?.results ?? [];
+          const targetReport = allReports.find((r) => r.external_id === targetReportId);
+          if (targetReport) {
+            setStudyReportId(targetReport.external_id);
+            reportBodyPart = targetReport.body_part;
+            reportModality = targetReport.modality;
+            reportPatientId = targetReport.patient?.id;
+            if (!hasRealServiceRequestId && targetReport.patient) {
+              setPatient(targetReport.patient);
             }
-          },
-        );
-
-        if (relevantServiceRequest === undefined) {
-          throw new Error("No service request exist for given studyUid");
-        }
-
-        const sr = relevantServiceRequest.service_request;
-        setPatient(sr.encounter.patient);
-        setRequester(sr.requester);
-        setDepartments((sr.encounter.organizations as any[]) ?? []);
-        setDicomStudy(relevantServiceRequest.dicom_study);
-        setSelectedModality(sr.code!.display);
-
-        // Load existing report if reportId is provided as a prop or present in the URL
-        const targetReportId =
-          reportId ?? new URLSearchParams(window.location.search).get("reportId");
-
-        let reportBodyPart: string | undefined;
-
-        if (targetReportId) {
-          try {
-            const reportRes = await apis.studyReport.fetchByStudy(studyUid);
-            const allReports: any[] = reportRes?.results ?? [];
-            const targetReport = allReports.find((r) => r.external_id === targetReportId);
-            if (targetReport) {
-              setStudyReportId(targetReport.external_id);
-              reportBodyPart = targetReport.body_part;
-              pendingScanProtocolIdRef.current = targetReport.scan_protocol_id;
-              techniqueRef.current?.clipboard.dangerouslyPasteHTML(targetReport.technique || "");
-              findingsRef.current?.clipboard.dangerouslyPasteHTML(targetReport.findings || "");
-              impressionRef.current?.clipboard.dangerouslyPasteHTML(targetReport.impression || "");
-              setReportExists(true);
+            if (!hasRealServiceRequestId && targetReport.created_by) {
+              setRequester(targetReport.created_by);
             }
-          } catch (err) {
-            if ((err as APIError).status === 403) {
-              toast.error((err as APIError).message);
-            } else {
-              console.error("Failed to load report", err);
-            }
+            pendingScanProtocolIdRef.current = targetReport.scan_protocol_id;
+            techniqueRef.current?.clipboard.dangerouslyPasteHTML(targetReport.technique || "");
+            findingsRef.current?.clipboard.dangerouslyPasteHTML(targetReport.findings || "");
+            impressionRef.current?.clipboard.dangerouslyPasteHTML(targetReport.impression || "");
+            setReportExists(true);
+          }
+        } catch (err) {
+          if ((err as APIError).status === 403) {
+            toast.error((err as APIError).message);
+          } else {
+            console.error("Failed to load report", err);
           }
         }
-
-        // Prefer the saved report's body part; fall back to the service request's body site
-        const resolvedBodyPart = reportBodyPart || sr.body_site?.display;
-        if (!resolvedBodyPart) {
-          setBodyPartMissing(true);
-        } else {
-          setSelectedBodyPart(resolvedBodyPart);
-        }
-      } catch (err) {
-        console.error("Service Request fetch failed", err);
       }
+
+      return { reportBodyPart, reportModality, reportPatientId };
     };
 
-    fetchRadiologyServiceRequest();
-  }, [serviceRequestId, reportId]);
+    if (hasRealServiceRequestId) {
+      const fetchRadiologyServiceRequest = async () => {
+        try {
+          const radiologyServiceRequests: RadiologyServiceRequest[] =
+            await apis.servicerequest.fetch({ serviceRequestId });
+
+          const relevantServiceRequest = radiologyServiceRequests.find(
+            (serviceRequest) => serviceRequest.dicom_study.external_id === studyUid,
+          );
+
+          if (relevantServiceRequest === undefined) {
+            throw new Error("No service request exist for given studyUid");
+          }
+
+          const sr = relevantServiceRequest.service_request;
+          setPatient(sr.encounter.patient);
+          setRequester(sr.requester);
+          setDepartments((sr.encounter.organizations as any[]) ?? []);
+          setDicomStudy(relevantServiceRequest.dicom_study);
+          setSelectedModality(sr.code!.display);
+
+          const { reportBodyPart } = await loadReportAndBodyPart();
+
+          const resolvedBodyPart = reportBodyPart || sr.body_site?.display;
+          if (!resolvedBodyPart) {
+            setBodyPartMissing(true);
+          } else {
+            setSelectedBodyPart(resolvedBodyPart);
+          }
+        } catch (err) {
+          console.error("Service Request fetch failed", err);
+        }
+      };
+      fetchRadiologyServiceRequest();
+    } else {
+      const fetchWithoutServiceRequest = async () => {
+        const { reportBodyPart, reportModality, reportPatientId } =
+          await loadReportAndBodyPart();
+
+        if (reportModality) {
+          setSelectedModality(reportModality);
+        }
+
+        if (reportBodyPart) {
+          setSelectedBodyPart(reportBodyPart);
+        } else {
+          setBodyPartMissing(true);
+        }
+
+        if (reportPatientId) {
+          try {
+            const studies: any[] = await apis.dicom.fetchStudies({ patient: reportPatientId });
+            const match = studies?.find((s: any) => s.external_id === studyUid);
+            if (match) {
+              setDicomStudy(match);
+            }
+          } catch (err) {
+            console.error("Failed to fetch dicom study fallback", err);
+          }
+        }
+      };
+      fetchWithoutServiceRequest();
+    }
+  }, [serviceRequestId, reportId, studyUid]);
+
 
   useEffect(() => {
     if (!selectedModality || !selectedBodyPart || !selectedScanProtocol) {

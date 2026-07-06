@@ -69,6 +69,11 @@ export default function RadiologyReportPreview({
         if (!initialReportId && results.length > 0) {
           setSelectedId(results[0].external_id);
         }
+        const anyReportWithPatient = results.find((r: any) => r.patient);
+        if (anyReportWithPatient) {
+          setPatient((anyReportWithPatient as any).patient);
+          setRequester((anyReportWithPatient as any).created_by ?? null);
+        }
       } finally {
         setLoading(false);
       }
@@ -77,7 +82,24 @@ export default function RadiologyReportPreview({
   }, [studyId, initialReportId]);
 
   useEffect(() => {
-    if (!serviceRequestId) return;
+    if (!patient?.id) return;
+    const fetchDicomStudyFallback = async () => {
+      try {
+        const studies: any[] = await apis.dicom.fetchStudies({ patient: patient.id });
+        const match = studies?.find((s: any) => s.external_id === studyId);
+        if (match) {
+          setDicomStudy((prev: any) => prev ?? match);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dicom study fallback", err);
+      }
+    };
+    fetchDicomStudyFallback();
+  }, [studyId, patient]);
+
+
+  useEffect(() => {
+    if (!serviceRequestId || serviceRequestId === ":serviceRequestId") return;
     const fetchPatientContext = async () => {
       try {
         const radiologyServiceRequests: RadiologyServiceRequest[] =
@@ -97,6 +119,7 @@ export default function RadiologyReportPreview({
     };
     fetchPatientContext();
   }, [serviceRequestId, studyId]);
+
 
   useEffect(() => {
     if (showAuditPopup && selectedId) {
@@ -142,7 +165,7 @@ export default function RadiologyReportPreview({
       if (e.key.toLowerCase() === "p") {
         e.preventDefault();
         handlePrint();
-      } else if (e.shiftKey && e.key.toLowerCase() === "e") {
+      } else if (e.shiftKey && e.key.toLowerCase() === "w") {
         e.preventDefault();
         handleEdit();
       }
@@ -194,33 +217,28 @@ export default function RadiologyReportPreview({
                       : "hover:bg-gray-100 border-l-4 border-l-transparent"
                   }`}
                 >
-                  <p className="font-medium text-gray-800 mb-1">Report {idx + 1}</p>
-                  <p className="text-gray-600">
-                    <span className="text-gray-400">Modality: </span>
-                    {report.modality || "—"}
+                  <p className="font-medium text-gray-800 mb-1">Report No: {idx + 1}</p>
+                  <p className="text-gray-600 text-sm mb-1">
+                    <span className="text-gray-400">Created by: </span>
+                    {getUserLabel(report.created_by)}
                   </p>
-                  <p className="text-gray-600">
-                    <span className="text-gray-400">Body Part: </span>
-                    {report.body_part || "—"}
+                  <p className="text-gray-600 text-sm mb-1">
+                    <span className="text-gray-400">Modified by: </span>
+                    {getUserLabel(report.updated_by)}
                   </p>
-                  <p className="text-gray-600">
-                    <span className="text-gray-400">Scan Protocol: </span>
-                    {report.scan_protocol || "—"}
-                  </p>
-                  {/* <p className="text-gray-500 text-xs mt-1">
+                  <p className="text-gray-500 text-xs mt-1">
                     Created:{" "}
                     {report.created_datetime
                       ? format(new Date(report.created_datetime), "dd MMM yyyy, hh:mm aa")
-                      : "—"}{" "}
-                    · {getUserLabel(report.created_by)}
+                      : "—"}
                   </p>
                   <p className="text-gray-500 text-xs">
                     Modified:{" "}
                     {report.last_modified_datetime
                       ? format(new Date(report.last_modified_datetime), "dd MMM yyyy, hh:mm aa")
-                      : "—"}{" "}
-                    · {getUserLabel(report.updated_by)}
-                  </p> */}
+                      : "—"}
+                  </p>
+
                 </button>
               );
             })
@@ -243,7 +261,7 @@ export default function RadiologyReportPreview({
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-gray-700 mb-2">
-                    Body Part <span className="text-red-500">*</span>
+                    Body Part
                   </h4>
                   <div className="flex items-center justify-between h-10 px-3 rounded-md border border-gray-200 bg-gray-100 text-sm text-gray-900">
                     <span className="truncate">{selectedReport.body_part || "—"}</span>
@@ -306,7 +324,7 @@ export default function RadiologyReportPreview({
           <Button variant="default" onClick={handleEdit}>
             <Pencil size={16} className="mr-2" />
             Edit
-            <KbdBadge keys="shift+e" variant="solid" />
+            <KbdBadge keys="shift+w" variant="solid" />
           </Button>``
         </div>
       )}
