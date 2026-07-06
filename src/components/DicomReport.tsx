@@ -259,7 +259,7 @@ export default function DicomReport({
     const text = html.replace(/<(.|\n)*?>/g, "").trim(); // strip HTML
     return { html, text };
   };
-  const canPreview = reportExists;
+  // const canPreview = reportExists;
   const validateReportFields = () => {
     if (!selectedModality) {
       toast.warning(t("radiology_please_select_modality"));
@@ -610,12 +610,12 @@ export default function DicomReport({
                 <Plus size={16} className="mr-2" />
                 {t("radiology_save_as_template")}
               </Button>
-              {canPreview && (
+              {/* {canPreview && (
                 <Button variant="outline" onClick={handlePreview}>
                   {t("radiology_preview")}
                   <KbdBadge keys="shift+p" />
                 </Button>
-              )}
+              )} */}
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={handleCancel}>
