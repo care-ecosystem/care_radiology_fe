@@ -281,7 +281,7 @@ export default function RadiologyReportPreview({
               <div>
                 <h4 className="font-medium text-gray-700 text-sm mb-1">Technique</h4>
                 <div
-                  className="border rounded-md bg-gray-50 mt-1 p-3 min-h-[80px] text-sm text-gray-500 cursor-not-allowed break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
+                  className="border rounded-md bg-gray-50 mt-1 p-3 min-h-[80px] text-sm text-gray-500 cursor-not-allowed whitespace-pre-wrap break-words [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: selectedReport.technique || "—" }}
                 />
               </div>
@@ -291,7 +291,7 @@ export default function RadiologyReportPreview({
                   Findings
                 </h4>
                 <div
-                  className="border rounded-md bg-gray-50 p-3 min-h-[100px] text-sm text-gray-500 cursor-not-allowed break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
+                  className="border rounded-md bg-gray-50 p-3 min-h-[100px] text-sm text-gray-500 cursor-not-allowed whitespace-pre-wrap break-words [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: selectedReport.findings || "—" }}
                 />
               </div>
@@ -301,7 +301,7 @@ export default function RadiologyReportPreview({
                   Impression 
                 </h4>
                 <div
-                  className="border rounded-md bg-gray-50 mt-1 p-3 min-h-[80px] text-sm text-gray-500 cursor-not-allowed break-words whitespace-pre-wrap [overflow-wrap:anywhere] [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
+                  className="border rounded-md bg-gray-50 mt-1 p-3 min-h-[80px] text-sm text-gray-500 cursor-not-allowed whitespace-pre-wrap break-words [&_*]:!font-sans [&_*]:!text-sm [&_*]:!font-normal [&_*]:!text-gray-500 [&_*]:!bg-transparent [&_*]:!leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: selectedReport.impression || "—" }}
                 />
               </div>
@@ -325,7 +325,7 @@ export default function RadiologyReportPreview({
             <Pencil size={16} className="mr-2" />
             Edit
             <KbdBadge keys="shift+w" variant="solid" />
-          </Button>``
+          </Button>
         </div>
       )}
 

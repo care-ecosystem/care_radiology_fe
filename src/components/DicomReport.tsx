@@ -5,7 +5,7 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import Quill from "quill";
 import Editor from "./ui/quilleditor";
-import { Plus, Pencil, Info } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import KbdBadge from "./ui/kbd-badge";
 import {
   Select,

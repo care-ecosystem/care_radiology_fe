@@ -9,11 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { navigate } from "raviger";
-import { Eye, FileText, Info, X, Pencil, Plus, FilePlusIcon } from "lucide-react";
+import { Eye, FileText, Info, X, FilePlusIcon } from "lucide-react";
 import { format } from "date-fns";
 import React from "react";
-import { apis } from "@/apis";
+// import { apis } from "@/apis";
 import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
 import DicomReport from "./DicomReport";
@@ -29,11 +28,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
   const [viewerStudyUid, setViewerStudyUid] = useState<string | null>(null);
-  const [showReportSelectModal, setShowReportSelectModal] = useState(false);
-  const [reportSelectStudyId, setReportSelectStudyId] = useState<string>("");
-  const [reportSelectList, setReportSelectList] = useState<any[]>([]);
 
   const [showPreviewPanel, setShowPreviewPanel] = useState(false);
+
   const [previewStudyId, setPreviewStudyId] = useState<string>("");
 
   const [showEditReportModal, setShowEditReportModal] = useState(false);
@@ -109,14 +106,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     setReportCreationStudyId(studyId);
     setShowReportCreationModal(true);
   };
-
-  const handleReportSelect = (reportId: string) => {
-    setShowReportSelectModal(false);
-    navigate(
-      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${reportSelectStudyId}?reportId=${reportId}`
-    );
-  };
-
 
   // Handle closing the report creation modal
   const handleCloseReportModal = () => {
@@ -195,84 +184,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
           </TableBody>
         </Table>
       </div>
-
-      {showReportSelectModal && (
-        <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-[760px] relative p-5 flex flex-col max-h-[80vh]">
-            <button
-              className="absolute top-3 right-3 text-gray-600 hover:text-red-600"
-              onClick={() => setShowReportSelectModal(false)}
-            >
-              <X size={20} />
-            </button>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                Multiple Reports Found
-              </h3>
-              <p className="text-sm text-gray-500">
-                Select a report to edit, or create a new one.
-              </p>
-            </div>
-            <div className="rounded-md border overflow-auto flex-1">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-100">
-                    <TableHead className="px-4">#</TableHead>
-                    <TableHead className="px-4">Modality</TableHead>
-                    <TableHead className="px-4">Body Part</TableHead>
-                    <TableHead className="px-4">Scan Protocol</TableHead>
-                    <TableHead className="px-4">Created</TableHead>
-                    <TableHead className="px-4">Last Modified</TableHead>
-                    <TableHead className="px-4 text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportSelectList.map((report, index) => (
-                    <TableRow key={report.external_id}>
-                      <TableCell className="px-4 text-gray-500 text-sm">{index + 1}</TableCell>
-                      <TableCell className="px-4">{report.modality || "—"}</TableCell>
-                      <TableCell className="px-4">{report.body_part || "—"}</TableCell>
-                      <TableCell className="px-4">{report.scan_protocol || "—"}</TableCell>
-                      <TableCell className="px-4">
-                        {report.created_datetime
-                          ? format(new Date(report.created_datetime), "dd MMM yyyy, hh:mm aa")
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="px-4">
-                        {report.last_modified_datetime
-                          ? format(new Date(report.last_modified_datetime), "dd MMM yyyy, hh:mm aa")
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="px-4 text-right">
-                        <button
-                          onClick={() => handleReportSelect(report.external_id)}
-                          className="text-gray-600 hover:text-purple-600"
-                          title="Edit report"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="flex justify-end pt-4 border-t mt-4">
-              <button
-                onClick={() => {
-                  setShowReportSelectModal(false);
-                  setReportCreationStudyId(reportSelectStudyId);
-                  setShowReportCreationModal(true);
-                }}
-                className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
-              >
-                <Plus size={15} />
-                New Report
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {viewerStudyUid && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
