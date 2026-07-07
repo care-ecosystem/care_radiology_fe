@@ -80,6 +80,19 @@ export const apis = {
       );
     },
 
+    linkServiceRequest: async (payload: {
+      study_uid: string;
+      service_request_id: string;
+    }): Promise<unknown> => {
+      return await request<unknown>(
+        "/api/care_radiology/dicom/link-service-request/",
+        {
+          body: JSON.stringify(payload),
+          method: "POST",
+        },
+      );
+    },
+
     fetchOne: async (studyUid: string) => {
       const all = await request<any>("/api/care_radiology/list-dicom-studies/");
       return all.find((s: any) => s.id === studyUid) || null;
@@ -92,6 +105,13 @@ export const apis = {
         `/api/care_radiology/dicom/service-requests${queryString({
           serviceRequestId: query?.serviceRequestId ?? "",
         })}`,
+      );
+    },
+
+    retrieve: async (facilityId: string, serviceRequestId: string) => {
+      return await request<any>(
+        `/api/v1/facility/${facilityId}/service_request/${serviceRequestId}/`,
+        { method: "GET" },
       );
     },
   },
