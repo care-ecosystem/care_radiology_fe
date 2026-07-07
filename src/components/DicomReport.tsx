@@ -6,7 +6,6 @@ import { Input } from "./ui/input";
 import Quill from "quill";
 import Editor from "./ui/quilleditor";
 import { Plus, Pencil } from "lucide-react";
-import KbdBadge from "./ui/kbd-badge";
 import {
   Select,
   SelectContent,
@@ -338,10 +337,12 @@ export default function DicomReport({
       toast.success(t("radiology_report_saved_successfully!"));
       setReportExists(true);
       onSaveSuccess?.();
-      
-      if (onClose) {
-        onClose();
-      }
+
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 1500);
     } catch (err) {
       if ((err as APIError).status == 403) {
         return toast.error((err as APIError).message);
@@ -394,29 +395,6 @@ export default function DicomReport({
 
   const canManageProtocol = !!(selectedBodyPart && !loadingScanProtocols);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.shiftKey && e.key === "Escape") {
-        e.preventDefault();
-        handleCancel();
-        return;
-      }
-      if (e.shiftKey && e.key.toLowerCase() === "enter") {
-        e.preventDefault();
-        handleSave();
-        return;
-      }
-      if (e.shiftKey && e.key.toLowerCase() === "p") {
-        e.preventDefault();
-        handlePreview();
-        return;
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedModality, selectedBodyPart, selectedScanProtocol, reportExists, studyReportId]);
-
-
   // const patientAgeGender = patient
   //   ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
   //   : "-";
@@ -446,7 +424,7 @@ export default function DicomReport({
           {/* Content Area - Scrollable */}
           <div className="flex flex-row gap-0 w-full flex-1 overflow-hidden">
             {/* Left Sidebar - with scrollbar */}
-            <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{width: "360px", maxWidth: "360px", minWidth: "360px"}}>
+            <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{ width: "360px", maxWidth: "360px", minWidth: "360px" }}>
               {/* Modality Section */}
               <div className="w-full min-w-0">
                 <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
@@ -467,7 +445,7 @@ export default function DicomReport({
                 </Select>
               </div>
 
-            {/* Body Part Section */}
+              {/* Body Part Section */}
               <div className="w-full min-w-0">
                 <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
                   {t("radiology_body_part")}{" "}
@@ -497,11 +475,12 @@ export default function DicomReport({
                 )}
               </div>
 
-            {/* Scan Protocol Section */}
+              {/* Scan Protocol Section */}
               <div className="w-full min-w-0">
-                <div className="flex justify-between items-center mb-2 gap-2">
-                  <h4 className="font-medium text-sm text-gray-700 truncate flex-1">
+                <div className="flex justify-between items-center mb-2 gap-4">
+                  <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
                     {t("radiology_scan_protocol")}
+                    <span className="text-red-500">*</span>
                   </h4>
                   <div className="flex gap-1 shrink-0">
                     <Plus
@@ -541,7 +520,7 @@ export default function DicomReport({
               </div>
             </div>
 
-          {/* Report Section */}
+            {/* Report Section */}
             <div className="flex-1 p-6 bg-white overflow-y-auto">
               <div className="flex flex-col gap-4">
                 {/* Scan Protocol Summary */}
@@ -565,7 +544,7 @@ export default function DicomReport({
                   />
                 </div>
 
-              {/* Technique */}
+                {/* Technique */}
                 <div>
                   <label className="font-medium text-gray-700 text-sm">
                     {t("radiology_technique")}
@@ -603,28 +582,20 @@ export default function DicomReport({
             </div>
           </div>
 
-              {/* Buttons */}
+          {/* Buttons */}
           <div className="border-t border-gray-200 bg-white p-6 flex justify-between items-center gap-4 flex-shrink-0">
             <div className="flex justify-start gap-3">
               <Button variant="outline" onClick={handleSaveAsTemplate}>
                 <Plus size={16} className="mr-2" />
                 {t("radiology_save_as_template")}
               </Button>
-              {/* {canPreview && (
-                <Button variant="outline" onClick={handlePreview}>
-                  {t("radiology_preview")}
-                  <KbdBadge keys="shift+p" />
-                </Button>
-              )} */}
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={handleCancel}>
                 {t("radiology_cancel")}
-                <KbdBadge keys="shift+esc" />
               </Button>
               <Button variant="default" onClick={handleSave}>
                 {t("radiology_save")}
-                <KbdBadge keys="shift+enter" variant="solid" />
               </Button>
             </div>
           </div>

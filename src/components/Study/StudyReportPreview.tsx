@@ -14,10 +14,10 @@ interface Props {
 
 function DetailRow({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="grid grid-cols-[10rem_auto_1fr] md:grid-cols-[8rem_auto_1fr] items-center">
-      <span className="text-gray-600">{label}</span>
-      <span className="text-gray-600">:</span>
-      <span className="font-semibold break-words">{value || "-"}</span>
+    <div className="grid grid-cols-10 items-center gap-x-2">
+      <span className="text-gray-600 col-span-4">{label}</span>
+      <span className="text-gray-600 col-span-1">:</span>
+      <span className="font-semibold break-words col-span-5">{value || "-"}</span>
     </div>
   );
 }
@@ -31,7 +31,7 @@ function SectionLayout({
 }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">
+      <h3 className="text-sm font-semibold text-gray-800 border-b-2 border-gray-400 pb-1">
         {title}
       </h3>
       {children}
@@ -66,7 +66,12 @@ export default function StudyReportPreview({ studyUid }: Props) {
             technique: r.technique || "",
             findings: r.findings || "",
             impression: r.impression || "",
+            modality: r.modality || "",
+            body_part: r.body_part || "",
+            scan_protocol: r.scan_protocol || "",
           });
+          setUser(r.created_by || null);
+          setPatient(r.patient || null);
         }
 
         if (serviceRequestId) {
@@ -93,8 +98,8 @@ export default function StudyReportPreview({ studyUid }: Props) {
   if (!report) {
     return <div className="p-4">{t("radiology_no_preview_data_found")}</div>;
   }
-  const doctorName = formatName(user);
 
+  const doctorName = formatName(user);
   const patientAge = patient
     ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
     : "-";
@@ -121,7 +126,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           </div>
 
           {/* Patient Details (CARE FE STYLE) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-8">
             {/* Left column */}
             <div className="space-y-3">
               <DetailRow
@@ -151,11 +156,38 @@ export default function StudyReportPreview({ studyUid }: Props) {
             </div>
           </div>
 
+          <SectionLayout title={t("radiology_modality")}>
+            <div
+              className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
+            >
+              {report.modality}
+            </div>
+          </SectionLayout>
+
+          <SectionLayout title={t("radiology_body_part")}>
+            <div
+              className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
+            >
+              {report.body_part}
+            </div>
+          </SectionLayout>
+
+          <SectionLayout title={t("radiology_scan_protocol")}>
+            <div
+              className="text-sm leading-relaxed text-gray-800"
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
+            >
+              {report.scan_protocol}
+            </div>
+          </SectionLayout>
+
           {/* Technique */}
           <SectionLayout title={t("radiology_technique")}>
             <div
               className="text-sm leading-relaxed text-gray-800"
-              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal" }}
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
               dangerouslySetInnerHTML={{ __html: report.technique }}
             />
           </SectionLayout>
@@ -164,7 +196,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           <SectionLayout title={t("radiology_findings")}>
             <div
               className="text-sm leading-relaxed text-gray-800"
-              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal" }}
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
               dangerouslySetInnerHTML={{ __html: report.findings }}
             />
           </SectionLayout>
@@ -173,7 +205,7 @@ export default function StudyReportPreview({ studyUid }: Props) {
           <SectionLayout title={t("radiology_impression")}>
             <div
               className="text-sm leading-relaxed text-gray-800"
-              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal" }}
+              style={{ overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal", }}
               dangerouslySetInnerHTML={{ __html: report.impression }}
             />
           </SectionLayout>

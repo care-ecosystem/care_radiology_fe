@@ -27,7 +27,7 @@ export default function PrintPreview({ children, title, className }: Props) {
   }, []);
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="radiology-container flex items-center justify-center">
       <div className="mx-4 my-4 max-w-[95vw] print:max-w-none sm:my-8">
         {/* Header (hidden in print) */}
         {title && (
