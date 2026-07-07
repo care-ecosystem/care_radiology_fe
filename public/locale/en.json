@@ -8,6 +8,7 @@
   "dicom_search_records": "Search Radiology Records",
   "dicom_upload_prompt": "Click 'Folder' or 'Files' to upload your DICOM files.",
   "dicom_no_studies_found": "No studies found",
+  "service_request_dicom_no_studies_found": "No DICOM files have been uploaded for this service request yet. Click on the 'Upload' button below to upload files",
   "radiology_study_report": "Radiology Study Report",
   "radiology_facility": "FACILITY WITH PATIENTS",
   "radiology_age": "Age",
