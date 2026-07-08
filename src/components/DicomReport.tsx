@@ -23,7 +23,6 @@ import { APIError } from "@/apis/request";
 import { RadiologyServiceRequest } from "@/types/ServiceRequest";
 
 export default function DicomReport({
-  facilityId,
   serviceRequestId,
   studyUid,
   onSaveSuccess,
@@ -102,19 +101,21 @@ export default function DicomReport({
         setDepartments(sr.encounter.organizations ?? []);
         setDicomStudy(relevantServiceRequest.dicom_study);
         setSelectedModality(sr.code!.display);
+
         if (!sr.body_site?.display) {
           setBodyPartMissing(true);
         } else {
           setSelectedBodyPart(sr.body_site.display);
         }
 
-        // Load existing report if reportId is in the URL
-        const reportId = new URLSearchParams(window.location.search).get("reportId");
-        if (reportId) {
+        const targetReportId = reportId ?? new URLSearchParams(window.location.search).get("reportId");
+
+        if (targetReportId) {
           try {
             const reportRes = await apis.studyReport.fetchByStudy(studyUid);
             const allReports: any[] = reportRes?.results ?? [];
-            const targetReport = allReports.find((r) => r.external_id === reportId);
+            const targetReport = allReports.find((r) => r.external_id === targetReportId);
+
             if (targetReport) {
               setStudyReportId(targetReport.external_id);
               setSelectedScanProtocol(targetReport.scan_protocol_id);
