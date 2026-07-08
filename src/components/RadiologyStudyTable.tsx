@@ -21,8 +21,13 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent } from "./ui/dialog";
 
 
-type RadiologyStudyTableProps = { className?: string, studies: DicomStudy[] };
-export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
+type RadiologyStudyTableProps = { 
+  className?: string, 
+  studies?: DicomStudy[],
+  refreshTableData?: () => void 
+};
+
+export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, studies, refreshTableData }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
 
   const [showModal, setShowModal] = useState(false);
@@ -43,17 +48,8 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
   const [showReportCreationModal, setShowReportCreationModal] = useState(false);
   const [reportCreationStudyId, setReportCreationStudyId] = useState<string>("");
 
-  const [localStudies, setLocalStudies] = useState<DicomStudy[]>(props.studies);
-  useEffect(() => {
-    setLocalStudies(props.studies);
-  }, [props.studies]);
-
-  const handleReportSaved = (studyId: string) => {
-    setLocalStudies((prev) =>
-      prev.map((s) =>
-        s.external_id === studyId ? { ...s, has_report: true } : s
-      )
-    );
+  const handleReportSaved = () => {
+    refreshTableData?.();
   };
 
 
@@ -113,7 +109,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
 
   return (
     <React.Fragment>
-      <div className={`${props.className ?? ''} rounded-md border`}>
+      <div className={`${className ?? ''} rounded-md border`}>
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-100">
@@ -124,7 +120,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {localStudies.map((study: DicomStudy) => (
+            {studies?.map((study: DicomStudy) => (
               <TableRow key={study.external_id}>
                 <TableCell>{study.study_description || "—"}</TableCell>
                 <TableCell>
@@ -219,7 +215,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
       }}>
         <DialogContent
           className="max-w-6xl w-full h-[85vh] flex flex-col p-0 overflow-hidden gap-0"
-          hideClose
+          hideCloseButton
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           {editReportStudyId && (
@@ -233,7 +229,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
                 setEditReportStudyId("");
                 setEditReportId("");
               }}
-              onSaveSuccess={() => handleReportSaved(editReportStudyId)}
+              onSaveSuccess={refreshTableData}
               onBack={() => {
                 setShowEditReportModal(false);
                 setEditReportStudyId("");
@@ -306,7 +302,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               serviceRequestId={serviceRequestId}
               studyUid={reportCreationStudyId}
               onClose={handleCloseReportModal}
-              onSaveSuccess={() => handleReportSaved(reportCreationStudyId)}
+              onSaveSuccess={refreshTableData}
             />
           </div>
         </div>
