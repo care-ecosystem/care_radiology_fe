@@ -5,7 +5,7 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import Quill from "quill";
 import Editor from "./ui/quilleditor";
-import { Plus, Pencil, Info } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,20 +20,25 @@ import { useTranslation } from "react-i18next";
 import RadiologyAuditPopup from "./Common/RadiologyAuditPopup";
 import PatientDetails from "./Common/PatientDetails";
 import { APIError } from "@/apis/request";
-import { formatPatientAge } from "@/utils/formatPatientAge";
+// import { formatPatientAge } from "@/utils/formatPatientAge";
 import { RadiologyServiceRequest } from "@/types/ServiceRequest";
 
 export default function DicomReport({
   facilityId,
   serviceRequestId,
   studyUid,
+  onSaveSuccess,
   onClose,
+  reportId,
 }: {
   facilityId: string;
   serviceRequestId: string;
   studyUid: string;
   onClose?: () => void;
+  onSaveSuccess?: () => void;
+  reportId?: string;
 }) {
+
   const [scanProtocols, setScanProtocols] = useState<any[]>([]);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -53,6 +58,7 @@ export default function DicomReport({
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   const [studyReportId, setStudyReportId] = useState<string | null>(null);
+  const pendingScanProtocolIdRef = useRef<string | null>(null);
   const [showAuditPopup, setShowAuditPopup] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [patient, setPatient] = useState<any>(null);
@@ -69,69 +75,118 @@ export default function DicomReport({
   const isInModal = !!onClose;
 
   useEffect(() => {
-    if (!serviceRequestId) return;
+    const hasRealServiceRequestId = !!serviceRequestId && serviceRequestId !== ":serviceRequestId";
 
-    const fetchRadiologyServiceRequest = async () => {
-      try {
-        const radiologyServiceRequests: RadiologyServiceRequest[] =
-          await apis.servicerequest.fetch({
-            serviceRequestId,
-          });
+    const loadReportAndBodyPart = async (): Promise<{
+      reportBodyPart?: string;
+      reportModality?: string;
+      reportPatientId?: string;
+    }> => {
+      const targetReportId =
+        reportId ?? new URLSearchParams(window.location.search).get("reportId");
 
-        const relevantServiceRequest = radiologyServiceRequests.find(
-          (serviceRequest) => {
-            if (serviceRequest.dicom_study.external_id === studyUid) {
-              return true;
+      let reportBodyPart: string | undefined;
+      let reportModality: string | undefined;
+      let reportPatientId: string | undefined;
+
+      if (targetReportId) {
+        try {
+          const reportRes = await apis.studyReport.fetchByStudy(studyUid);
+          const allReports: any[] = reportRes?.results ?? [];
+          const targetReport = allReports.find((r) => r.external_id === targetReportId);
+          if (targetReport) {
+            setStudyReportId(targetReport.external_id);
+            reportBodyPart = targetReport.body_part;
+            reportModality = targetReport.modality;
+            reportPatientId = targetReport.patient?.id;
+            if (!hasRealServiceRequestId && targetReport.patient) {
+              setPatient(targetReport.patient);
             }
-          },
-        );
-
-        if (relevantServiceRequest === undefined) {
-          throw new Error("No service request exist for given studyUid");
-        }
-
-        const sr = relevantServiceRequest.service_request;
-        setPatient(sr.encounter.patient);
-        setRequester(sr.requester);
-        setDepartments(sr.encounter.organizations ?? []);
-        setDicomStudy(relevantServiceRequest.dicom_study);
-        setSelectedModality(sr.code!.display);
-        if (!sr.body_site?.display) {
-          setBodyPartMissing(true);
-        } else {
-          setSelectedBodyPart(sr.body_site.display);
-        }
-
-        // Load existing report if reportId is in the URL
-        const reportId = new URLSearchParams(window.location.search).get("reportId");
-        if (reportId) {
-          try {
-            const reportRes = await apis.studyReport.fetchByStudy(studyUid);
-            const allReports: any[] = reportRes?.results ?? [];
-            const targetReport = allReports.find((r) => r.external_id === reportId);
-            if (targetReport) {
-              setStudyReportId(targetReport.external_id);
-              setSelectedScanProtocol(targetReport.scan_protocol_id);
-              techniqueRef.current?.clipboard.dangerouslyPasteHTML(targetReport.technique || "");
-              findingsRef.current?.clipboard.dangerouslyPasteHTML(targetReport.findings || "");
-              impressionRef.current?.clipboard.dangerouslyPasteHTML(targetReport.impression || "");
-              setReportExists(true);
+            if (!hasRealServiceRequestId && targetReport.created_by) {
+              setRequester(targetReport.created_by);
             }
-          } catch (err) {
-            if ((err as APIError).status === 403) {
-              toast.error((err as APIError).message);
-            } else {
-              console.error("Failed to load report", err);
-            }
+            pendingScanProtocolIdRef.current = targetReport.scan_protocol_id;
+            techniqueRef.current?.clipboard.dangerouslyPasteHTML(targetReport.technique || "");
+            findingsRef.current?.clipboard.dangerouslyPasteHTML(targetReport.findings || "");
+            impressionRef.current?.clipboard.dangerouslyPasteHTML(targetReport.impression || "");
+            setReportExists(true);
+          }
+        } catch (err) {
+          if ((err as APIError).status === 403) {
+            toast.error((err as APIError).message);
+          } else {
+            console.error("Failed to load report", err);
           }
         }
-      } catch (err) {
-        console.error("Service Request fetch failed", err);
       }
+
+      return { reportBodyPart, reportModality, reportPatientId };
     };
 
-    fetchRadiologyServiceRequest();
-  }, [serviceRequestId]);
+    if (hasRealServiceRequestId) {
+      const fetchRadiologyServiceRequest = async () => {
+        try {
+          const radiologyServiceRequests: RadiologyServiceRequest[] =
+            await apis.servicerequest.fetch({ serviceRequestId });
+
+          const relevantServiceRequest = radiologyServiceRequests.find(
+            (serviceRequest) => serviceRequest.dicom_study.external_id === studyUid,
+          );
+
+          if (relevantServiceRequest === undefined) {
+            throw new Error("No service request exist for given studyUid");
+          }
+
+          const sr = relevantServiceRequest.service_request;
+          setPatient(sr.encounter.patient);
+          setRequester(sr.requester);
+          setDepartments((sr.encounter.organizations as any[]) ?? []);
+          setDicomStudy(relevantServiceRequest.dicom_study);
+          setSelectedModality(sr.code!.display);
+
+          const { reportBodyPart } = await loadReportAndBodyPart();
+
+          const resolvedBodyPart = reportBodyPart || sr.body_site?.display;
+          if (!resolvedBodyPart) {
+            setBodyPartMissing(true);
+          } else {
+            setSelectedBodyPart(resolvedBodyPart);
+          }
+        } catch (err) {
+          console.error("Service Request fetch failed", err);
+        }
+      };
+      fetchRadiologyServiceRequest();
+    } else {
+      const fetchWithoutServiceRequest = async () => {
+        const { reportBodyPart, reportModality, reportPatientId } =
+          await loadReportAndBodyPart();
+
+        if (reportModality) {
+          setSelectedModality(reportModality);
+        }
+
+        if (reportBodyPart) {
+          setSelectedBodyPart(reportBodyPart);
+        } else {
+          setBodyPartMissing(true);
+        }
+
+        if (reportPatientId) {
+          try {
+            const studies: any[] = await apis.dicom.fetchStudies({ patient: reportPatientId });
+            const match = studies?.find((s: any) => s.external_id === studyUid);
+            if (match) {
+              setDicomStudy(match);
+            }
+          } catch (err) {
+            console.error("Failed to fetch dicom study fallback", err);
+          }
+        }
+      };
+      fetchWithoutServiceRequest();
+    }
+  }, [serviceRequestId, reportId, studyUid]);
 
 
   useEffect(() => {
@@ -166,7 +221,8 @@ export default function DicomReport({
   useEffect(() => {
     if (showAuditPopup && studyReportId) {
       apis.studyReportAudit.fetchByStudyReport(studyReportId).then((res) => {
-        setAuditLogs(res.results || []);
+        const results: any[] = (res as any)?.results ?? [];
+        setAuditLogs(results);
       });
     }
   }, [showAuditPopup, studyReportId]);
@@ -176,13 +232,18 @@ export default function DicomReport({
     if (!selectedModality || !selectedBodyPart) return;
     const fetchScanProtocols = async () => {
       try {
-        setSelectedScanProtocol("");
         setLoadingScanProtocols(true);
         const data = await apis.scanProtocol.fetchAll({
           modality: selectedModality,
           body_part: selectedBodyPart,
         });
         setScanProtocols(data.results);
+        if (pendingScanProtocolIdRef.current) {
+          setSelectedScanProtocol(pendingScanProtocolIdRef.current);
+          pendingScanProtocolIdRef.current = null;
+        } else {
+          setSelectedScanProtocol("");
+        }
       } catch (err) {
         console.error("Failed to load scan protocols", err);
       } finally {
@@ -197,7 +258,7 @@ export default function DicomReport({
     const text = html.replace(/<(.|\n)*?>/g, "").trim(); // strip HTML
     return { html, text };
   };
-  const canPreview = reportExists;
+  // const canPreview = reportExists;
   const validateReportFields = () => {
     if (!selectedModality) {
       toast.warning(t("radiology_please_select_modality"));
@@ -275,10 +336,13 @@ export default function DicomReport({
       }
       toast.success(t("radiology_report_saved_successfully!"));
       setReportExists(true);
-      
-      if (onClose) {
-        onClose();
-      }
+      onSaveSuccess?.();
+
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 1500);
     } catch (err) {
       if ((err as APIError).status == 403) {
         return toast.error((err as APIError).message);
@@ -337,28 +401,10 @@ export default function DicomReport({
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Page Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {t("radiology_dicom_report")}
-          </h1>
-          {/* <p className="text-sm text-gray-600 mt-1">
-            Reporting on study{" "}
-            <span className="font-medium">ACC-2026-005821</span> · Patient{" "}
-            <span className="font-medium">
-              {patient?.name ?? "-"} {patientAgeGender}
-            </span>
-          </p> */}
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 text-sm text-gray-500"></span>
-          <Info
-            size={18}
-            className="cursor-pointer text-gray-400 hover:text-green-600 ml-2"
-            onClick={() => setShowAuditPopup(true)}
-          />
-        </div>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {t("radiology_dicom_report")}
+        </h1>
       </div>
 
       {/* Patient Details Card */}
@@ -368,6 +414,7 @@ export default function DicomReport({
           requester={requester}
           dicomStudy={dicomStudy}
           departments={departments}
+          onInfoClick={() => setShowAuditPopup(true)}
         />
       </div>
 
@@ -377,7 +424,7 @@ export default function DicomReport({
           {/* Content Area - Scrollable */}
           <div className="flex flex-row gap-0 w-full flex-1 overflow-hidden">
             {/* Left Sidebar - with scrollbar */}
-            <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{width: "360px", maxWidth: "360px", minWidth: "360px"}}>
+            <div className="border-r p-6 bg-white flex flex-col gap-4 overflow-y-auto shrink-0 overflow-x-hidden" style={{ width: "360px", maxWidth: "360px", minWidth: "360px" }}>
               {/* Modality Section */}
               <div className="w-full min-w-0">
                 <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
@@ -398,7 +445,7 @@ export default function DicomReport({
                 </Select>
               </div>
 
-            {/* Body Part Section */}
+              {/* Body Part Section */}
               <div className="w-full min-w-0">
                 <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
                   {t("radiology_body_part")}{" "}
@@ -428,11 +475,12 @@ export default function DicomReport({
                 )}
               </div>
 
-            {/* Scan Protocol Section */}
+              {/* Scan Protocol Section */}
               <div className="w-full min-w-0">
-                <div className="flex justify-between items-center mb-2 gap-2">
-                  <h4 className="font-medium text-sm text-gray-700 truncate flex-1">
+                <div className="flex justify-between items-center mb-2 gap-4">
+                  <h4 className="font-medium text-sm text-gray-700 mb-2 truncate">
                     {t("radiology_scan_protocol")}
+                    <span className="text-red-500">*</span>
                   </h4>
                   <div className="flex gap-1 shrink-0">
                     <Plus
@@ -472,7 +520,7 @@ export default function DicomReport({
               </div>
             </div>
 
-          {/* Report Section */}
+            {/* Report Section */}
             <div className="flex-1 p-6 bg-white overflow-y-auto">
               <div className="flex flex-col gap-4">
                 {/* Scan Protocol Summary */}
@@ -496,10 +544,11 @@ export default function DicomReport({
                   />
                 </div>
 
-              {/* Technique */}
+                {/* Technique */}
                 <div>
                   <label className="font-medium text-gray-700 text-sm">
                     {t("radiology_technique")}
+                    <span className="text-red-500">*</span>
                   </label>
                   <div className="border rounded-md bg-white mt-1">
                     <Editor ref={techniqueRef} height={130} />
@@ -533,18 +582,13 @@ export default function DicomReport({
             </div>
           </div>
 
-              {/* Buttons */}
+          {/* Buttons */}
           <div className="border-t border-gray-200 bg-white p-6 flex justify-between items-center gap-4 flex-shrink-0">
             <div className="flex justify-start gap-3">
               <Button variant="outline" onClick={handleSaveAsTemplate}>
                 <Plus size={16} className="mr-2" />
                 {t("radiology_save_as_template")}
               </Button>
-              {canPreview && (
-                <Button variant="outline" onClick={handlePreview}>
-                  {t("radiology_preview")}
-                </Button>
-              )}
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={handleCancel}>

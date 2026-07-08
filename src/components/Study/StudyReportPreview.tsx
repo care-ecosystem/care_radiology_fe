@@ -31,7 +31,7 @@ function SectionLayout({
 }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">
+      <h3 className="text-sm font-semibold text-gray-800 border-b-2 border-gray-400 pb-1">
         {title}
       </h3>
       {children}
@@ -49,6 +49,10 @@ export default function StudyReportPreview({ studyUid }: Props) {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const path = window.location.pathname;
+        const serviceRequestMatch = path.match(/\/service_requests?\/([^/]+)/);
+        const serviceRequestId = serviceRequestMatch?.[1];
+
         const reportId = new URLSearchParams(window.location.search).get("reportId");
         const reportRes = await apis.studyReport.fetchByStudy(studyUid);
         const results: any[] = reportRes?.results ?? [];
@@ -69,6 +73,20 @@ export default function StudyReportPreview({ studyUid }: Props) {
           setUser(r.created_by || null);
           setPatient(r.patient || null);
         }
+
+        if (serviceRequestId) {
+          const radiologyServiceRequests: any[] = await apis.servicerequest.fetch({
+            serviceRequestId,
+          });
+          const relevant = radiologyServiceRequests.find(
+            (sr) => sr.dicom_study?.external_id === studyUid
+          );
+          if (relevant) {
+            const sr = relevant.service_request;
+            setPatient(sr.encounter.patient);
+            setUser(sr.requester);
+          }
+        }
       } catch (err) {
         console.error("Failed to load preview data", err);
       }
@@ -80,8 +98,8 @@ export default function StudyReportPreview({ studyUid }: Props) {
   if (!report) {
     return <div className="p-4">{t("radiology_no_preview_data_found")}</div>;
   }
-  const doctorName = formatName(user);
 
+  const doctorName = formatName(user);
   const patientAge = patient
     ? `${formatPatientAge(patient, true)}, ${basetranslate(`GENDER__${patient.gender}`)}`
     : "-";
