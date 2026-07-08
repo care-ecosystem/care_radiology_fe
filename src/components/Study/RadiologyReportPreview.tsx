@@ -53,6 +53,7 @@ export default function RadiologyReportPreview({
 
   const [patient, setPatient] = useState<any>(null);
   const [requester, setRequester] = useState<any>(null);
+  const [serviceRequestRequester, setServiceRequestRequester] = useState<any>(null);
   const [departments, setDepartments] = useState<any[]>([]);
   const [dicomStudy, setDicomStudy] = useState<any>(null);
   const [showAuditPopup, setShowAuditPopup] = useState(false);
@@ -110,7 +111,7 @@ export default function RadiologyReportPreview({
         if (!relevant) return;
         const sr = relevant.service_request;
         setPatient(sr.encounter.patient);
-        setRequester(sr.requester);
+        setServiceRequestRequester(sr.requester);  // ← Store service request requester separately
         setDepartments((sr.encounter.organizations as any[]) ?? []);
         setDicomStudy(relevant.dicom_study);
       } catch (err) {
@@ -155,7 +156,7 @@ export default function RadiologyReportPreview({
       <div className="flex-shrink-0 bg-white border-b border-gray-200">
         <PatientDetails
           patient={patient}
-          requester={requester}
+          requester={serviceRequestRequester || requester}
           dicomStudy={dicomStudy}
           departments={departments}
           onInfoClick={selectedReport ? () => setShowAuditPopup(true) : undefined}
@@ -320,7 +321,7 @@ export default function RadiologyReportPreview({
             onClick={onClose}
             className="cursor-pointer w-30"
           >
-            {t("radiology_view_report_cancel")}
+            {t("radiology_close")}
           </Button>
           <Button
             variant="outline"

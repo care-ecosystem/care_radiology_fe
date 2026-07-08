@@ -101,13 +101,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
     setViewerStudyUid(studyUid);
   }
 
-  // Handle "New Report" button click - Opens modal immediately
   const handleNewReportClick = (studyId: string) => {
     setReportCreationStudyId(studyId);
     setShowReportCreationModal(true);
   };
 
-  // Handle closing the report creation modal
   const handleCloseReportModal = () => {
     setShowReportCreationModal(false);
     setReportCreationStudyId("");
@@ -214,7 +212,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
         </div>
       )}
 
-      <Dialog open={showEditReportModal} onOpenChange={(open) => !open && handleCloseEditReportModal()}>
+      <Dialog open={showEditReportModal} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseEditReportModal();
+        }
+      }}>
         <DialogContent
           className="max-w-6xl w-full h-[85vh] flex flex-col p-0 overflow-hidden gap-0"
           hideClose
@@ -226,8 +228,22 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = (props) => {
               serviceRequestId={serviceRequestId}
               studyUid={editReportStudyId}
               reportId={editReportId}
-              onClose={handleCloseEditReportModal}
+              onClose={() => {
+                setShowEditReportModal(false);
+                setEditReportStudyId("");
+                setEditReportId("");
+              }}
               onSaveSuccess={() => handleReportSaved(editReportStudyId)}
+              onBack={() => {
+                setShowEditReportModal(false);
+                setEditReportStudyId("");
+                setEditReportId("");
+                
+                setTimeout(() => {
+                  setPreviewStudyId(editReportStudyId);
+                  setShowPreviewPanel(true);
+                }, 300); 
+              }}
             />
           )}
         </DialogContent>
