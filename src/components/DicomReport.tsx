@@ -24,12 +24,12 @@ import { APIError } from "@/apis/request";
 import { RadiologyServiceRequest } from "@/types/ServiceRequest";
 
 export default function DicomReport({
-  facilityId,
   serviceRequestId,
   studyUid,
   onSaveSuccess,
   onClose,
   reportId,
+  onBack,
 }: {
   facilityId: string;
   serviceRequestId: string;
@@ -37,6 +37,7 @@ export default function DicomReport({
   onClose?: () => void;
   onSaveSuccess?: () => void;
   reportId?: string;
+  onBack?: () => void;
 }) {
 
   const [scanProtocols, setScanProtocols] = useState<any[]>([]);
@@ -290,14 +291,6 @@ export default function DicomReport({
     return true;
   };
 
-  const handleCancel = () => {
-    if (onClose) {
-      onClose();
-    } else {
-      window.history.back();
-    }
-  };
-
   const handleSave = async () => {
     if (reportExists) {
       setShowOverwriteConfirm(true);
@@ -311,6 +304,8 @@ export default function DicomReport({
     const findingsContent = findingsRef.current?.root.innerHTML;
     const impressionContent = impressionRef.current?.root.innerHTML;
     try {
+      const isUpdate = !!studyReportId;
+      
       if (studyReportId) {
         await apis.studyReport.update(studyReportId, {
           modality: selectedModality,
@@ -334,15 +329,23 @@ export default function DicomReport({
           setStudyReportId(res.external_id);
         }
       }
-      toast.success(t("radiology_report_saved_successfully!"));
+      
+      if (isUpdate) {
+        toast.success(t("radiology_report_updated_successfully!"));
+      } else {
+        toast.success(t("radiology_report_saved_successfully!"));
+      }
+      
       setReportExists(true);
       onSaveSuccess?.();
 
       setTimeout(() => {
-        if (onClose) {
+        if (onBack) {
+          onBack();
+        } else if (onClose) {
           onClose();
         }
-      }, 1500);
+      }, 800);
     } catch (err) {
       if ((err as APIError).status == 403) {
         return toast.error((err as APIError).message);
@@ -350,14 +353,6 @@ export default function DicomReport({
         toast.error(t("radiology_error_saving_report"));
       }
     }
-  };
-
-  const handlePreview = () => {
-    const query = studyReportId ? `?reportId=${studyReportId}` : "";
-    window.open(
-      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/report/${studyUid}/preview${query}`,
-      "_blank",
-    );
   };
 
   const handleSaveAsTemplate = async () => {
@@ -585,16 +580,21 @@ export default function DicomReport({
           {/* Buttons */}
           <div className="border-t border-gray-200 bg-white p-6 flex justify-between items-center gap-4 flex-shrink-0">
             <div className="flex justify-start gap-3">
-              <Button variant="outline" onClick={handleSaveAsTemplate}>
+              <Button variant="outline" onClick={handleSaveAsTemplate} className="w-33.5 flex items-center justify-center">
                 <Plus size={16} className="mr-2" />
                 {t("radiology_save_as_template")}
               </Button>
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={handleCancel}>
-                {t("radiology_cancel")}
+              <Button variant="outline" onClick={onClose} className="w-32 flex items-center justify-center">
+                {t("radiology_close")}
               </Button>
-              <Button variant="default" onClick={handleSave}>
+              {onBack && (
+                <Button variant="outline" onClick={onBack} className="w-32 flex items-center justify-center">
+                  {t("radiology_back")}
+                </Button>
+              )}
+              <Button variant="default" onClick={handleSave} className="w-32 flex items-center justify-center">
                 {t("radiology_save")}
               </Button>
             </div>
