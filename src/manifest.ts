@@ -6,7 +6,10 @@ const manifest = {
   routes,
   extends: [],
   components: {
-    ServiceRequestAction: lazy(() => import("./components/ServiceRequestView"))
+    ServiceRequestAction: lazy(() => import("./components/ServiceRequestView")),
+    RadiologyDiagnosticReportResultsView: lazy(
+      () => import("./components/DiagnosticReportResultsView"),
+    ),
   },
   navItems: [],
   encounterTabs: {
