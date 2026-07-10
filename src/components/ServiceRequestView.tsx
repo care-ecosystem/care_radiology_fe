@@ -9,7 +9,7 @@ import { Label } from "@radix-ui/react-label";
 import { RadiologyServiceRequest, ServiceRequest } from "@/types/ServiceRequest";
 import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
-import { PLUGIN_SLUG } from "@/constants";
+import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
 import { Plus } from "lucide-react";
 
 type SRProps = {
@@ -49,7 +49,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
     enabled: !!facilityId && !!serviceRequestId,
   });
 
-  if (serviceRequestDetail?.category !== "imaging") {
+  if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
     return null;
   }
 
