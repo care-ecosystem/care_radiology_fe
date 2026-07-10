@@ -6,10 +6,10 @@ import DicomUploader from "./DicomUploader";
 import { Card, CardContent } from "./ui/card";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Label } from "@radix-ui/react-label";
-import { RadiologyServiceRequest } from "@/types/ServiceRequest";
+import { RadiologyServiceRequest, ServiceRequest } from "@/types/ServiceRequest";
 import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
-import { PLUGIN_SLUG } from "@/constants";
+import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
 import { Plus } from "lucide-react";
 
 type SRProps = {
@@ -31,7 +31,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
       }),
     enabled: !!serviceRequestId,
   });
-
+  
   const dicomStudies = useMemo(
     () =>
       radiologyServiceRequests?.map((rsr) => rsr.dicom_study).filter(Boolean),
@@ -42,12 +42,16 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
     const match = window.location.pathname.match(/\/facility\/([^/]+)/);
     return match?.[1];
   }, []);
-
-  const { data: serviceRequestDetail } = useQuery({
+  
+  const { data: serviceRequestDetail } = useQuery<ServiceRequest>({
     queryKey: ["serviceRequestDetail", facilityId, serviceRequestId],
     queryFn: () => apis.servicerequest.retrieve(facilityId!, serviceRequestId),
     enabled: !!facilityId && !!serviceRequestId,
   });
+
+  if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
+    return null;
+  }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
 

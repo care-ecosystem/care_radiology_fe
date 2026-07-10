@@ -14,6 +14,7 @@ export interface ServiceRequest {
   requester: User;
   code?: Coding;
   body_site?: Coding;
+  category?: string;
 
   [key: string]: unknown;
 }
