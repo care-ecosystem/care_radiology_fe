@@ -16,7 +16,7 @@ const manifest = {
   encounterTabs: {
     radiology: lazy(() => import("./components/RadiologyEncounterTab")),
   },
-  DiagnosticReportResultsOverrideCategory: DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
+  diagnosticReportResultsOverrideCategory: DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
 };
 
 export default manifest;
