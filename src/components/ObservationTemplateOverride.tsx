@@ -61,11 +61,16 @@ interface FieldRow extends ObservationTemplateField {
 
 // Template fields only store {code, value, description} — recover a human
 // display name for a code from the definition/component it belongs to.
-function displayForCode(definition: ObservationDefinition, code: string): string {
+function displayForCode(
+  definition: ObservationDefinition,
+  code: string,
+): string {
   if (code === (definition.code?.code ?? definition.id)) {
     return definition.title || definition.code?.display || code;
   }
-  const component = (definition.component ?? []).find((c) => c.code.code === code);
+  const component = (definition.component ?? []).find(
+    (c) => c.code.code === code,
+  );
   return component?.code.display || code;
 }
 
@@ -167,12 +172,17 @@ export default function ObservationTemplateOverride({
     }
     setSavingEdit(true);
     try {
-      const updated = await apis.observationTemplate.update(selectedTemplate.id, {
-        facility: facilityId,
-        title: editTitle.trim(),
-        description: editDescription.trim(),
-      });
-      setTemplates((prev) => prev.map((tpl) => (tpl.id === updated.id ? updated : tpl)));
+      const updated = await apis.observationTemplate.update(
+        selectedTemplate.id,
+        {
+          facility: facilityId,
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+        },
+      );
+      setTemplates((prev) =>
+        prev.map((tpl) => (tpl.id === updated.id ? updated : tpl)),
+      );
       setSelectedTemplate(updated);
       setIsEditingTemplate(false);
       toast.success(t("radiology_template_updated_successfully"));
@@ -277,7 +287,7 @@ export default function ObservationTemplateOverride({
               {observationDefinitions.map((definition) => (
                 <div
                   key={definition.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5"
+                  className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 bg-gray-100/50"
                 >
                   <span className="text-sm font-medium text-gray-700 truncate">
                     {definition.title ||
@@ -293,7 +303,7 @@ export default function ObservationTemplateOverride({
                       onClick={() => openSaveTemplate(definition)}
                     >
                       <Plus className="size-4" />
-                      {t("radiology_save_as_template")}
+                      {t("radiology_create_template")}
                     </Button>
                     <Button
                       type="button"
@@ -345,16 +355,18 @@ export default function ObservationTemplateOverride({
                     <button
                       type="button"
                       key={template.id}
-                      className={`text-left rounded-md border p-3 transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:border-primary-500 focus-visible:ring-primary-500 ${
+                      className={`block w-full min-w-0 text-left rounded-md border p-3 transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:border-primary-500 focus-visible:ring-primary-500 ${
                         selectedTemplate?.id === template.id
                           ? "bg-primary-100 border-primary-300 text-primary-950"
                           : "bg-white border-gray-200 hover:bg-gray-50"
                       }`}
                       onClick={() => selectTemplate(template)}
                     >
-                      <p className="font-medium text-sm">{template.title}</p>
+                      <p className="font-medium text-sm truncate">
+                        {template.title}
+                      </p>
                       {template.description && (
-                        <p className="text-sm text-gray-500 mt-0.5 truncate">
+                        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2 break-words">
                           {template.description}
                         </p>
                       )}
@@ -435,7 +447,8 @@ export default function ObservationTemplateOverride({
                           className="rounded-md bg-gray-50 p-3 space-y-1"
                         >
                           <p className="text-sm font-medium text-gray-900">
-                            {useTemplateFor && displayForCode(useTemplateFor, field.code)}
+                            {useTemplateFor &&
+                              displayForCode(useTemplateFor, field.code)}
                           </p>
                           {field.description && (
                             <p className="text-sm text-gray-500 break-words">
@@ -491,40 +504,40 @@ export default function ObservationTemplateOverride({
       >
         <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{t("radiology_save_as_template")}</DialogTitle>
+            <DialogTitle>{t("radiology_create_template")}</DialogTitle>
             <DialogDescription>
               {saveTemplateFor?.title || saveTemplateFor?.code?.display}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-4 px-1.5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t("radiology_name")}</Label>
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("radiology_description")}</Label>
-                <Input
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 px-1.5">
+            <div className="space-y-2">
+              <Label>{t("radiology_name")}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("radiology_description")}</Label>
+              <Input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>{t("radiology_fields")}</Label>
-              <div className="space-y-2">
+              <Label>{t("radiology_observation_data")}</Label>
+              <div className="rounded-md bg-gray-50 p-4 space-y-4">
                 {fields.map((field, index) => (
-                  <div
-                    key={field.code}
-                    className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 rounded-md bg-gray-50 p-3"
-                  >
-                    <Label className="text-sm text-gray-700 flex items-center sm:pr-2">
+                  <div key={field.code} className="space-y-2">
+                    <Label className="text-sm text-gray-700">
                       {field.display}
                     </Label>
+                    <Input
+                      className="bg-white"
+                      placeholder={t("radiology_field_description")}
+                      value={field.description ?? ""}
+                      onChange={(e) =>
+                        updateFieldDescription(index, e.target.value)
+                      }
+                    />
                     {field.dataType === "text" ? (
                       <Textarea
                         className="bg-white min-h-20"
@@ -550,14 +563,6 @@ export default function ObservationTemplateOverride({
                         }
                       />
                     )}
-                    <Input
-                      className="bg-white"
-                      placeholder={t("radiology_field_description")}
-                      value={field.description ?? ""}
-                      onChange={(e) =>
-                        updateFieldDescription(index, e.target.value)
-                      }
-                    />
                   </div>
                 ))}
               </div>

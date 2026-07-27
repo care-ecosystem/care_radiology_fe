@@ -49,6 +49,7 @@
   "radiology_select_body_part": "Select Body Part",
   "radiology_select_scan_protocol": "Select Scan Protocol",
   "radiology_save_as_template": "Save as Template",
+  "radiology_create_template": "Create Template",
   "radiology_view_report_print_preview": "Print Preview",
   "radiology_view_report_edit": "Edit Report",
   "radiology_preview": "Print Preview",
@@ -85,7 +86,7 @@
   "radiology_no_templates_found": "No templates found",
   "radiology_please_enter_template_title": "Please enter a template name",
   "radiology_description": "Description",
-  "radiology_fields": "Fields",
+  "radiology_observation_data": "Observation Data",
   "radiology_field_value": "Value",
   "radiology_field_description": "Description"
 }
