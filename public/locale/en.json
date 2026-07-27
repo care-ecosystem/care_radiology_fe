@@ -84,6 +84,7 @@
   "radiology_failed_to_load_templates": "Failed to load templates",
   "radiology_template_applied": "Template applied",
   "radiology_no_templates_found": "No templates found",
+  "radiology_search_templates": "Search templates",
   "radiology_please_enter_template_title": "Please enter a template name",
   "radiology_description": "Description",
   "radiology_observation_data": "Observation Data",

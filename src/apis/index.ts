@@ -337,9 +337,24 @@ export const apis = {
       facility: string;
       observation_definition: string;
       activity_definition?: string;
+      title?: string;
+      limit?: number;
     }): Promise<PaginatedResponse<ObservationTemplate>> => {
+      const params: Record<string, string | number> = {
+        facility: query.facility,
+        observation_definition: query.observation_definition,
+      };
+      if (query.activity_definition) {
+        params.activity_definition = query.activity_definition;
+      }
+      if (query.title) {
+        params.title = query.title;
+      }
+      if (query.limit) {
+        params.limit = query.limit;
+      }
       return await request<PaginatedResponse<ObservationTemplate>>(
-        `/api/care_radiology/observation_template/${queryString(query)}`,
+        `/api/care_radiology/observation_template/${queryString(params)}`,
       );
     },
 

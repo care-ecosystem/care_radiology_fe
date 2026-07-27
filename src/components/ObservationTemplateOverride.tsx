@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apis, ObservationTemplate, ObservationTemplateField } from "@/apis";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
+import { Skeleton } from "./ui/skeleton";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG } from "@/constants";
@@ -115,6 +116,7 @@ export default function ObservationTemplateOverride({
 
   const [useTemplateFor, setUseTemplateFor] =
     useState<ObservationDefinition | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [templates, setTemplates] = useState<ObservationTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
@@ -131,8 +133,6 @@ export default function ObservationTemplateOverride({
   const [fields, setFields] = useState<FieldRow[]>([]);
   const [saving, setSaving] = useState(false);
 
-  if (!facilityId || !observationDefinitions?.length) return null;
-
   // Only title/description are selectable for edit — the backend's update
   // endpoint (ObservationTemplateUpdateSpec) only accepts those two fields,
   // so per-field value/description edits can't be persisted and aren't offered.
@@ -143,25 +143,44 @@ export default function ObservationTemplateOverride({
     setEditDescription(template?.description ?? "");
   };
 
-  const openUseTemplate = async (definition: ObservationDefinition) => {
+  // Debounced, search-driven fetch: re-runs whenever the dialog opens for a
+  // definition or the search query changes. Server-side pagination defaults
+  // to 14 and hard-caps at 200 (CareLimitOffsetPagination), so rather than
+  // ever trying to load "all" templates, narrowing via `title` server-side
+  // is what actually scales past a handful of saved templates.
+  useEffect(() => {
+    const definitionId = useTemplateFor?.id;
+    if (!definitionId || !facilityId) return;
+    setLoadingTemplates(true);
+    const handle = setTimeout(async () => {
+      try {
+        const res = await apis.observationTemplate.fetchAll({
+          facility: facilityId,
+          observation_definition: definitionId,
+          title: searchQuery.trim() || undefined,
+          limit: 50,
+        });
+        const results = res.results || [];
+        setTemplates(results);
+        selectTemplate(results[0] ?? null);
+      } catch (err) {
+        console.error("Failed to load observation templates", err);
+        toast.error(t("radiology_failed_to_load_templates"));
+      } finally {
+        setLoadingTemplates(false);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useTemplateFor?.id, searchQuery, facilityId]);
+
+  if (!facilityId || !observationDefinitions?.length) return null;
+
+  const openUseTemplate = (definition: ObservationDefinition) => {
     setUseTemplateFor(definition);
+    setSearchQuery("");
     setTemplates([]);
     selectTemplate(null);
-    setLoadingTemplates(true);
-    try {
-      const res = await apis.observationTemplate.fetchAll({
-        facility: facilityId,
-        observation_definition: definition.id,
-      });
-      const results = res.results || [];
-      setTemplates(results);
-      selectTemplate(results[0] ?? null);
-    } catch (err) {
-      console.error("Failed to load observation templates", err);
-      toast.error(t("radiology_failed_to_load_templates"));
-    } finally {
-      setLoadingTemplates(false);
-    }
   };
 
   const saveTemplateEdit = async () => {
@@ -338,12 +357,27 @@ export default function ObservationTemplateOverride({
 
           <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
             {/* Template list */}
-            <div className="w-64 shrink-0 h-full flex flex-col border-r border-gray-100 pr-4">
+            <div className="w-72 shrink-0 h-full flex flex-col border-r border-gray-100 pr-4">
+              <div className="p-1.5 shrink-0">
+                <Input
+                  placeholder={t("radiology_search_templates")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <ScrollArea className="flex-1 min-h-0 px-1.5">
                 {loadingTemplates && (
-                  <p className="text-sm text-gray-500 py-1">
-                    {t("radiology_loading")}
-                  </p>
+                  <div className="flex flex-col gap-2 py-1">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="rounded-md border border-gray-200 p-3 space-y-2"
+                      >
+                        <Skeleton className="h-4 w-2/3" />
+                        <Skeleton className="h-3 w-full" />
+                      </div>
+                    ))}
+                  </div>
                 )}
                 {!loadingTemplates && templates.length === 0 && (
                   <p className="text-sm text-gray-500 py-1">
@@ -351,27 +385,28 @@ export default function ObservationTemplateOverride({
                   </p>
                 )}
                 <div className="flex flex-col gap-2 py-1">
-                  {templates.map((template) => (
-                    <button
-                      type="button"
-                      key={template.id}
-                      className={`block w-full min-w-0 text-left rounded-md border p-3 transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:border-primary-500 focus-visible:ring-primary-500 ${
-                        selectedTemplate?.id === template.id
-                          ? "bg-primary-100 border-primary-300 text-primary-950"
-                          : "bg-white border-gray-200 hover:bg-gray-50"
-                      }`}
-                      onClick={() => selectTemplate(template)}
-                    >
-                      <p className="font-medium text-sm truncate">
-                        {template.title}
-                      </p>
-                      {template.description && (
-                        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2 break-words">
-                          {template.description}
+                  {!loadingTemplates &&
+                    templates.map((template) => (
+                      <button
+                        type="button"
+                        key={template.id}
+                        className={`block w-full min-w-0 text-left rounded-md border p-3 transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:border-primary-500 focus-visible:ring-primary-500 ${
+                          selectedTemplate?.id === template.id
+                            ? "bg-primary-100 border-primary-300 text-primary-950"
+                            : "bg-white border-gray-200 hover:bg-gray-50"
+                        }`}
+                        onClick={() => selectTemplate(template)}
+                      >
+                        <p className="font-medium text-sm truncate">
+                          {template.title}
                         </p>
-                      )}
-                    </button>
-                  ))}
+                        {template.description && (
+                          <p className="text-sm text-gray-500 mt-0.5 line-clamp-2 break-words">
+                            {template.description}
+                          </p>
+                        )}
+                      </button>
+                    ))}
                 </div>
               </ScrollArea>
             </div>
@@ -465,7 +500,7 @@ export default function ObservationTemplateOverride({
                 </>
               ) : (
                 !loadingTemplates && (
-                  <p className="text-sm text-gray-500 py-1 px-1.5">
+                  <p className="text-sm text-gray-500 py-1 px-1.5 m-auto">
                     {t("radiology_no_templates_found")}
                   </p>
                 )
