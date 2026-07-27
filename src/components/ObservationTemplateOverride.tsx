@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { apis, ObservationTemplate, ObservationTemplateField } from "@/apis";
 import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
@@ -16,12 +17,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG } from "@/constants";
-import { ClipboardList, Pencil, Plus } from "lucide-react";
-
-// Aligns focus ring color with care_fe's Input/Textarea (primary-500 ring,
-// gray-950 is this plugin's shadcn default and reads out of place inside care_fe).
-const FOCUS_RING =
-  "focus-visible:border-primary-500 focus-visible:ring-primary-500 focus-visible:ring-1";
+import { ClipboardList, LayoutTemplate, Pencil, Plus } from "lucide-react";
 
 // Mirrors the subset of QuestionType actually special-cased by DiagnosticReportForm
 // in care_fe: "text" renders as a textarea, "decimal"/"integer" as a number input,
@@ -260,41 +256,55 @@ export default function ObservationTemplateOverride({
   };
 
   return (
-    <div className="flex flex-col gap-2 mb-4">
-      {observationDefinitions.map((definition) => (
-        <div
-          key={definition.id}
-          className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5"
-        >
-          <span className="text-sm font-medium text-gray-700 truncate">
-            {definition.title ||
-              definition.code?.display ||
-              t("radiology_observation")}
-          </span>
-          <div className="flex gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled}
-              onClick={() => openUseTemplate(definition)}
-            >
-              <ClipboardList className="size-4" />
-              {t("radiology_use_template")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled}
-              onClick={() => openSaveTemplate(definition)}
-            >
-              <Plus className="size-4" />
-              {t("radiology_save_as_template")}
-            </Button>
+    <>
+      <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
+        <CardContent className="p-4">
+          <div className="grid gap-3">
+            <div className="flex items-center gap-2">
+              <LayoutTemplate className="size-4 text-primary-700" />
+              <Label className="text-base font-semibold text-gray-950">
+                {t("radiology_observation_templates")}
+              </Label>
+            </div>
+            <div className="flex flex-col gap-2">
+              {observationDefinitions.map((definition) => (
+                <div
+                  key={definition.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5"
+                >
+                  <span className="text-sm font-medium text-gray-700 truncate">
+                    {definition.title ||
+                      definition.code?.display ||
+                      t("radiology_observation")}
+                  </span>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() => openSaveTemplate(definition)}
+                    >
+                      <Plus className="size-4" />
+                      {t("radiology_save_as_template")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() => openUseTemplate(definition)}
+                    >
+                      <ClipboardList className="size-4" />
+                      {t("radiology_use_template")}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        </CardContent>
+      </Card>
 
       {/* Use Template dialog */}
       <Dialog
@@ -328,11 +338,11 @@ export default function ObservationTemplateOverride({
                     <button
                       type="button"
                       key={template.id}
-                      className={`text-left rounded-md p-3 transition-colors focus-visible:outline-hidden ${
+                      className={`text-left rounded-md border p-3 transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:border-primary-500 focus-visible:ring-primary-500 ${
                         selectedTemplate?.id === template.id
-                          ? "bg-primary-100 text-primary-950"
-                          : "bg-gray-50 hover:bg-gray-100"
-                      } ${FOCUS_RING}`}
+                          ? "bg-primary-100 border-primary-300 text-primary-950"
+                          : "bg-white border-gray-200 hover:bg-gray-50"
+                      }`}
                       onClick={() => selectTemplate(template)}
                     >
                       <p className="font-medium text-sm">{template.title}</p>
@@ -355,12 +365,11 @@ export default function ObservationTemplateOverride({
                     {isEditingTemplate ? (
                       <div className="flex-1 space-y-2">
                         <Input
-                          className={FOCUS_RING}
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
                         />
                         <Textarea
-                          className={`min-h-16 ${FOCUS_RING}`}
+                          className="min-h-16"
                           placeholder={t("radiology_description")}
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
@@ -390,6 +399,7 @@ export default function ObservationTemplateOverride({
                         </Button>
                         <Button
                           type="button"
+                          variant="primary"
                           size="sm"
                           onClick={saveTemplateEdit}
                           loading={savingEdit}
@@ -453,6 +463,7 @@ export default function ObservationTemplateOverride({
             </Button>
             <Button
               type="button"
+              variant="primary"
               disabled={!selectedTemplate}
               onClick={() =>
                 useTemplateFor &&
@@ -483,7 +494,6 @@ export default function ObservationTemplateOverride({
               <div className="space-y-2">
                 <Label>{t("radiology_name")}</Label>
                 <Input
-                  className={FOCUS_RING}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -491,7 +501,6 @@ export default function ObservationTemplateOverride({
               <div className="space-y-2">
                 <Label>{t("radiology_description")}</Label>
                 <Input
-                  className={FOCUS_RING}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -511,7 +520,7 @@ export default function ObservationTemplateOverride({
                     </Label>
                     {field.dataType === "text" ? (
                       <Textarea
-                        className={`bg-white min-h-20 ${FOCUS_RING}`}
+                        className="bg-white min-h-20"
                         placeholder={t("radiology_field_value")}
                         value={field.value ?? ""}
                         onChange={(e) =>
@@ -520,7 +529,7 @@ export default function ObservationTemplateOverride({
                       />
                     ) : (
                       <Input
-                        className={`bg-white ${FOCUS_RING}`}
+                        className="bg-white"
                         type={
                           field.dataType === "decimal" ||
                           field.dataType === "integer"
@@ -535,7 +544,7 @@ export default function ObservationTemplateOverride({
                       />
                     )}
                     <Input
-                      className={`bg-white ${FOCUS_RING}`}
+                      className="bg-white"
                       placeholder={t("radiology_field_description")}
                       value={field.description ?? ""}
                       onChange={(e) =>
@@ -555,12 +564,17 @@ export default function ObservationTemplateOverride({
             >
               {t("radiology_cancel")}
             </Button>
-            <Button type="button" onClick={saveTemplate} loading={saving}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={saveTemplate}
+              loading={saving}
+            >
               {t("radiology_save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

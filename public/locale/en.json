@@ -79,6 +79,7 @@
   "radiology_modification_history": "Modification History",
   "radiology_no_history_available": "No history available",
   "radiology_observation": "Observation",
+  "radiology_observation_templates": "Observation Templates",
   "radiology_failed_to_load_templates": "Failed to load templates",
   "radiology_template_applied": "Template applied",
   "radiology_no_templates_found": "No templates found",
