@@ -17,7 +17,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG } from "@/constants";
-import { ClipboardList, LayoutTemplate, Pencil, Plus } from "lucide-react";
+import { ClipboardList, Pencil, Plus } from "lucide-react";
 
 // Mirrors the subset of QuestionType actually special-cased by DiagnosticReportForm
 // in care_fe: "text" renders as a textarea, "decimal"/"integer" as a number input,
@@ -70,7 +70,22 @@ function displayForCode(definition: ObservationDefinition, code: string): string
 }
 
 function fieldRowsFor(definition: ObservationDefinition): FieldRow[] {
-  const rows: FieldRow[] = [
+  const hasComponents = (definition.component ?? []).length > 0;
+
+  // Mirrors care_fe's DiagnosticReportForm: an observation with components
+  // (e.g. blood pressure -> systolic/diastolic) never uses its own top-level
+  // value, per FHIR Observation semantics, so no main-value row is offered.
+  if (hasComponents) {
+    return definition.component!.map((component) => ({
+      code: component.code.code,
+      display: component.code.display || component.code.code,
+      dataType: component.permitted_data_type,
+      value: "",
+      description: "",
+    }));
+  }
+
+  return [
     {
       code: definition.code?.code ?? definition.id,
       display: definition.title || definition.code?.display || "Value",
@@ -79,16 +94,6 @@ function fieldRowsFor(definition: ObservationDefinition): FieldRow[] {
       description: "",
     },
   ];
-  for (const component of definition.component ?? []) {
-    rows.push({
-      code: component.code.code,
-      display: component.code.display || component.code.code,
-      dataType: component.permitted_data_type,
-      value: "",
-      description: "",
-    });
-  }
-  return rows;
 }
 
 export default function ObservationTemplateOverride({
@@ -186,6 +191,7 @@ export default function ObservationTemplateOverride({
     const componentCodes = new Set(
       (definition.component ?? []).map((c) => c.code.code),
     );
+    const hasComponents = componentCodes.size > 0;
     for (const field of template.fields) {
       if (componentCodes.has(field.code)) {
         handleComponentValueChange(
@@ -195,7 +201,9 @@ export default function ObservationTemplateOverride({
           field.value ?? "",
           "",
         );
-      } else {
+      } else if (!hasComponents) {
+        // Matches care_fe: a definition with components has no top-level
+        // value to write to, so a stray non-component field is ignored.
         handleValueChange(definition.id, 0, field.value ?? "");
       }
     }
@@ -261,7 +269,6 @@ export default function ObservationTemplateOverride({
         <CardContent className="p-4">
           <div className="grid gap-3">
             <div className="flex items-center gap-2">
-              <LayoutTemplate className="size-4 text-primary-700" />
               <Label className="text-base font-semibold text-gray-950">
                 {t("radiology_observation_templates")}
               </Label>
