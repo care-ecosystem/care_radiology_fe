@@ -8,10 +8,20 @@ export interface ObservationComponent {
   value: ObservationValue;
 }
 
+// Mirrors ObservationDefinitionComponentSpec (backend): schema for one
+// component of a definition — code/display + expected data type.
+export interface ObservationDefinitionComponent {
+  code?: { code?: string; display?: string };
+  permitted_data_type?: string;
+}
+
 export interface ObservationDefinition {
+  id?: string;
   title?: string;
   code?: { code?: string; display?: string };
   category?: string;
+  permitted_data_type?: string;
+  component?: ObservationDefinitionComponent[];
 }
 
 export interface DiagnosticReportObservation {
