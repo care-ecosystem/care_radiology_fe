@@ -16,7 +16,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG } from "@/constants";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Pencil, Plus } from "lucide-react";
 
 // Aligns focus ring color with care_fe's Input/Textarea (primary-500 ring,
 // gray-950 is this plugin's shadcn default and reads out of place inside care_fe).
@@ -63,6 +63,16 @@ interface FieldRow extends ObservationTemplateField {
   dataType?: PermittedDataType;
 }
 
+// Template fields only store {code, value, description} — recover a human
+// display name for a code from the definition/component it belongs to.
+function displayForCode(definition: ObservationDefinition, code: string): string {
+  if (code === (definition.code?.code ?? definition.id)) {
+    return definition.title || definition.code?.display || code;
+  }
+  const component = (definition.component ?? []).find((c) => c.code.code === code);
+  return component?.code.display || code;
+}
+
 function fieldRowsFor(definition: ObservationDefinition): FieldRow[] {
   const rows: FieldRow[] = [
     {
@@ -101,6 +111,12 @@ export default function ObservationTemplateOverride({
     useState<ObservationDefinition | null>(null);
   const [templates, setTemplates] = useState<ObservationTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ObservationTemplate | null>(null);
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<ObservationDefinition | null>(null);
@@ -111,20 +127,59 @@ export default function ObservationTemplateOverride({
 
   if (!facilityId || !observationDefinitions?.length) return null;
 
+  // Only title/description are selectable for edit — the backend's update
+  // endpoint (ObservationTemplateUpdateSpec) only accepts those two fields,
+  // so per-field value/description edits can't be persisted and aren't offered.
+  const selectTemplate = (template: ObservationTemplate | null) => {
+    setSelectedTemplate(template);
+    setIsEditingTemplate(false);
+    setEditTitle(template?.title ?? "");
+    setEditDescription(template?.description ?? "");
+  };
+
   const openUseTemplate = async (definition: ObservationDefinition) => {
     setUseTemplateFor(definition);
+    setTemplates([]);
+    selectTemplate(null);
     setLoadingTemplates(true);
     try {
       const res = await apis.observationTemplate.fetchAll({
         facility: facilityId,
         observation_definition: definition.id,
       });
-      setTemplates(res.results || []);
+      const results = res.results || [];
+      setTemplates(results);
+      selectTemplate(results[0] ?? null);
     } catch (err) {
       console.error("Failed to load observation templates", err);
       toast.error(t("radiology_failed_to_load_templates"));
     } finally {
       setLoadingTemplates(false);
+    }
+  };
+
+  const saveTemplateEdit = async () => {
+    if (!selectedTemplate) return;
+    if (!editTitle.trim()) {
+      toast.warning(t("radiology_please_enter_template_title"));
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const updated = await apis.observationTemplate.update(selectedTemplate.id, {
+        facility: facilityId,
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+      });
+      setTemplates((prev) => prev.map((tpl) => (tpl.id === updated.id ? updated : tpl)));
+      setSelectedTemplate(updated);
+      setIsEditingTemplate(false);
+      toast.success(t("radiology_template_updated_successfully"));
+    } catch (err) {
+      console.error("Failed to update observation template", err);
+      toast.error(t("radiology_failed_to_update_template"));
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -246,44 +301,168 @@ export default function ObservationTemplateOverride({
         open={!!useTemplateFor}
         onOpenChange={(open) => !open && setUseTemplateFor(null)}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{t("radiology_use_template")}</DialogTitle>
             <DialogDescription>
               {useTemplateFor?.title || useTemplateFor?.code?.display}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-80 px-1.5">
-            {loadingTemplates && (
-              <p className="text-sm text-gray-500 py-1">
-                {t("radiology_loading")}
-              </p>
-            )}
-            {!loadingTemplates && templates.length === 0 && (
-              <p className="text-sm text-gray-500 py-1">
-                {t("radiology_no_templates_found")}
-              </p>
-            )}
-            <div className="flex flex-col gap-2 py-1">
-              {templates.map((template) => (
-                <button
-                  type="button"
-                  key={template.id}
-                  className={`text-left rounded-md bg-gray-50 p-3 transition-colors hover:bg-gray-100 focus-visible:outline-hidden ${FOCUS_RING}`}
-                  onClick={() =>
-                    useTemplateFor && applyTemplate(useTemplateFor, template)
-                  }
-                >
-                  <p className="font-medium text-sm">{template.title}</p>
-                  {template.description && (
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      {template.description}
-                    </p>
-                  )}
-                </button>
-              ))}
+
+          <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
+            {/* Template list */}
+            <div className="w-64 shrink-0 h-full flex flex-col border-r border-gray-100 pr-4">
+              <ScrollArea className="flex-1 min-h-0 px-1.5">
+                {loadingTemplates && (
+                  <p className="text-sm text-gray-500 py-1">
+                    {t("radiology_loading")}
+                  </p>
+                )}
+                {!loadingTemplates && templates.length === 0 && (
+                  <p className="text-sm text-gray-500 py-1">
+                    {t("radiology_no_templates_found")}
+                  </p>
+                )}
+                <div className="flex flex-col gap-2 py-1">
+                  {templates.map((template) => (
+                    <button
+                      type="button"
+                      key={template.id}
+                      className={`text-left rounded-md p-3 transition-colors focus-visible:outline-hidden ${
+                        selectedTemplate?.id === template.id
+                          ? "bg-primary-100 text-primary-950"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      } ${FOCUS_RING}`}
+                      onClick={() => selectTemplate(template)}
+                    >
+                      <p className="font-medium text-sm">{template.title}</p>
+                      {template.description && (
+                        <p className="text-sm text-gray-500 mt-0.5 truncate">
+                          {template.description}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
-          </ScrollArea>
+
+            {/* Preview */}
+            <div className="flex-1 min-w-0 h-full flex flex-col">
+              {selectedTemplate ? (
+                <>
+                  <div className="flex items-start justify-between gap-3 px-1.5 pb-3 shrink-0">
+                    {isEditingTemplate ? (
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          className={FOCUS_RING}
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                        />
+                        <Textarea
+                          className={`min-h-16 ${FOCUS_RING}`}
+                          placeholder={t("radiology_description")}
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedTemplate.title}
+                        </p>
+                        {selectedTemplate.description && (
+                          <p className="text-sm text-gray-500">
+                            {selectedTemplate.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {isEditingTemplate ? (
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => selectTemplate(selectedTemplate)}
+                        >
+                          {t("radiology_cancel")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={saveTemplateEdit}
+                          loading={savingEdit}
+                        >
+                          {t("radiology_update")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => setIsEditingTemplate(true)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <ScrollArea className="flex-1 min-h-0 px-1.5">
+                    <div className="space-y-2 py-1">
+                      {selectedTemplate.fields.map((field) => (
+                        <div
+                          key={field.code}
+                          className="rounded-md bg-gray-50 p-3 space-y-1"
+                        >
+                          <p className="text-sm font-medium text-gray-900">
+                            {useTemplateFor && displayForCode(useTemplateFor, field.code)}
+                          </p>
+                          {field.description && (
+                            <p className="text-sm text-gray-500 break-words">
+                              {field.description}
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-700 break-words">
+                            {field.value || "-"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </>
+              ) : (
+                !loadingTemplates && (
+                  <p className="text-sm text-gray-500 py-1 px-1.5">
+                    {t("radiology_no_templates_found")}
+                  </p>
+                )
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-gray-100 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setUseTemplateFor(null)}
+            >
+              {t("radiology_cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={!selectedTemplate}
+              onClick={() =>
+                useTemplateFor &&
+                selectedTemplate &&
+                applyTemplate(useTemplateFor, selectedTemplate)
+              }
+            >
+              {t("radiology_use_template")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -292,14 +471,14 @@ export default function ObservationTemplateOverride({
         open={!!saveTemplateFor}
         onOpenChange={(open) => !open && setSaveTemplateFor(null)}
       >
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{t("radiology_save_as_template")}</DialogTitle>
             <DialogDescription>
               {saveTemplateFor?.title || saveTemplateFor?.code?.display}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1.5">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-4 px-1.5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("radiology_name")}</Label>

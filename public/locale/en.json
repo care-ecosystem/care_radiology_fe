@@ -39,6 +39,8 @@
   "radiology_service_request_missing_config": "Body Part not configured. Contact administrator.",
   "radiology_template_saved_successfully!": "Template saved successfully!",
   "radiology_failed_to_save_template": "Failed to save template",
+  "radiology_template_updated_successfully": "Template updated successfully",
+  "radiology_failed_to_update_template": "Failed to update template",
   "radiology_please_select_an_item_to_edit": "Please select an item to edit",
   "radiology_dicom_report": "DICOM Report",
   "radiology_loading": "Loading...",

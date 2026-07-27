@@ -359,6 +359,21 @@ export const apis = {
         },
       );
     },
+
+    update: async (
+      id: string,
+      payload: { facility: string; title: string; description?: string },
+    ): Promise<ObservationTemplate> => {
+      return await request<ObservationTemplate>(
+        `/api/care_radiology/observation_template/${id}/${queryString({
+          facility: payload.facility,
+        })}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        },
+      );
+    },
   },
 
   template: {
