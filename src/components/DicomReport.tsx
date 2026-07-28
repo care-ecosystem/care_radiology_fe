@@ -15,7 +15,7 @@ import {
 } from "./ui/select";
 import EditAddModal from "./EditAddModal";
 import BodyPartSearch from "./BodyPartSearch";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import RadiologyAuditPopup from "./Common/RadiologyAuditPopup";
 import PatientDetails from "./Common/PatientDetails";
@@ -644,7 +644,6 @@ export default function DicomReport({
         onClose={() => setShowAuditPopup(false)}
         audits={auditLogs}
       />
-      <Toaster position="top-center" richColors closeButton />
     </div>
   );
 }

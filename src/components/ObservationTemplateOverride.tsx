@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apis, ObservationTemplate } from "@/apis";
+import { APIError } from "@/apis/request";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -127,7 +128,11 @@ export default function ObservationTemplateOverride({
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to load observation templates", err);
-        toast.error(t("radiology_failed_to_load_templates"));
+        toast.error(
+          err instanceof APIError
+            ? err.message
+            : t("radiology_failed_to_load_templates"),
+        );
       } finally {
         if (!cancelled) setLoadingTemplates(false);
       }
@@ -176,7 +181,11 @@ export default function ObservationTemplateOverride({
       toast.success(t("radiology_template_updated_successfully"));
     } catch (err) {
       console.error("Failed to update observation template", err);
-      toast.error(t("radiology_failed_to_update_template"));
+      toast.error(
+        err instanceof APIError
+          ? err.message
+          : t("radiology_failed_to_update_template"),
+      );
     } finally {
       setSavingEdit(false);
     }

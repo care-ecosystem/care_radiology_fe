@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { apis, ObservationTemplateField } from "@/apis";
+import { APIError } from "@/apis/request";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
   PLUGIN_SLUG,
@@ -133,7 +134,11 @@ export function DiagnosticReportResultsOverride({
       setSaveTemplateFor(null);
     } catch (err) {
       console.error("Failed to save observation template", err);
-      toast.error(t("radiology_failed_to_save_template"));
+      toast.error(
+        err instanceof APIError
+          ? err.message
+          : t("radiology_failed_to_save_template"),
+      );
     } finally {
       setSaving(false);
     }
