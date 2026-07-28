@@ -89,21 +89,28 @@ export default function ObservationTemplateOverride({
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  // Read inside async callbacks after an await, where closed-over state/props
-  // would otherwise reflect the render the callback started in, not "now".
-  const selectedTemplateIdRef = useRef<string | null>(null);
-  selectedTemplateIdRef.current = selectedTemplate?.id ?? null;
-  const useTemplateForIdRef = useRef<string | undefined>(undefined);
-  useTemplateForIdRef.current = useTemplateFor?.id;
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Bumped on every selection/dialog-open/close; an async edit captures it
+  // before awaiting and compares after, to detect a stale response.
+  const selectionTokenRef = useRef(0);
+  const bumpSelectionToken = () => {
+    selectionTokenRef.current += 1;
+  };
 
   // Only title/description are editable — ObservationTemplateUpdateSpec
   // doesn't accept field-level changes.
   const selectTemplate = (template: ObservationTemplate | null) => {
+    bumpSelectionToken();
     setSelectedTemplate(template);
     setIsEditingTemplate(false);
     setEditTitle(template?.title ?? "");
     setEditDescription(template?.description ?? "");
+  };
+
+  const closeUseTemplateDialog = () => {
+    bumpSelectionToken();
+    setUseTemplateFor(null);
   };
 
   // Debounced, server-side search — pagination caps at 200
@@ -147,6 +154,7 @@ export default function ObservationTemplateOverride({
   if (!facilityId || !observationDefinitions?.length) return null;
 
   const openUseTemplate = (definition: ObservationDefinition) => {
+    bumpSelectionToken();
     setUseTemplateFor(definition);
     setSearchQuery("");
     setTemplates([]);
@@ -160,7 +168,7 @@ export default function ObservationTemplateOverride({
       return;
     }
     const editingId = selectedTemplate.id;
-    const editingDefinitionId = useTemplateFor?.id;
+    const tokenAtStart = selectionTokenRef.current;
     setSavingEdit(true);
     try {
       const updated = await apis.observationTemplate.update(editingId, {
@@ -171,10 +179,7 @@ export default function ObservationTemplateOverride({
       setTemplates((prev) =>
         prev.map((tpl) => (tpl.id === updated.id ? updated : tpl)),
       );
-      const stillEditingSameOne =
-        selectedTemplateIdRef.current === editingId &&
-        useTemplateForIdRef.current === editingDefinitionId;
-      if (stillEditingSameOne) {
+      if (selectionTokenRef.current === tokenAtStart) {
         setSelectedTemplate(updated);
         setIsEditingTemplate(false);
       }
@@ -221,7 +226,7 @@ export default function ObservationTemplateOverride({
       }
     }
     toast.success(t("radiology_template_applied"));
-    setUseTemplateFor(null);
+    closeUseTemplateDialog();
   };
 
   return (
@@ -274,7 +279,7 @@ export default function ObservationTemplateOverride({
 
       <Dialog
         open={!!useTemplateFor}
-        onOpenChange={(open) => !open && setUseTemplateFor(null)}
+        onOpenChange={(open) => !open && closeUseTemplateDialog()}
       >
         <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
@@ -455,7 +460,7 @@ export default function ObservationTemplateOverride({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setUseTemplateFor(null)}
+              onClick={() => closeUseTemplateDialog()}
             >
               {t("radiology_cancel")}
             </Button>
