@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
+import { encodeFieldValue } from "@/utils/templateFieldValue";
 
 function getValueText(value: ObservationValue) {
   if (!value?.value) return "-";
@@ -27,12 +28,12 @@ function getValueText(value: ObservationValue) {
   return unit ? `${value.value} ${unit}` : value.value;
 }
 
-// One row per template field: code/display/dataType are recovered from the
-// observation's definition schema; value is prefilled from the actual saved
-// observation, only description is left for the user to fill in.
+// `unit` is frontend-only — encoded into `value` at save time (see
+// templateFieldValue.ts), since ObservationTemplateData has no unit column.
 interface FieldRow extends ObservationTemplateField {
   display: string;
   dataType?: string;
+  unit?: string;
 }
 
 function fieldRowsFromObservation(
@@ -52,6 +53,7 @@ function fieldRowsFromObservation(
         display: component.code?.display || code,
         dataType: schema?.permitted_data_type,
         value: component.value?.value ?? "",
+        unit: component.value?.unit?.code || component.value?.unit?.display,
         description: "",
       };
     });
@@ -63,6 +65,7 @@ function fieldRowsFromObservation(
       display: definition?.title || definition?.code?.display || "Value",
       dataType: definition?.permitted_data_type,
       value: observation.value?.value ?? "",
+      unit: observation.value?.unit?.code || observation.value?.unit?.display,
       description: "",
     },
   ];
@@ -127,9 +130,9 @@ export function DiagnosticReportResultsOverride({
         title: title.trim(),
         description: description.trim() || undefined,
         fields: fields.map(
-          ({ code, value, description: fieldDescription }) => ({
+          ({ code, value, unit, description: fieldDescription }) => ({
             code,
-            value,
+            value: encodeFieldValue(value ?? "", unit),
             description: fieldDescription,
           }),
         ),
@@ -203,7 +206,6 @@ export function DiagnosticReportResultsOverride({
         );
       })}
 
-      {/* Save as Template dialog */}
       <Dialog
         open={!!saveTemplateFor}
         onOpenChange={(open) => !open && setSaveTemplateFor(null)}

@@ -17,17 +17,13 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Skeleton } from "./ui/skeleton";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { PLUGIN_SLUG } from "@/constants";
+import {
+  DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
+  PLUGIN_SLUG,
+} from "@/constants";
 import { ClipboardList, Pencil } from "lucide-react";
-
-interface ObservationDefinition {
-  id: string;
-  title?: string;
-  code?: { code: string; display?: string };
-  component?: {
-    code: { code: string; display?: string };
-  }[];
-}
+import { decodeFieldValue } from "@/utils/templateFieldValue";
+import { ObservationDefinition } from "@/types/diagnosticReports";
 
 interface Props {
   observationDefinitions: ObservationDefinition[];
@@ -43,11 +39,19 @@ interface Props {
     index: number,
     value: string,
   ) => void;
+  // handleValueChange's own unit param only seeds a brand-new entry and
+  // no-ops otherwise, so this is the only reliable way to set a unit on an
+  // existing non-component field.
+  handleUnitChange?: (
+    definitionId: string,
+    index: number,
+    unit: string,
+  ) => void;
   disabled?: boolean;
 }
 
-// Template fields only store {code, value, description} — recover a human
-// display name for a code from the definition/component it belongs to.
+// Recovers a human display name for a code from the definition/component it
+// belongs to, since template fields only store the raw code.
 function displayForCode(
   definition: ObservationDefinition,
   code: string,
@@ -56,15 +60,16 @@ function displayForCode(
     return definition.title || definition.code?.display || code;
   }
   const component = (definition.component ?? []).find(
-    (c) => c.code.code === code,
+    (c) => c?.code?.code === code,
   );
-  return component?.code.display || code;
+  return component?.code?.display || code;
 }
 
 export default function ObservationTemplateOverride({
   observationDefinitions,
   handleComponentValueChange,
   handleValueChange,
+  handleUnitChange,
   disabled,
 }: Props) {
   const { t } = useTranslation(PLUGIN_SLUG);
@@ -85,9 +90,8 @@ export default function ObservationTemplateOverride({
   const [editDescription, setEditDescription] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Only title/description are selectable for edit — the backend's update
-  // endpoint (ObservationTemplateUpdateSpec) only accepts those two fields,
-  // so per-field value/description edits can't be persisted and aren't offered.
+  // Only title/description are editable — ObservationTemplateUpdateSpec
+  // doesn't accept field-level changes.
   const selectTemplate = (template: ObservationTemplate | null) => {
     setSelectedTemplate(template);
     setIsEditingTemplate(false);
@@ -95,11 +99,8 @@ export default function ObservationTemplateOverride({
     setEditDescription(template?.description ?? "");
   };
 
-  // Debounced, search-driven fetch: re-runs whenever the dialog opens for a
-  // definition or the search query changes. Server-side pagination defaults
-  // to 14 and hard-caps at 200 (CareLimitOffsetPagination), so rather than
-  // ever trying to load "all" templates, narrowing via `title` server-side
-  // is what actually scales past a handful of saved templates.
+  // Debounced, server-side search — pagination caps at 200
+  // (CareLimitOffsetPagination), so this scales better than loading "all".
   useEffect(() => {
     const definitionId = useTemplateFor?.id;
     if (!definitionId || !facilityId) return;
@@ -169,23 +170,29 @@ export default function ObservationTemplateOverride({
     definition: ObservationDefinition,
     template: ObservationTemplate,
   ) => {
+    const definitionId = definition.id;
+    if (!definitionId) return;
+
     const componentCodes = new Set(
-      (definition.component ?? []).map((c) => c.code.code),
+      (definition.component ?? [])
+        .map((c) => c.code?.code)
+        .filter((code): code is string => !!code),
     );
     const hasComponents = componentCodes.size > 0;
     for (const field of template.fields) {
+      const { value, unit } = decodeFieldValue(field.value);
       if (componentCodes.has(field.code)) {
         handleComponentValueChange(
-          definition.id,
+          definitionId,
           0,
           field.code,
-          field.value ?? "",
-          "",
+          value,
+          unit ?? "",
         );
       } else if (!hasComponents) {
-        // Matches care_fe: a definition with components has no top-level
-        // value to write to, so a stray non-component field is ignored.
-        handleValueChange(definition.id, 0, field.value ?? "");
+        // A definition with components has no top-level value to write to.
+        handleValueChange(definitionId, 0, value);
+        if (unit) handleUnitChange?.(definitionId, 0, unit);
       }
     }
     toast.success(t("radiology_template_applied"));
@@ -203,36 +210,43 @@ export default function ObservationTemplateOverride({
               </Label>
             </div>
             <div className="flex flex-col gap-2">
-              {observationDefinitions.map((definition) => (
-                <div
-                  key={definition.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 bg-gray-100/50"
-                >
-                  <span className="text-sm font-medium text-gray-700 truncate">
-                    {definition.title ||
-                      definition.code?.display ||
-                      t("radiology_observation")}
-                  </span>
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      disabled={disabled}
-                      onClick={() => openUseTemplate(definition)}
-                    >
-                      <ClipboardList className="size-4" />
-                      {t("radiology_use_template")}
-                    </Button>
+              {observationDefinitions.map((definition) => {
+                if (
+                  definition.category !==
+                  DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY
+                ) {
+                  return null;
+                }
+                return (
+                  <div
+                    key={definition.id}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 bg-gray-100/50"
+                  >
+                    <span className="text-sm font-medium text-gray-700 truncate">
+                      {definition.title ||
+                        definition.code?.display ||
+                        t("radiology_observation")}
+                    </span>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        disabled={disabled}
+                        onClick={() => openUseTemplate(definition)}
+                      >
+                        <ClipboardList className="size-4" />
+                        {t("radiology_use_template")}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Use Template dialog */}
       <Dialog
         open={!!useTemplateFor}
         onOpenChange={(open) => !open && setUseTemplateFor(null)}
@@ -246,7 +260,6 @@ export default function ObservationTemplateOverride({
           </DialogHeader>
 
           <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
-            {/* Template list */}
             <div className="w-72 shrink-0 h-full flex flex-col border-r border-gray-100 pr-4">
               <div className="p-1.5 shrink-0">
                 <Input
@@ -301,7 +314,6 @@ export default function ObservationTemplateOverride({
               </ScrollArea>
             </div>
 
-            {/* Preview */}
             <div className="flex-1 min-w-0 h-full flex flex-col">
               {selectedTemplate ? (
                 <>
@@ -366,25 +378,32 @@ export default function ObservationTemplateOverride({
 
                   <ScrollArea className="flex-1 min-h-0 px-1.5">
                     <div className="space-y-2 py-1">
-                      {selectedTemplate.fields.map((field) => (
-                        <div
-                          key={field.code}
-                          className="rounded-md bg-gray-50 p-3 space-y-1"
-                        >
-                          <p className="text-sm font-medium text-gray-900">
-                            {useTemplateFor &&
-                              displayForCode(useTemplateFor, field.code)}
-                          </p>
-                          {field.description && (
-                            <p className="text-sm text-gray-500 break-words">
-                              {field.description}
+                      {selectedTemplate.fields.map((field) => {
+                        const { value, unit } = decodeFieldValue(field.value);
+                        return (
+                          <div
+                            key={field.code}
+                            className="rounded-md bg-gray-50 p-3 space-y-1"
+                          >
+                            <p className="text-sm font-medium text-gray-900">
+                              {useTemplateFor &&
+                                displayForCode(useTemplateFor, field.code)}
                             </p>
-                          )}
-                          <p className="text-sm text-gray-700 break-words">
-                            {field.value || "-"}
-                          </p>
-                        </div>
-                      ))}
+                            {field.description && (
+                              <p className="text-sm text-gray-500 break-words">
+                                {field.description}
+                              </p>
+                            )}
+                            <p className="text-sm text-gray-700 break-words">
+                              {value
+                                ? unit
+                                  ? `${value} ${unit}`
+                                  : value
+                                : "-"}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 </>
