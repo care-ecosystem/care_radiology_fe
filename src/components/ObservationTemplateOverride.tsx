@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apis, ObservationTemplate } from "@/apis";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -87,6 +87,13 @@ export default function ObservationTemplateOverride({
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+
+  // Read inside async callbacks after an await, where closed-over state/props
+  // would otherwise reflect the render the callback started in, not "now".
+  const selectedTemplateIdRef = useRef<string | null>(null);
+  selectedTemplateIdRef.current = selectedTemplate?.id ?? null;
+  const useTemplateForIdRef = useRef<string | undefined>(undefined);
+  useTemplateForIdRef.current = useTemplateFor?.id;
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Only title/description are editable — ObservationTemplateUpdateSpec
@@ -104,6 +111,7 @@ export default function ObservationTemplateOverride({
     const definitionId = useTemplateFor?.id;
     if (!definitionId || !facilityId) return;
     setLoadingTemplates(true);
+    let cancelled = false;
     const handle = setTimeout(async () => {
       try {
         const res = await apis.observationTemplate.fetchAll({
@@ -112,17 +120,22 @@ export default function ObservationTemplateOverride({
           title: searchQuery.trim() || undefined,
           limit: 50,
         });
+        if (cancelled) return;
         const results = res.results || [];
         setTemplates(results);
         selectTemplate(results[0] ?? null);
       } catch (err) {
+        if (cancelled) return;
         console.error("Failed to load observation templates", err);
         toast.error(t("radiology_failed_to_load_templates"));
       } finally {
-        setLoadingTemplates(false);
+        if (!cancelled) setLoadingTemplates(false);
       }
     }, 300);
-    return () => clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useTemplateFor?.id, searchQuery, facilityId]);
 
@@ -141,21 +154,25 @@ export default function ObservationTemplateOverride({
       toast.warning(t("radiology_please_enter_template_title"));
       return;
     }
+    const editingId = selectedTemplate.id;
+    const editingDefinitionId = useTemplateFor?.id;
     setSavingEdit(true);
     try {
-      const updated = await apis.observationTemplate.update(
-        selectedTemplate.id,
-        {
-          facility: facilityId,
-          title: editTitle.trim(),
-          description: editDescription.trim(),
-        },
-      );
+      const updated = await apis.observationTemplate.update(editingId, {
+        facility: facilityId,
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+      });
       setTemplates((prev) =>
         prev.map((tpl) => (tpl.id === updated.id ? updated : tpl)),
       );
-      setSelectedTemplate(updated);
-      setIsEditingTemplate(false);
+      const stillEditingSameOne =
+        selectedTemplateIdRef.current === editingId &&
+        useTemplateForIdRef.current === editingDefinitionId;
+      if (stillEditingSameOne) {
+        setSelectedTemplate(updated);
+        setIsEditingTemplate(false);
+      }
       toast.success(t("radiology_template_updated_successfully"));
     } catch (err) {
       console.error("Failed to update observation template", err);

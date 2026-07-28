@@ -348,7 +348,7 @@ export const apis = {
         params.activity_definition = query.activity_definition;
       }
       if (query.title) {
-        params.title = query.title;
+        params.title = encodeURIComponent(query.title);
       }
       if (query.limit) {
         params.limit = query.limit;

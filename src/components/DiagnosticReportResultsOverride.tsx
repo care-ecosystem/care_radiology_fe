@@ -214,18 +214,23 @@ export function DiagnosticReportResultsOverride({
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 px-1.5">
             <div className="space-y-2">
-              <Label>
+              <Label htmlFor="template-name">
                 {t("radiology_name")} <span className="text-red-500">*</span>
               </Label>
               <Input
+                id="template-name"
                 placeholder={t("radiology_enter_name")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("radiology_description")}</Label>
+              <Label htmlFor="template-description">
+                {t("radiology_description")}
+              </Label>
               <Input
+                id="template-description"
                 placeholder={t("radiology_description")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
