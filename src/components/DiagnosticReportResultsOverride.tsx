@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { apis, ObservationTemplateField } from "@/apis";
-import { DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY, PLUGIN_SLUG } from "@/constants";
+import {
+  DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
+  PLUGIN_SLUG,
+} from "@/constants";
 import {
   DiagnosticReportObservation,
   ObservationValue,
@@ -8,7 +11,6 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +34,6 @@ function getValueText(value: ObservationValue) {
 // templateFieldValue.ts), since ObservationTemplateData has no unit column.
 interface FieldRow extends ObservationTemplateField {
   display: string;
-  dataType?: string;
   unit?: string;
 }
 
@@ -45,13 +46,9 @@ function fieldRowsFromObservation(
   if (hasComponents) {
     return observation.component!.map((component) => {
       const code = component.code?.code ?? "";
-      const schema = definition?.component?.find(
-        (c) => c.code?.code === code,
-      );
       return {
         code,
         display: component.code?.display || code,
-        dataType: schema?.permitted_data_type,
         value: component.value?.value ?? "",
         unit: component.value?.unit?.code || component.value?.unit?.display,
         description: "",
@@ -63,7 +60,6 @@ function fieldRowsFromObservation(
     {
       code: definition?.code?.code ?? definition?.id ?? "",
       display: definition?.title || definition?.code?.display || "Value",
-      dataType: definition?.permitted_data_type,
       value: observation.value?.value ?? "",
       unit: observation.value?.unit?.code || observation.value?.unit?.display,
       description: "",
@@ -90,6 +86,7 @@ export function DiagnosticReportResultsOverride({
   const [description, setDescription] = useState("");
   const [fields, setFields] = useState<FieldRow[]>([]);
   const [saving, setSaving] = useState(false);
+  // const [isFieldsOpen, setIsFieldsOpen] = useState(false);
 
   if (!observations?.length) {
     return null;
@@ -100,21 +97,16 @@ export function DiagnosticReportResultsOverride({
     setTitle("");
     setDescription("");
     setFields(fieldRowsFromObservation(observation));
+    // setIsFieldsOpen(false);
   };
 
-  const updateFieldValue = (index: number, value: string) => {
-    setFields((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, value } : f)),
-    );
-  };
-
-  const updateFieldDescription = (index: number, fieldDescription: string) => {
-    setFields((prev) =>
-      prev.map((f, i) =>
-        i === index ? { ...f, description: fieldDescription } : f,
-      ),
-    );
-  };
+  // const updateFieldDescription = (index: number, fieldDescription: string) => {
+  //   setFields((prev) =>
+  //     prev.map((f, i) =>
+  //       i === index ? { ...f, description: fieldDescription } : f,
+  //     ),
+  //   );
+  // };
 
   const saveTemplate = async () => {
     if (!saveTemplateFor?.observation_definition?.id || !facilityId) return;
@@ -210,9 +202,11 @@ export function DiagnosticReportResultsOverride({
         open={!!saveTemplateFor}
         onOpenChange={(open) => !open && setSaveTemplateFor(null)}
       >
-        <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{t("radiology_save_as_observation_template")}</DialogTitle>
+            <DialogTitle>
+              {t("radiology_save_as_observation_template")}
+            </DialogTitle>
             <DialogDescription>
               {saveTemplateFor?.observation_definition?.title ||
                 saveTemplateFor?.observation_definition?.code?.display}
@@ -220,64 +214,72 @@ export function DiagnosticReportResultsOverride({
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 px-1.5">
             <div className="space-y-2">
-              <Label>{t("radiology_name")}</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Label>
+                {t("radiology_name")} <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                placeholder={t("radiology_enter_name")}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("radiology_description")}</Label>
               <Input
+                placeholder={t("radiology_description")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>{t("radiology_observation_data")}</Label>
-              <div className="rounded-md bg-gray-50 p-4 space-y-4">
-                {fields.map((field, index) => (
-                  <div key={field.code} className="space-y-2">
-                    <Label className="text-sm text-gray-700">
-                      {field.display}
-                    </Label>
-                    <Input
-                      className="bg-white"
-                      placeholder={t("radiology_field_description")}
-                      value={field.description ?? ""}
-                      onChange={(e) =>
-                        updateFieldDescription(index, e.target.value)
-                      }
-                    />
-                    {field.dataType === "text" ? (
-                      <Textarea
-                        className="bg-white min-h-20"
-                        placeholder={t("radiology_field_value")}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          updateFieldValue(index, e.target.value)
-                        }
-                      />
-                    ) : (
-                      <Input
-                        className="bg-white"
-                        type={
-                          field.dataType === "decimal" ||
-                          field.dataType === "integer"
-                            ? "number"
-                            : "text"
-                        }
-                        placeholder={t("radiology_field_value")}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          updateFieldValue(index, e.target.value)
-                        }
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Preview of template data */}
+
+            {/* <div className="rounded-md bg-gray-100">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between p-4"
+                onClick={() => setIsFieldsOpen((prev) => !prev)}
+              >
+                <Label className="cursor-pointer">
+                  {t("radiology_observation_data")}
+                </Label>
+                {isFieldsOpen ? (
+                  <ChevronUp className="size-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="size-4 text-gray-500" />
+                )}
+              </button>
+              {isFieldsOpen && (
+                <div className="px-4 pb-4">
+                  {fields.map((field, index) => (
+                    <div key={field.code}>
+                      {index > 0 && (
+                        <Separator className="my-4" style={{ height: 1 }} />
+                      )}
+                      <div className="space-y-1.5">
+                        <p className="text-sm text-gray-700">
+                          {field.display}
+                        </p>
+                        <Input
+                          className="bg-white"
+                          placeholder={t("radiology_field_description")}
+                          value={field.description ?? ""}
+                          onChange={(e) =>
+                            updateFieldDescription(index, e.target.value)
+                          }
+                        />
+                        <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">
+                          {field.value || "-"}
+                          {field.unit && <span> {field.unit}</span>}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div> */}
           </div>
-          <DialogFooter className="border-t border-gray-100 pt-4">
+          <DialogFooter className="pt-4">
             <Button
               type="button"
               variant="outline"
@@ -290,6 +292,7 @@ export function DiagnosticReportResultsOverride({
               variant="primary"
               onClick={saveTemplate}
               loading={saving}
+              disabled={!title.trim()}
             >
               {t("radiology_save")}
             </Button>

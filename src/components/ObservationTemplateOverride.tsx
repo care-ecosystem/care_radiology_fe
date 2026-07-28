@@ -4,7 +4,6 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -317,34 +316,30 @@ export default function ObservationTemplateOverride({
             <div className="flex-1 min-w-0 h-full flex flex-col">
               {selectedTemplate ? (
                 <>
-                  <div className="flex items-start justify-between gap-3 px-1.5 pb-3 shrink-0">
-                    {isEditingTemplate ? (
-                      <div className="flex-1 space-y-2">
+                  {isEditingTemplate ? (
+                    <div className="space-y-3 px-1.5 pb-3 shrink-0">
+                      <div className="space-y-2">
+                        <Label>
+                          {t("radiology_name")}{" "}
+                          <span className="text-red-500">*</span>
+                        </Label>
                         <Input
+                          placeholder={t("radiology_enter_name")}
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
                         />
-                        <Textarea
-                          className="min-h-16"
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t("radiology_description")}</Label>
+                        <Input
                           placeholder={t("radiology_description")}
                           value={editDescription}
-                          onChange={(e) => setEditDescription(e.target.value)}
+                          onChange={(e) =>
+                            setEditDescription(e.target.value)
+                          }
                         />
                       </div>
-                    ) : (
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {selectedTemplate.title}
-                        </p>
-                        {selectedTemplate.description && (
-                          <p className="text-sm text-gray-500">
-                            {selectedTemplate.description}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {isEditingTemplate ? (
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex justify-end gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -359,11 +354,24 @@ export default function ObservationTemplateOverride({
                           size="sm"
                           onClick={saveTemplateEdit}
                           loading={savingEdit}
+                          disabled={!editTitle.trim()}
                         >
                           {t("radiology_update")}
                         </Button>
                       </div>
-                    ) : (
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3 px-1.5 pb-3 shrink-0">
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedTemplate.title}
+                        </p>
+                        {selectedTemplate.description && (
+                          <p className="text-sm text-gray-500">
+                            {selectedTemplate.description}
+                          </p>
+                        )}
+                      </div>
                       <Button
                         type="button"
                         variant="ghost"
@@ -373,8 +381,8 @@ export default function ObservationTemplateOverride({
                       >
                         <Pencil className="size-4" />
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <ScrollArea className="flex-1 min-h-0 px-1.5">
                     <div className="space-y-2 py-1">
@@ -428,7 +436,7 @@ export default function ObservationTemplateOverride({
             <Button
               type="button"
               variant="primary"
-              disabled={!selectedTemplate}
+              disabled={!selectedTemplate || isEditingTemplate}
               onClick={() =>
                 useTemplateFor &&
                 selectedTemplate &&
