@@ -29,6 +29,22 @@ export interface ScanProtocol {
   coding: Coding[];
 }
 
+export interface ObservationTemplateField {
+  code: string;
+  value: string | null;
+  description?: string | null;
+}
+
+export interface ObservationTemplate {
+  id: string;
+  title: string;
+  description?: string | null;
+  facility: string;
+  observation_definition: string;
+  activity_definition?: string | null;
+  fields: ObservationTemplateField[];
+}
+
 // FIXME: Move all the api specific types to a ./types.ts file
 
 export const apis = {
@@ -313,6 +329,65 @@ export const apis = {
         method: "POST",
         body: JSON.stringify({ count, search }),
       });
+    },
+  },
+
+  observationTemplate: {
+    fetchAll: async (query: {
+      facility: string;
+      observation_definition: string;
+      activity_definition?: string;
+      title?: string;
+      limit?: number;
+    }): Promise<PaginatedResponse<ObservationTemplate>> => {
+      const params: Record<string, string | number> = {
+        facility: query.facility,
+        observation_definition: query.observation_definition,
+      };
+      if (query.activity_definition) {
+        params.activity_definition = query.activity_definition;
+      }
+      if (query.title) {
+        params.title = encodeURIComponent(query.title);
+      }
+      if (query.limit) {
+        params.limit = query.limit;
+      }
+      return await request<PaginatedResponse<ObservationTemplate>>(
+        `/api/care_radiology/observation_template/${queryString(params)}`,
+      );
+    },
+
+    create: async (payload: {
+      facility: string;
+      observation_definition: string;
+      activity_definition?: string;
+      title: string;
+      description?: string;
+      fields: ObservationTemplateField[];
+    }): Promise<ObservationTemplate> => {
+      return await request<ObservationTemplate>(
+        "/api/care_radiology/observation_template/",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+    },
+
+    update: async (
+      id: string,
+      payload: { facility: string; title: string; description?: string },
+    ): Promise<ObservationTemplate> => {
+      return await request<ObservationTemplate>(
+        `/api/care_radiology/observation_template/${id}/${queryString({
+          facility: payload.facility,
+        })}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        },
+      );
     },
   },
 

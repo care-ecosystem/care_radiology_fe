@@ -1,5 +1,22 @@
 import { CARE_ACCESS_TOKEN_LOCAL_STORAGE_KEY } from "@/constants";
 
+// Mirrors care_fe's errorHandler.ts handlePydanticErrors: EMR resources
+// serialize validation errors as {errors: [{type, loc?, msg}]}, where msg is
+// either a plain string or a {field: message} object.
+function extractErrorMessage(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const { detail, errors } = data as Record<string, unknown>;
+  if (typeof detail === "string") return detail;
+  const firstError = Array.isArray(errors) ? errors[0] : null;
+  const msg = firstError?.msg;
+  if (typeof msg === "string") return msg;
+  if (msg && typeof msg === "object") {
+    const value = Object.values(msg)[0];
+    if (typeof value === "string") return value;
+  }
+  return null;
+}
+
 export class APIError extends Error {
   message: string;
   data: unknown;
@@ -43,7 +60,7 @@ export async function request<Response>(
 
   let data = null;
   const contentType = response.headers.get("Content-Type");
-  if (contentType === "application/json") {
+  if (contentType?.includes("application/json")) {
     data = await response.json();
   } else if (contentType === "image/png") {
     data = await response.blob();
@@ -55,7 +72,8 @@ export async function request<Response>(
     }
 
     throw new APIError(
-      (data.detail ?? JSON.stringify(data)) || "Something went wrong",
+      extractErrorMessage(data) ??
+        (data ? JSON.stringify(data) : "Something went wrong"),
       data,
       response.status
     );
