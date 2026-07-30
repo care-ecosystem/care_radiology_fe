@@ -80,6 +80,13 @@ export function DiagnosticReportResultsOverride({
     () => window.location.pathname.match(/\/facility\/([^/]+)/)?.[1],
     [],
   );
+  const isServiceRequestPage = useMemo(
+    () =>
+      /^\/facility\/[^/]+\/(?:locations\/[^/]+\/)?service_requests\/[^/]+$/.test(
+        window.location.pathname,
+      ),
+    [],
+  );
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
@@ -167,17 +174,19 @@ export function DiagnosticReportResultsOverride({
                 {observation.observation_definition?.title ||
                   observation.observation_definition?.code?.display}
               </span>
-              {facilityId && observation.observation_definition?.id && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openSaveTemplate(observation)}
-                >
-                  <Plus className="size-4" />
-                  {t("radiology_save_as_observation_template")}
-                </Button>
-              )}
+              {isServiceRequestPage &&
+                facilityId &&
+                observation.observation_definition?.id && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openSaveTemplate(observation)}
+                  >
+                    <Plus className="size-4" />
+                    {t("radiology_save_as_observation_template")}
+                  </Button>
+                )}
             </div>
 
             {!hasComponents && (

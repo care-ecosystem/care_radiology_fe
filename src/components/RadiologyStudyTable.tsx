@@ -1,6 +1,6 @@
 import { DicomStudy } from "@/types/Dicom";
-import { FC, useMemo, useState, useEffect } from "react";
-import DicomViewer from "./DicomViewer";
+import { FC, useMemo, useState } from "react";
+import { PlugConfigMeta } from "@/types/plugin";
 import {
   Table,
   TableBody,
@@ -32,7 +32,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
 
   const [showModal, setShowModal] = useState(false);
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
-  const [viewerStudyUid, setViewerStudyUid] = useState<string | null>(null);
 
   const [showPreviewPanel, setShowPreviewPanel] = useState(false);
 
@@ -94,7 +93,18 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
 
 
   const handleViewStudy = (studyUid: string) => {
-    setViewerStudyUid(studyUid);
+    // Token auth is currently a no-op backend-side (auth_request disabled in nginx),
+    // so it's commented out here. Re-enable if DICOMweb auth is enforced again.
+    // const { access: token } = await queryClient.ensureQueryData<{ access: string }>({
+    //   queryKey: ["user-refresh-token"],
+    // });
+    const meta = window.__CARE_PLUGIN_RUNTIME__?.meta[PLUGIN_SLUG] as PlugConfigMeta;
+    const ohifBaseUrl = meta?.radiologyViewerBaseUrl || "";
+    window.open(
+      `${ohifBaseUrl}/viewer?StudyInstanceUIDs=${studyUid}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   const handleNewReportClick = (studyId: string) => {
@@ -179,17 +189,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
         </Table>
       </div>
 
-      {viewerStudyUid && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[95vh] overflow-auto">
-            <DicomViewer
-              studyUid={viewerStudyUid}
-              embedded
-              onClose={() => setViewerStudyUid(null)}
-            />
-          </div>
-        </div>
-      )}
 
       {showPreviewPanel && previewStudyId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
