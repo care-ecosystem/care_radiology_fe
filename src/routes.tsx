@@ -23,8 +23,17 @@ const routes = {
     ),
   // willberemovedlater
   "/facility/:facilityId/service_requests/:serviceRequestId/radiology/view/:studyid":
-    ({ studyid }: { studyid: string }) => (
-      <DicomViewer studyUid={studyid}></DicomViewer>
+    ({
+      serviceRequestId,
+      studyid,
+    }: {
+      serviceRequestId: string;
+      studyid: string;
+    }) => (
+      <DicomViewer
+        serviceRequestId={serviceRequestId}
+        studyUid={studyid}
+      ></DicomViewer>
     ),
   // willberemovedlater
   "/facility/:facilityId/service_requests/:serviceRequestId/radiology/report/:studyid":
@@ -48,12 +57,6 @@ const routes = {
     ({ studyid }: { studyid: string }) => (
       <StudyReportPreview studyUid={studyid}></StudyReportPreview>
     ),
-  // willberemovedlater
-  /* "/facility/:facilityId/services_requests/radiology/view/:studyid": (
-      { studyid }: { studyid: string }
-    ) => (
-      <DicomViewer studyUid={studyid}></DicomViewer>
-    ), */
 };
 
 export default routes;

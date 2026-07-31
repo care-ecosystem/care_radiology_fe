@@ -93,15 +93,8 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
 
 
   const handleViewStudy = (studyUid: string) => {
-    // Token auth is currently a no-op backend-side (auth_request disabled in nginx),
-    // so it's commented out here. Re-enable if DICOMweb auth is enforced again.
-    // const { access: token } = await queryClient.ensureQueryData<{ access: string }>({
-    //   queryKey: ["user-refresh-token"],
-    // });
-    const meta = window.__CARE_PLUGIN_RUNTIME__?.meta[PLUGIN_SLUG] as PlugConfigMeta;
-    const ohifBaseUrl = meta?.radiologyViewerBaseUrl || "";
     window.open(
-      `${ohifBaseUrl}/viewer?StudyInstanceUIDs=${studyUid}`,
+      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`,
       "_blank",
       "noopener,noreferrer"
     );
