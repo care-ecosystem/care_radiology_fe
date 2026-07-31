@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { apis, ObservationTemplate } from "@/apis";
 import { APIError } from "@/apis/request";
+import { ServiceRequest } from "@/types/ServiceRequest";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -20,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
   PLUGIN_SLUG,
+  SERVICE_REQUEST_OVERRIDE_CATEGORY,
 } from "@/constants";
 import { ClipboardList, Pencil } from "lucide-react";
 import { decodeFieldValue } from "@/utils/templateFieldValue";
@@ -77,6 +80,17 @@ export default function ObservationTemplateOverride({
     () => window.location.pathname.match(/\/facility\/([^/]+)/)?.[1],
     [],
   );
+  const serviceRequestId = useMemo(
+    () =>
+      window.location.pathname.match(/\/service_requests\/([^/]+)/)?.[1],
+    [],
+  );
+
+  const { data: serviceRequestDetail } = useQuery<ServiceRequest>({
+    queryKey: ["serviceRequestDetail", facilityId, serviceRequestId],
+    queryFn: () => apis.servicerequest.retrieve(facilityId!, serviceRequestId!),
+    enabled: !!facilityId && !!serviceRequestId,
+  });
 
   const [useTemplateFor, setUseTemplateFor] =
     useState<ObservationDefinition | null>(null);
@@ -152,6 +166,9 @@ export default function ObservationTemplateOverride({
   }, [useTemplateFor?.id, searchQuery, facilityId]);
 
   if (!facilityId || !observationDefinitions?.length) return null;
+  if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
+    return null;
+  }
 
   const openUseTemplate = (definition: ObservationDefinition) => {
     bumpSelectionToken();
