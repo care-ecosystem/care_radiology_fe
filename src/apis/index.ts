@@ -1,23 +1,9 @@
 import { queryString, request } from "./request";
 import { PaginatedResponse } from "./types";
-// FIXME: Move all the api specific types to a ./types.ts file
-export interface ObservationTemplateField {
-  code: string;
-  value: string | null;
-  description?: string | null;
-}
-
-export interface ObservationTemplate {
-  id: string;
-  title: string;
-  description?: string | null;
-  facility: string;
-  observation_definition: string;
-  activity_definition?: string | null;
-  fields: ObservationTemplateField[];
-}
-
-// FIXME: Move all the api specific types to a ./types.ts file
+import {
+  ObservationTemplate,
+  ObservationTemplateField,
+} from "@/types/observationTemplate";
 
 export const apis = {
   dicom: {

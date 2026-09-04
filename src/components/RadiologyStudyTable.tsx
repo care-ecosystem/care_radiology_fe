@@ -1,4 +1,4 @@
-import { DicomStudy } from "@/types/Dicom";
+import { DicomStudy } from "@/types/dicom";
 import { FC, useMemo, useState } from "react";
 import {
   Table,

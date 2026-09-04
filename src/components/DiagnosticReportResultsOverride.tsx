@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { apis, ObservationTemplateField } from "@/apis";
+import { apis } from "@/apis";
+import { ObservationTemplateField } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,

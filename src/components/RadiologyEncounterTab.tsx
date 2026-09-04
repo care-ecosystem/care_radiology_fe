@@ -1,5 +1,5 @@
 import { FC, useState } from "react";
-import { EncounterTabProps } from "../types/EncouterTab";
+import { EncounterTabProps } from "../types/encounterTab";
 import { useTranslation } from "react-i18next";
 import { Button } from "./ui/button";
 import { Plus, Search } from "lucide-react";
@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { Card, CardContent } from "./ui/card";
 import RadiologyStudyTable from "./RadiologyStudyTable";
-import { DicomStudy } from "@/types/Dicom";
+import { DicomStudy } from "@/types/dicom";
 import { PLUGIN_SLUG } from "@/constants";
 
 export const RadiologyEncounterTab: FC<EncounterTabProps> = ({

@@ -6,7 +6,7 @@ import DicomUploader from "./DicomUploader";
 import { Card, CardContent } from "./ui/card";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Label } from "@radix-ui/react-label";
-import { RadiologyServiceRequest, ServiceRequest } from "@/types/ServiceRequest";
+import { RadiologyServiceRequest, ServiceRequest } from "@/types/serviceRequest";
 import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";

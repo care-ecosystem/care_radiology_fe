@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
 import { PlugConfigMeta } from "@/types/plugin";
 import { apis } from "@/apis";
-import { RadiologyServiceRequest } from "@/types/ServiceRequest";
+import { RadiologyServiceRequest } from "@/types/serviceRequest";
 
 export default function DicomViewer({
   serviceRequestId,

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apis, ObservationTemplate } from "@/apis";
+import { apis } from "@/apis";
+import { ObservationTemplate } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
-import { ServiceRequest } from "@/types/ServiceRequest";
+import { ServiceRequest } from "@/types/serviceRequest";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";

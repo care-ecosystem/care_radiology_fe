@@ -1,6 +1,6 @@
-import { DicomStudy } from "./Dicom";
+import { DicomStudy } from "./dicom";
 import { Encounter } from "./encounter";
-import { User } from "./User";
+import { User } from "./user";
 
 export interface Coding {
   code: string;
