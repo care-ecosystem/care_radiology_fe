@@ -72,7 +72,7 @@ export default function DicomUploader({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.status !== "pending") continue;
+      if (file.status !== "pending" && file.status !== "failed") continue;
       setFileStatus(i, { status: "uploading" });
 
       const formData = new FormData();
@@ -113,12 +113,15 @@ export default function DicomUploader({
             service_request_id: serviceRequestId,
           });
         }
-        setUploadDone(true);
         onUploadSuccess?.();
         toast.success(t("dicom_files_uploaded_successfully"));
       } catch (_) {
         toast.error(t("dicom_failed_to_link_study"));
       }
+    }
+
+    if (counts.failed === 0) {
+      setUploadDone(true);
     }
 
     setIsUploading(false);
@@ -267,7 +270,10 @@ export default function DicomUploader({
               <Button
                 onClick={handleSave}
                 disabled={
-                  isUploading || files.every((f) => f.status !== "pending")
+                  isUploading ||
+                  files.every(
+                    (f) => f.status !== "pending" && f.status !== "failed",
+                  )
                 }
                 size="sm"
                 className="min-w-[100px]"
