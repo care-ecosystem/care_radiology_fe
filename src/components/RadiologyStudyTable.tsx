@@ -59,10 +59,12 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-100">
-              <TableHead>Study Name</TableHead>
-              <TableHead>Study Date</TableHead>
-              <TableHead>Study Modality</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("radiology_study_name")}</TableHead>
+              <TableHead>{t("radiology_study_date")}</TableHead>
+              <TableHead>{t("radiology_study_modality")}</TableHead>
+              <TableHead className="text-right">
+                {t("radiology_actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -95,7 +97,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
                       className="text-xs h-auto py-1 px-2"
                     >
                       <Info size={16} className="mr-1" />
-                      Info
+                      {t("radiology_info")}
                     </Button>
                   </div>
                 </TableCell>
@@ -143,7 +145,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No series found</p>
+                  <p className="text-gray-500 text-sm">
+                    {t("radiology_no_series_found")}
+                  </p>
                 )}
               </div>
             </>

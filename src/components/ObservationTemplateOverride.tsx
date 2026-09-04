@@ -153,10 +153,8 @@ export default function ObservationTemplateOverride({
     );
   }, [templatesError, t]);
 
-  // Re-selects the first result once data arrives for a NEW search identity
-  // (definition/search text). Gated on identity, not just on `templatesData`
-  // changing, so an in-place cache patch (e.g. updateTemplateMutation editing
-  // a non-first template) doesn't re-trigger this and stomp that selection.
+  // Gated on identity, not just `templatesData`, so an in-place cache patch
+  // (e.g. an edit) doesn't re-trigger this and stomp the selection.
   const autoSelectedKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!templatesData) return;

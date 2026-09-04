@@ -64,7 +64,7 @@ export default function DicomViewer({
     if (ref.current) ref.current.requestFullscreen();
   };
 
-  if (!iframeUrl) return <div>Please Wait...</div>;
+  if (!iframeUrl) return <div>{t("radiology_please_wait")}</div>;
 
   return (
     <div id="dicom-viewer-page" className="flex flex-col bg-white rounded-lg overflow-hidden">
@@ -86,14 +86,14 @@ export default function DicomViewer({
               goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
             }}
           >
-            Fullscreen
+            {t("radiology_fullscreen")}
           </Button>
           <Button
             variant={"outline"}
             color={"red"}
             onClick={() => window.close()}
           >
-            Close
+            {t("radiology_close")}
           </Button>
         </div>
       </div>

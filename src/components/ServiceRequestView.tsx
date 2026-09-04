@@ -73,7 +73,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
             <div className="grid gap-4">
               <div className="flex justify-between items-start">
                 <Label className="text-base font-semibold text-gray-950">
-                  Radiology Studies
+                  {t("radiology_studies")}
                 </Label>
                 <Button
                   variant="primary"
@@ -96,7 +96,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
               <div className="flex flex-col gap-4 items-center">
                 <div className="text-center">
                   <Label className="text-base font-semibold text-gray-950">
-                    Upload DICOM files
+                    {t("dicom_upload_files_heading")}
                   </Label>
                   <p className="mt-2 text-sm text-gray-500">
                     {t("service_request_dicom_no_studies_found")}

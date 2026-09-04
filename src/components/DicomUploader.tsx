@@ -95,7 +95,12 @@ export default function DicomUploader({
     }
 
     if (counts.failed) {
-      toast.error(`${counts.failed} files failed. ${counts.success} uploaded.`);
+      toast.error(
+        t("dicom_upload_summary_failed", {
+          failed: counts.failed,
+          success: counts.success,
+        }),
+      );
     }
 
     if (uploadedStudyUid) {
@@ -108,9 +113,9 @@ export default function DicomUploader({
         }
         setUploadDone(true);
         onUploadSuccess?.();
-        toast.success("Files uploaded successfully");
+        toast.success(t("dicom_files_uploaded_successfully"));
       } catch (_) {
-        toast.error("Failed to link study to the service request.");
+        toast.error(t("dicom_failed_to_link_study"));
       }
     }
 
@@ -151,7 +156,7 @@ export default function DicomUploader({
             >
               <div className="flex items-center gap-2">
                 <FolderPlus className="h-4 w-4" />
-                Upload Folder
+                {t("dicom_upload_folder")}
               </div>
             </Button>
             <input
@@ -172,7 +177,7 @@ export default function DicomUploader({
             >
               <div className="flex items-center gap-2">
                 <FilePlus className="h-4 w-4" />
-                Upload Files
+                {t("dicom_upload_files_button")}
               </div>
             </Button>
             <input
@@ -202,25 +207,25 @@ export default function DicomUploader({
               <div className="mb-4 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-700 font-bold">
                 {uploadedCount > 0 && (
                   <span className="text-green-600">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    {uploadedCount} uploaded.{" "}
+                    {t("dicom_files_uploaded_count", { count: uploadedCount })}{" "}
                   </span>
                 )}
                 {failedCount > 0 && (
                   <span className="text-red-500">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    {failedCount} failed.{" "}
+                    {t("dicom_files_failed_count", { count: failedCount })}{" "}
                   </span>
                 )}
                 {pendingCount > 0 && !isUploading && (
                   <span className="text-gray-500">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    {files.length} ready for upload.
+                    {t("dicom_files_ready_count", { count: files.length })}
                   </span>
                 )}
                 {isUploading && (
                   <span className="text-blue-600">
-                    Uploading... {uploadedCount + failedCount} / {files.length}
+                    {t("dicom_uploading_progress", {
+                      current: uploadedCount + failedCount,
+                      total: files.length,
+                    })}
                   </span>
                 )}
               </div>
@@ -265,7 +270,7 @@ export default function DicomUploader({
                 size="sm"
                 className="min-w-[100px]"
               >
-                {isUploading ? "Uploading..." : baseTranslate("upload")}
+                {isUploading ? t("dicom_uploading") : baseTranslate("upload")}
               </Button>
             )}
           </div>
