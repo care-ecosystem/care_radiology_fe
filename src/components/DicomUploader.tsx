@@ -61,6 +61,7 @@ export default function DicomUploader({
       status: "pending" as FileStatus,
     }));
     setFiles((prev) => [...prev, ...dicomFiles]);
+    setUploadDone(false);
   };
 
   const handleSave = async () => {

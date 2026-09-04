@@ -188,6 +188,10 @@ export default function ObservationTemplateOverride({
             ),
           },
       );
+      // Invalidate so the active search re-fetches
+      queryClient.invalidateQueries({
+        queryKey: templatesQueryKey(vars.definitionId),
+      });
     },
   });
 
