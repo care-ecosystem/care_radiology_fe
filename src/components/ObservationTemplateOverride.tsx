@@ -198,6 +198,10 @@ export default function ObservationTemplateOverride({
 
   const openUseTemplate = (definition: ObservationDefinition) => {
     bumpSelectionToken();
+    // Closing clears `definitionId` to a never-fetched key, so the effect's
+    // `!templatesData` guard skips updating this ref — it can still hold a
+    // stale match from before close. Reset here so every open reselects.
+    autoSelectedKeyRef.current = null;
     setUseTemplateFor(definition);
     setSearchQuery("");
     selectTemplate(null);
