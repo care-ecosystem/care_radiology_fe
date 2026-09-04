@@ -153,13 +153,16 @@ export default function ObservationTemplateOverride({
     );
   }, [templatesError, t]);
 
-  // Gated on identity, not just `templatesData`, so an in-place cache patch
-  // (e.g. an edit) doesn't re-trigger this and stomp the selection.
+  // Reselects on a new definition/search key, or if the selection got filtered out by an edit.
   const autoSelectedKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!templatesData) return;
     const key = `${definitionId ?? ""}::${searchQuery}`;
-    if (autoSelectedKeyRef.current === key) return;
+    const isNewKey = autoSelectedKeyRef.current !== key;
+    const selectionDropped =
+      !!selectedTemplate &&
+      !templatesData.results.some((tpl) => tpl.id === selectedTemplate.id);
+    if (!isNewKey && !selectionDropped) return;
     autoSelectedKeyRef.current = key;
     selectTemplate(templatesData.results[0] ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps

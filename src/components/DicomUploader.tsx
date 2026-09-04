@@ -72,6 +72,7 @@ export default function DicomUploader({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (file.status !== "pending") continue;
       setFileStatus(i, { status: "uploading" });
 
       const formData = new FormData();
@@ -218,7 +219,7 @@ export default function DicomUploader({
                 )}
                 {pendingCount > 0 && !isUploading && (
                   <span className="text-gray-500">
-                    {t("dicom_files_ready_count", { count: files.length })}
+                    {t("dicom_files_ready_count", { count: pendingCount })}
                   </span>
                 )}
                 {isUploading && (
