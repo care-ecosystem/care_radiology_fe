@@ -12,5 +12,4 @@ export interface DicomSeries {
   series_number: string;
   series_instance_count: string;
   series_description: string;
-  series_protocol: string;
 }

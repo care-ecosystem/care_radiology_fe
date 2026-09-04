@@ -1,6 +1,3 @@
-// ObservationTemplateData has no unit column, so unit is encoded into the
-// same value string (JSON) when present. Plain non-JSON values are treated
-// as unitless, for templates saved before this existed.
 interface EncodedValue {
   v: string;
   u: string;

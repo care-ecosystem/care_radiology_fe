@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplate } from "@/types/observationTemplate";
+import { PaginatedResponse } from "@/apis/types";
 import { APIError } from "@/apis/request";
 import { ServiceRequest } from "@/types/serviceRequest";
+import { debounced } from "@/utils/query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,9 +45,6 @@ interface Props {
     index: number,
     value: string,
   ) => void;
-  // handleValueChange's own unit param only seeds a brand-new entry and
-  // no-ops otherwise, so this is the only reliable way to set a unit on an
-  // existing non-component field.
   handleUnitChange?: (
     definitionId: string,
     index: number,
@@ -54,8 +53,6 @@ interface Props {
   disabled?: boolean;
 }
 
-// Recovers a human display name for a code from the definition/component it
-// belongs to, since template fields only store the raw code.
 function displayForCode(
   definition: ObservationDefinition,
   code: string,
@@ -93,28 +90,22 @@ export default function ObservationTemplateOverride({
     enabled: !!facilityId && !!serviceRequestId,
   });
 
+  const queryClient = useQueryClient();
+
   const [useTemplateFor, setUseTemplateFor] =
     useState<ObservationDefinition | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [templates, setTemplates] = useState<ObservationTemplate[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
     useState<ObservationTemplate | null>(null);
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  // Bumped on every selection/dialog-open/close; an async edit captures it
-  // before awaiting and compares after, to detect a stale response.
   const selectionTokenRef = useRef(0);
   const bumpSelectionToken = () => {
     selectionTokenRef.current += 1;
   };
 
-  // Only title/description are editable — ObservationTemplateUpdateSpec
-  // doesn't accept field-level changes.
   const selectTemplate = (template: ObservationTemplate | null) => {
     bumpSelectionToken();
     setSelectedTemplate(template);
@@ -128,43 +119,79 @@ export default function ObservationTemplateOverride({
     setUseTemplateFor(null);
   };
 
-  // Debounced, server-side search — pagination caps at 200
-  // (CareLimitOffsetPagination), so this scales better than loading "all".
-  useEffect(() => {
-    const definitionId = useTemplateFor?.id;
-    if (!definitionId || !facilityId) return;
-    setLoadingTemplates(true);
-    let cancelled = false;
-    const handle = setTimeout(async () => {
-      try {
-        const res = await apis.observationTemplate.fetchAll({
-          facility: facilityId,
-          observation_definition: definitionId,
+  const definitionId = useTemplateFor?.id;
+  const templatesQueryKey = (defId: string | undefined) =>
+    ["observationTemplates", facilityId, defId] as const;
+
+  const {
+    data: templatesData,
+    isLoading: loadingTemplates,
+    error: templatesError,
+  } = useQuery<PaginatedResponse<ObservationTemplate>>({
+    queryKey: [...templatesQueryKey(definitionId), searchQuery],
+    queryFn: debounced(
+      () =>
+        apis.observationTemplate.fetchAll({
+          facility: facilityId!,
+          observation_definition: definitionId!,
           title: searchQuery.trim() || undefined,
           limit: 50,
-        });
-        if (cancelled) return;
-        const results = res.results || [];
-        setTemplates(results);
-        selectTemplate(results[0] ?? null);
-      } catch (err) {
-        if (cancelled) return;
-        console.error("Failed to load observation templates", err);
-        toast.error(
-          err instanceof APIError
-            ? err.message
-            : t("radiology_failed_to_load_templates"),
-        );
-      } finally {
-        if (!cancelled) setLoadingTemplates(false);
-      }
-    }, 300);
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
+        }),
+      300,
+    ),
+    enabled: !!facilityId && !!definitionId,
+  });
+  const templates = templatesData?.results ?? [];
+
+  useEffect(() => {
+    if (!templatesError) return;
+    console.error("Failed to load observation templates", templatesError);
+    toast.error(
+      templatesError instanceof APIError
+        ? templatesError.message
+        : t("radiology_failed_to_load_templates"),
+    );
+  }, [templatesError, t]);
+
+  // Re-selects the first result once data arrives for a NEW search identity
+  // (definition/search text). Gated on identity, not just on `templatesData`
+  // changing, so an in-place cache patch (e.g. updateTemplateMutation editing
+  // a non-first template) doesn't re-trigger this and stomp that selection.
+  const autoSelectedKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!templatesData) return;
+    const key = `${definitionId ?? ""}::${searchQuery}`;
+    if (autoSelectedKeyRef.current === key) return;
+    autoSelectedKeyRef.current = key;
+    selectTemplate(templatesData.results[0] ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useTemplateFor?.id, searchQuery, facilityId]);
+  }, [definitionId, searchQuery, templatesData]);
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: (vars: {
+      id: string;
+      definitionId: string;
+      title: string;
+      description: string;
+    }) =>
+      apis.observationTemplate.update(vars.id, {
+        facility: facilityId!,
+        title: vars.title,
+        description: vars.description,
+      }),
+    onSuccess: (updated, vars) => {
+      queryClient.setQueriesData<PaginatedResponse<ObservationTemplate>>(
+        { queryKey: templatesQueryKey(vars.definitionId) },
+        (old) =>
+          old && {
+            ...old,
+            results: old.results.map((tpl) =>
+              tpl.id === updated.id ? updated : tpl,
+            ),
+          },
+      );
+    },
+  });
 
   if (!facilityId || !observationDefinitions?.length) return null;
   if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
@@ -175,43 +202,41 @@ export default function ObservationTemplateOverride({
     bumpSelectionToken();
     setUseTemplateFor(definition);
     setSearchQuery("");
-    setTemplates([]);
     selectTemplate(null);
   };
 
-  const saveTemplateEdit = async () => {
-    if (!selectedTemplate) return;
+  const saveTemplateEdit = () => {
+    if (!selectedTemplate || !definitionId) return;
     if (!editTitle.trim()) {
       toast.warning(t("radiology_please_enter_template_title"));
       return;
     }
-    const editingId = selectedTemplate.id;
     const tokenAtStart = selectionTokenRef.current;
-    setSavingEdit(true);
-    try {
-      const updated = await apis.observationTemplate.update(editingId, {
-        facility: facilityId,
+    updateTemplateMutation.mutate(
+      {
+        id: selectedTemplate.id,
+        definitionId,
         title: editTitle.trim(),
         description: editDescription.trim(),
-      });
-      setTemplates((prev) =>
-        prev.map((tpl) => (tpl.id === updated.id ? updated : tpl)),
-      );
-      if (selectionTokenRef.current === tokenAtStart) {
-        setSelectedTemplate(updated);
-        setIsEditingTemplate(false);
-      }
-      toast.success(t("radiology_template_updated_successfully"));
-    } catch (err) {
-      console.error("Failed to update observation template", err);
-      toast.error(
-        err instanceof APIError
-          ? err.message
-          : t("radiology_failed_to_update_template"),
-      );
-    } finally {
-      setSavingEdit(false);
-    }
+      },
+      {
+        onSuccess: (updated) => {
+          if (selectionTokenRef.current === tokenAtStart) {
+            setSelectedTemplate(updated);
+            setIsEditingTemplate(false);
+          }
+          toast.success(t("radiology_template_updated_successfully"));
+        },
+        onError: (err) => {
+          console.error("Failed to update observation template", err);
+          toast.error(
+            err instanceof APIError
+              ? err.message
+              : t("radiology_failed_to_update_template"),
+          );
+        },
+      },
+    );
   };
 
   const applyTemplate = (
@@ -238,7 +263,6 @@ export default function ObservationTemplateOverride({
           unit ?? "",
         );
       } else if (!hasComponents) {
-        // A definition with components has no top-level value to write to.
         handleValueChange(definitionId, 0, value);
         if (unit) handleUnitChange?.(definitionId, 0, unit);
       }
@@ -402,7 +426,7 @@ export default function ObservationTemplateOverride({
                           variant="primary"
                           size="sm"
                           onClick={saveTemplateEdit}
-                          loading={savingEdit}
+                          loading={updateTemplateMutation.isPending}
                           disabled={!editTitle.trim()}
                         >
                           {t("radiology_update")}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplateField } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
@@ -94,7 +95,22 @@ export function DiagnosticReportResultsOverride({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fields, setFields] = useState<FieldRow[]>([]);
-  const [saving, setSaving] = useState(false);
+
+  const createTemplateMutation = useMutation({
+    mutationFn: apis.observationTemplate.create,
+    onSuccess: () => {
+      toast.success(t("radiology_template_saved_successfully!"));
+      setSaveTemplateFor(null);
+    },
+    onError: (err) => {
+      console.error("Failed to save observation template", err);
+      toast.error(
+        err instanceof APIError
+          ? err.message
+          : t("radiology_failed_to_save_template"),
+      );
+    },
+  });
 
   if (!observations?.length) {
     return null;
@@ -107,39 +123,25 @@ export function DiagnosticReportResultsOverride({
     setFields(fieldRowsFromObservation(observation));
   };
 
-  const saveTemplate = async () => {
+  const saveTemplate = () => {
     if (!saveTemplateFor?.observation_definition?.id || !facilityId) return;
     if (!title.trim()) {
       toast.warning(t("radiology_please_enter_template_title"));
       return;
     }
-    setSaving(true);
-    try {
-      await apis.observationTemplate.create({
-        facility: facilityId,
-        observation_definition: saveTemplateFor.observation_definition.id,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        fields: fields.map(
-          ({ code, value, unit, description: fieldDescription }) => ({
-            code,
-            value: encodeFieldValue(value ?? "", unit),
-            description: fieldDescription,
-          }),
-        ),
-      });
-      toast.success(t("radiology_template_saved_successfully!"));
-      setSaveTemplateFor(null);
-    } catch (err) {
-      console.error("Failed to save observation template", err);
-      toast.error(
-        err instanceof APIError
-          ? err.message
-          : t("radiology_failed_to_save_template"),
-      );
-    } finally {
-      setSaving(false);
-    }
+    createTemplateMutation.mutate({
+      facility: facilityId,
+      observation_definition: saveTemplateFor.observation_definition.id,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      fields: fields.map(
+        ({ code, value, unit, description: fieldDescription }) => ({
+          code,
+          value: encodeFieldValue(value ?? "", unit),
+          description: fieldDescription,
+        }),
+      ),
+    });
   };
 
   return (
@@ -255,7 +257,7 @@ export function DiagnosticReportResultsOverride({
               type="button"
               variant="primary"
               onClick={saveTemplate}
-              loading={saving}
+              loading={createTemplateMutation.isPending}
               disabled={!title.trim()}
             >
               {t("radiology_save")}
