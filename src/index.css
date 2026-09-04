@@ -1,5 +1,4 @@
 
-@import "quill/dist/quill.snow.css";
 @config '../tailwind.config.js';
 
 .radiology-container {
