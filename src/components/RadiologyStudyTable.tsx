@@ -1,6 +1,5 @@
 import { DicomStudy } from "@/types/Dicom";
 import { FC, useMemo, useState } from "react";
-import { PlugConfigMeta } from "@/types/plugin";
 import {
   Table,
   TableBody,
@@ -12,7 +11,6 @@ import {
 import { Eye, FileText, Info, X, FilePlusIcon } from "lucide-react";
 import { format } from "date-fns";
 import React from "react";
-// import { apis } from "@/apis";
 import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
 import DicomReport from "./DicomReport";
@@ -46,11 +44,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
   // Report creation modal state
   const [showReportCreationModal, setShowReportCreationModal] = useState(false);
   const [reportCreationStudyId, setReportCreationStudyId] = useState<string>("");
-
-  const handleReportSaved = () => {
-    refreshTableData?.();
-  };
-
 
   const handleInfoClick = async (study: DicomStudy) => {
     try {
