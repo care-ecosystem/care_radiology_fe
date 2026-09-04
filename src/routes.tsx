@@ -1,7 +1,5 @@
 import DicomUploader from "./components/DicomUploader";
 import DicomViewer from "./components/DicomViewer";
-import DicomReport from "./components/DicomReport";
-import StudyReportPreview from "./components/Study/StudyReportPreview";
 
 const routes = {
   // willberemovedlater
@@ -34,28 +32,6 @@ const routes = {
         serviceRequestId={serviceRequestId}
         studyUid={studyid}
       ></DicomViewer>
-    ),
-  // willberemovedlater
-  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/report/:studyid":
-    ({
-      facilityId,
-      serviceRequestId,
-      studyid,
-    }: {
-      facilityId: string;
-      serviceRequestId: string;
-      studyid: string;
-    }) => (
-      <DicomReport
-        facilityId={facilityId}
-        serviceRequestId={serviceRequestId}
-        studyUid={studyid}
-      ></DicomReport>
-    ),
-  // willberemovedlater
-  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/report/:studyid/preview":
-    ({ studyid }: { studyid: string }) => (
-      <StudyReportPreview studyUid={studyid}></StudyReportPreview>
     ),
 };
 

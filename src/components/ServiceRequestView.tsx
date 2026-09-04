@@ -83,10 +83,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
                   {t("dicom_upload_data")}
                 </Button>
               </div>
-              <RadiologyStudyTable 
-                studies={dicomStudies} 
-                refreshTableData={invalidateServiceRequestQueries} 
-              />
+              <RadiologyStudyTable studies={dicomStudies} />
             </div>
           </CardContent>
         </Card>
