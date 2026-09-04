@@ -5,7 +5,6 @@ export interface DicomStudy {
   study_description: string;
   study_modalities: string[];
   study_series: DicomSeries[];
-  has_report: boolean;
 }
 
 export interface DicomSeries {

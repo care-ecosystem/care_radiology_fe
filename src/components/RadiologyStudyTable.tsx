@@ -1,6 +1,5 @@
 import { DicomStudy } from "@/types/Dicom";
 import { FC, useMemo, useState } from "react";
-import { PlugConfigMeta } from "@/types/plugin";
 import {
   Table,
   TableBody,
@@ -9,48 +8,24 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Eye, FileText, Info, X, FilePlusIcon } from "lucide-react";
+import { Eye, Info, X } from "lucide-react";
 import { format } from "date-fns";
 import React from "react";
-// import { apis } from "@/apis";
 import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
-import DicomReport from "./DicomReport";
-import RadiologyReportPreview from "@/components/Study/RadiologyReportPreview";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent } from "./ui/dialog";
 
 
-type RadiologyStudyTableProps = { 
-  className?: string, 
+type RadiologyStudyTableProps = {
+  className?: string,
   studies?: DicomStudy[],
-  refreshTableData?: () => void 
 };
 
-export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, studies, refreshTableData }) => {
+export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, studies }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
 
   const [showModal, setShowModal] = useState(false);
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
-
-  const [showPreviewPanel, setShowPreviewPanel] = useState(false);
-
-  const [previewStudyId, setPreviewStudyId] = useState<string>("");
-
-  const [showEditReportModal, setShowEditReportModal] = useState(false);
-  const [editReportStudyId, setEditReportStudyId] = useState<string>("");
-  const [editReportId, setEditReportId] = useState<string>("");
-
-
-  
-  // Report creation modal state
-  const [showReportCreationModal, setShowReportCreationModal] = useState(false);
-  const [reportCreationStudyId, setReportCreationStudyId] = useState<string>("");
-
-  const handleReportSaved = () => {
-    refreshTableData?.();
-  };
-
 
   const handleInfoClick = async (study: DicomStudy) => {
     try {
@@ -72,26 +47,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
     };
   }, []);
 
-  const handlePreview = (studyId: string) => {
-    setPreviewStudyId(studyId);
-    setShowPreviewPanel(true);
-  }
-
-  const handleEditFromPreview = (studyId: string, reportId: string) => {
-    setShowPreviewPanel(false);
-    setPreviewStudyId("");
-    setEditReportStudyId(studyId);
-    setEditReportId(reportId);
-    setShowEditReportModal(true);
-  };
-
-  const handleCloseEditReportModal = () => {
-    setShowEditReportModal(false);
-    setEditReportStudyId("");
-    setEditReportId("");
-  };
-
-
   const handleViewStudy = (studyUid: string) => {
     window.open(
       `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`,
@@ -99,16 +54,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
       "noopener,noreferrer"
     );
   }
-
-  const handleNewReportClick = (studyId: string) => {
-    setReportCreationStudyId(studyId);
-    setShowReportCreationModal(true);
-  };
-
-  const handleCloseReportModal = () => {
-    setShowReportCreationModal(false);
-    setReportCreationStudyId("");
-  };
 
   return (
     <React.Fragment>
@@ -136,17 +81,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center justify-end flex-wrap">
-                    {study.has_report && 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePreview(study.external_id)}
-                        className="text-xs h-auto py-1 px-2"
-                      >
-                        <FileText size={16} className="mr-1" />
-                        View Report
-                      </Button>
-                    }             
                     <Button
                       variant="outline"
                       size="sm"
@@ -165,15 +99,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
                       <Info size={16} className="mr-1" />
                       Info
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleNewReportClick(study.external_id)}
-                      className="text-xs h-auto py-1 px-2"
-                    >
-                      <FilePlusIcon size={16} className="mr-1" />
-                      New Report
-                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -181,61 +106,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
           </TableBody>
         </Table>
       </div>
-
-
-      {showPreviewPanel && previewStudyId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
-            <RadiologyReportPreview
-              studyId={previewStudyId}
-              serviceRequestId={serviceRequestId}
-              facilityId={facilityId}
-              onClose={() => {
-                setShowPreviewPanel(false);
-                setPreviewStudyId("");
-              }}
-              onEdit={handleEditFromPreview}
-            />
-          </div>
-        </div>
-      )}
-
-      <Dialog open={showEditReportModal} onOpenChange={(open) => {
-        if (!open) {
-          handleCloseEditReportModal();
-        }
-      }}>
-        <DialogContent
-          className="max-w-6xl w-full h-[85vh] flex flex-col p-0 overflow-hidden gap-0"
-          hideCloseButton
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
-          {editReportStudyId && (
-            <DicomReport
-              facilityId={facilityId}
-              serviceRequestId={serviceRequestId}
-              studyUid={editReportStudyId}
-              reportId={editReportId}
-              onClose={() => {
-                setShowEditReportModal(false);
-                setEditReportStudyId("");
-                setEditReportId("");
-              }}
-              onSaveSuccess={refreshTableData}
-              onBack={() => {
-                setShowEditReportModal(false);
-                setEditReportStudyId("");
-                setEditReportId("");
-                
-                setTimeout(() => {
-                  setPreviewStudyId(editReportStudyId);
-                  setShowPreviewPanel(true);
-                }, 300); 
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {showModal && selectedStudy && (
         <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -281,21 +151,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({ className, s
                 <p className="text-gray-500 text-sm">No series found</p>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Report Creation Modal */}
-      {showReportCreationModal && reportCreationStudyId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
-            <DicomReport
-              facilityId={facilityId}
-              serviceRequestId={serviceRequestId}
-              studyUid={reportCreationStudyId}
-              onClose={handleCloseReportModal}
-              onSaveSuccess={refreshTableData}
-            />
           </div>
         </div>
       )}
