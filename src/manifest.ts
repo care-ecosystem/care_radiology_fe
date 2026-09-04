@@ -7,17 +7,17 @@ const manifest = {
   routes,
   extends: [],
   components: {
-    ServiceRequestAction: lazy(() => import("./components/ServiceRequestView")),
+    ServiceRequestAction: lazy(() => import("@/components/ServiceRequestView")),
     DiagnosticReportResultsOverride: lazy(
-      () => import("./components/DiagnosticReportResultsOverride"),
+      () => import("@/components/DiagnosticReportResultsOverride"),
     ),
     DiagnosticReportOverride: lazy(
-      () => import("./components/ObservationTemplateOverride"),
+      () => import("@/components/ObservationTemplateOverride"),
     ),
   },
   navItems: [],
   encounterTabs: {
-    radiology: lazy(() => import("./components/RadiologyEncounterTab")),
+    radiology: lazy(() => import("@/components/RadiologyEncounterTab")),
   },
   diagnosticReportResultsOverrideCategory:
     DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,

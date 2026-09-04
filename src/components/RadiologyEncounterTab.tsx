@@ -1,11 +1,11 @@
 import { FC, useState } from "react";
-import { EncounterTabProps } from "../types/encounterTab";
+import { EncounterTabProps } from "@/types/encounterTab";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { apis } from "@/apis";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import { DicomStudy } from "@/types/dicom";
 import { PLUGIN_SLUG } from "@/constants";

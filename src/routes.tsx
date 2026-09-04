@@ -1,4 +1,4 @@
-import DicomViewer from "./components/DicomViewer";
+import DicomViewer from "@/components/DicomViewer";
 
 const routes = {
   "/facility/:facilityId/service_requests/:serviceRequestId/radiology/view/:studyid":

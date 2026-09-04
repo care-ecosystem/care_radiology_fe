@@ -7,9 +7,9 @@ import {
   FilePlus,
 } from "lucide-react";
 import { useState, useRef } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { apis } from "@/apis";
 import { toast } from "@/lib/utils";
 import { PLUGIN_SLUG } from "@/constants";
