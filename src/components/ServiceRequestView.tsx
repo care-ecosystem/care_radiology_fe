@@ -127,10 +127,8 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
             hideCloseButton
           >
             <DicomUploader
-              facilityId={facilityId}
               patientId={patientId}
               serviceRequestId={serviceRequestId}
-              embedded
               onClose={handleUploaderClose}
               onUploadSuccess={invalidateServiceRequestQueries}
             />

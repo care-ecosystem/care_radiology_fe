@@ -95,7 +95,6 @@ export function DiagnosticReportResultsOverride({
   const [description, setDescription] = useState("");
   const [fields, setFields] = useState<FieldRow[]>([]);
   const [saving, setSaving] = useState(false);
-  // const [isFieldsOpen, setIsFieldsOpen] = useState(false);
 
   if (!observations?.length) {
     return null;
@@ -106,16 +105,7 @@ export function DiagnosticReportResultsOverride({
     setTitle("");
     setDescription("");
     setFields(fieldRowsFromObservation(observation));
-    // setIsFieldsOpen(false);
   };
-
-  // const updateFieldDescription = (index: number, fieldDescription: string) => {
-  //   setFields((prev) =>
-  //     prev.map((f, i) =>
-  //       i === index ? { ...f, description: fieldDescription } : f,
-  //     ),
-  //   );
-  // };
 
   const saveTemplate = async () => {
     if (!saveTemplateFor?.observation_definition?.id || !facilityId) return;
@@ -252,52 +242,6 @@ export function DiagnosticReportResultsOverride({
               />
             </div>
 
-            {/* Preview of template data */}
-
-            {/* <div className="rounded-md bg-gray-100">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between p-4"
-                onClick={() => setIsFieldsOpen((prev) => !prev)}
-              >
-                <Label className="cursor-pointer">
-                  {t("radiology_observation_data")}
-                </Label>
-                {isFieldsOpen ? (
-                  <ChevronUp className="size-4 text-gray-500" />
-                ) : (
-                  <ChevronDown className="size-4 text-gray-500" />
-                )}
-              </button>
-              {isFieldsOpen && (
-                <div className="px-4 pb-4">
-                  {fields.map((field, index) => (
-                    <div key={field.code}>
-                      {index > 0 && (
-                        <Separator className="my-4" style={{ height: 1 }} />
-                      )}
-                      <div className="space-y-1.5">
-                        <p className="text-sm text-gray-700">
-                          {field.display}
-                        </p>
-                        <Input
-                          className="bg-white"
-                          placeholder={t("radiology_field_description")}
-                          value={field.description ?? ""}
-                          onChange={(e) =>
-                            updateFieldDescription(index, e.target.value)
-                          }
-                        />
-                        <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">
-                          {field.value || "-"}
-                          {field.unit && <span> {field.unit}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div> */}
           </div>
           <DialogFooter className="pt-4">
             <Button
