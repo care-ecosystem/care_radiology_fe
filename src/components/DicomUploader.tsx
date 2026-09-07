@@ -5,15 +5,12 @@ import {
   Clock,
   FolderPlus,
   FilePlus,
-  Eye,
 } from "lucide-react";
-import { navigate } from "raviger";
 import { useState, useRef } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { apis } from "@/apis";
-import { Toaster } from "sonner";
 import { toast } from "@/lib/utils";
 import { PLUGIN_SLUG } from "@/constants";
 
@@ -28,45 +25,33 @@ interface DicomFile {
 }
 
 export default function DicomUploader({
-  facilityId,
   patientId,
   serviceRequestId,
-  embedded,
   onClose,
   onUploadSuccess,
 }: {
-  facilityId: string;
   patientId: string;
   serviceRequestId: string;
-  embedded?: boolean;
-  onClose?: () => void;
+  onClose: () => void;
   onUploadSuccess?: () => void;
 }) {
   const [files, setFiles] = useState<DicomFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [successfulLink, setSuccessfulLink] = useState<string | null>(null);
+  const [uploadDone, setUploadDone] = useState(false);
 
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const goBack = () => (embedded && onClose ? onClose() : window.history.back());
-
   const { t } = useTranslation(PLUGIN_SLUG);
   const { t: baseTranslate } = useTranslation();
 
-  const handleFolderSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = event.target.files;
-    if (!selectedFiles) return;
-    const dicomFiles = Array.from(selectedFiles).map((file, index) => ({
-      id: `${Date.now()}-${index}`,
-      name: file.name,
-      file,
-      status: "pending" as FileStatus,
-    }));
-    setFiles((prev) => [...prev, ...dicomFiles]);
+  const setFileStatus = (index: number, patch: Partial<DicomFile>) => {
+    setFiles((prev) =>
+      prev.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+    );
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFilesPicked = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (!selectedFiles) return;
     const dicomFiles = Array.from(selectedFiles).map((file, index) => ({
@@ -76,6 +61,7 @@ export default function DicomUploader({
       status: "pending" as FileStatus,
     }));
     setFiles((prev) => [...prev, ...dicomFiles]);
+    setUploadDone(false);
   };
 
   const handleSave = async () => {
@@ -86,11 +72,8 @@ export default function DicomUploader({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      setFiles((prev) =>
-        prev.map((f, index) =>
-          index === i ? { ...f, status: "uploading" } : f
-        )
-      );
+      if (file.status !== "pending" && file.status !== "failed") continue;
+      setFileStatus(i, { status: "uploading" });
 
       const formData = new FormData();
       formData.append("file", file.file);
@@ -104,26 +87,22 @@ export default function DicomUploader({
         if (isSuccess && response.study_uid) {
           uploadedStudyUid = response.study_uid;
         }
-        setFiles((prev) =>
-          prev.map((f, index) =>
-            index === i
-              ? {
-                  ...f,
-                  status: isSuccess ? "success" : "failed",
-                  study_uid: response.study_uid,
-                }
-              : f
-          )
-        );
+        setFileStatus(i, {
+          status: isSuccess ? "success" : "failed",
+          study_uid: response.study_uid,
+        });
       } catch (_) {
-        setFiles((prev) =>
-          prev.map((f, index) => (index === i ? { ...f, status: "failed" } : f))
-        );
+        setFileStatus(i, { status: "failed" });
       }
     }
 
     if (counts.failed) {
-      toast.error(`${counts.failed} files failed. ${counts.success} uploaded.`);
+      toast.error(
+        t("dicom_upload_summary_failed", {
+          failed: counts.failed,
+          success: counts.success,
+        }),
+      );
     }
 
     if (uploadedStudyUid) {
@@ -134,14 +113,15 @@ export default function DicomUploader({
             service_request_id: serviceRequestId,
           });
         }
-
-        const link = `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${uploadedStudyUid}`;
-        setSuccessfulLink(link);
         onUploadSuccess?.();
-        toast.success("Files uploaded successfully");
+        toast.success(t("dicom_files_uploaded_successfully"));
       } catch (_) {
-        toast.error("Failed to link study to the service request.");
+        toast.error(t("dicom_failed_to_link_study"));
       }
+    }
+
+    if (counts.failed === 0) {
+      setUploadDone(true);
     }
 
     setIsUploading(false);
@@ -163,7 +143,7 @@ export default function DicomUploader({
   const uploadedCount = files.filter((f) => f.status === "success").length;
   const failedCount = files.filter((f) => f.status === "failed").length;
   const pendingCount = files.filter((f) => f.status === "pending").length;
-  const isEmbeddedUploadDone = embedded && !!successfulLink && !isUploading;
+  const isUploadDone = uploadDone && !isUploading;
 
   return (
     <div>
@@ -181,9 +161,8 @@ export default function DicomUploader({
             >
               <div className="flex items-center gap-2">
                 <FolderPlus className="h-4 w-4" />
-                Upload Folder
+                {t("dicom_upload_folder")}
               </div>
-              {/* Folder */}
             </Button>
             <input
               ref={folderInputRef}
@@ -191,7 +170,7 @@ export default function DicomUploader({
               multiple
               // @ts-expect-error - works for directories
               webkitdirectory=""
-              onChange={handleFolderSelect}
+              onChange={handleFilesPicked}
               className="hidden"
               accept=".dcm,.dicom"
             />
@@ -203,14 +182,14 @@ export default function DicomUploader({
             >
               <div className="flex items-center gap-2">
                 <FilePlus className="h-4 w-4" />
-                Upload Files
+                {t("dicom_upload_files_button")}
               </div>
             </Button>
             <input
               ref={fileInputRef}
               type="file"
               multiple
-              onChange={handleFileSelect}
+              onChange={handleFilesPicked}
               className="hidden"
               accept=".dcm,.dicom"
             />
@@ -233,25 +212,25 @@ export default function DicomUploader({
               <div className="mb-4 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-700 font-bold">
                 {uploadedCount > 0 && (
                   <span className="text-green-600">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    {uploadedCount} uploaded.{" "}
+                    {t("dicom_files_uploaded_count", { count: uploadedCount })}{" "}
                   </span>
                 )}
                 {failedCount > 0 && (
                   <span className="text-red-500">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    {failedCount} failed.{" "}
+                    {t("dicom_files_failed_count", { count: failedCount })}{" "}
                   </span>
                 )}
                 {pendingCount > 0 && !isUploading && (
                   <span className="text-gray-500">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    {files.length} ready for upload.
+                    {t("dicom_files_ready_count", { count: pendingCount })}
                   </span>
                 )}
                 {isUploading && (
                   <span className="text-blue-600">
-                    Uploading... {uploadedCount + failedCount} / {files.length}
+                    {t("dicom_uploading_progress", {
+                      current: uploadedCount + failedCount,
+                      total: files.length,
+                    })}
                   </span>
                 )}
               </div>
@@ -280,41 +259,31 @@ export default function DicomUploader({
           )}
           <div className="flex justify-end gap-3 mt-6">
             <Button
-              onClick={() => goBack()}
+              onClick={onClose}
               size="sm"
-              variant={isEmbeddedUploadDone ? "primary" : "outline"}
+              variant={isUploadDone ? "primary" : "outline"}
               className="min-w-[100px]"
             >
-              {isEmbeddedUploadDone
-                ? baseTranslate("done")
-                : baseTranslate("cancel")}
+              {isUploadDone ? baseTranslate("done") : baseTranslate("cancel")}
             </Button>
-            {!embedded && successfulLink && (
-              <Button
-                onClick={() => navigate(successfulLink)}
-                disabled={isUploading || !successfulLink}
-                size="sm"
-                className="min-w-[100px]"
-              >
-                View Study
-              </Button>
-            )}
-            {!isEmbeddedUploadDone && (
+            {!isUploadDone && (
               <Button
                 onClick={handleSave}
                 disabled={
-                  isUploading || files.every((f) => f.status !== "pending")
+                  isUploading ||
+                  files.every(
+                    (f) => f.status !== "pending" && f.status !== "failed",
+                  )
                 }
                 size="sm"
                 className="min-w-[100px]"
               >
-                {isUploading ? "Uploading..." : baseTranslate("upload")}
+                {isUploading ? t("dicom_uploading") : baseTranslate("upload")}
               </Button>
             )}
           </div>
         </CardContent>
       </Card>
-      {!embedded && <Toaster />}
     </div>
   );
 }

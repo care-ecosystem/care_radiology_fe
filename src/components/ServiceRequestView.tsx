@@ -3,11 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import DicomUploader from "./DicomUploader";
-import { Card, CardContent } from "./ui/card";
-import { Dialog, DialogContent } from "./ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
-import { RadiologyServiceRequest, ServiceRequest } from "@/types/ServiceRequest";
-import { Button } from "./ui/button";
+import { RadiologyServiceRequest, ServiceRequest } from "@/types/serviceRequest";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
 import { Plus } from "lucide-react";
@@ -73,7 +73,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
             <div className="grid gap-4">
               <div className="flex justify-between items-start">
                 <Label className="text-base font-semibold text-gray-950">
-                  Radiology Studies
+                  {t("radiology_studies")}
                 </Label>
                 <Button
                   variant="primary"
@@ -96,7 +96,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
               <div className="flex flex-col gap-4 items-center">
                 <div className="text-center">
                   <Label className="text-base font-semibold text-gray-950">
-                    Upload DICOM files
+                    {t("dicom_upload_files_heading")}
                   </Label>
                   <p className="mt-2 text-sm text-gray-500">
                     {t("service_request_dicom_no_studies_found")}
@@ -127,10 +127,8 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
             hideCloseButton
           >
             <DicomUploader
-              facilityId={facilityId}
               patientId={patientId}
               serviceRequestId={serviceRequestId}
-              embedded
               onClose={handleUploaderClose}
               onUploadSuccess={invalidateServiceRequestQueries}
             />

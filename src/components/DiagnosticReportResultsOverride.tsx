@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { apis, ObservationTemplateField } from "@/apis";
+import { useMutation } from "@tanstack/react-query";
+import { apis } from "@/apis";
+import { ObservationTemplateField } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
@@ -9,9 +11,9 @@ import {
   DiagnosticReportObservation,
   ObservationValue,
 } from "@/types/diagnosticReports";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "./ui/dialog";
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
@@ -93,8 +95,22 @@ export function DiagnosticReportResultsOverride({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fields, setFields] = useState<FieldRow[]>([]);
-  const [saving, setSaving] = useState(false);
-  // const [isFieldsOpen, setIsFieldsOpen] = useState(false);
+
+  const createTemplateMutation = useMutation({
+    mutationFn: apis.observationTemplate.create,
+    onSuccess: () => {
+      toast.success(t("radiology_template_saved_successfully!"));
+      setSaveTemplateFor(null);
+    },
+    onError: (err) => {
+      console.error("Failed to save observation template", err);
+      toast.error(
+        err instanceof APIError
+          ? err.message
+          : t("radiology_failed_to_save_template"),
+      );
+    },
+  });
 
   if (!observations?.length) {
     return null;
@@ -105,50 +121,27 @@ export function DiagnosticReportResultsOverride({
     setTitle("");
     setDescription("");
     setFields(fieldRowsFromObservation(observation));
-    // setIsFieldsOpen(false);
   };
 
-  // const updateFieldDescription = (index: number, fieldDescription: string) => {
-  //   setFields((prev) =>
-  //     prev.map((f, i) =>
-  //       i === index ? { ...f, description: fieldDescription } : f,
-  //     ),
-  //   );
-  // };
-
-  const saveTemplate = async () => {
+  const saveTemplate = () => {
     if (!saveTemplateFor?.observation_definition?.id || !facilityId) return;
     if (!title.trim()) {
       toast.warning(t("radiology_please_enter_template_title"));
       return;
     }
-    setSaving(true);
-    try {
-      await apis.observationTemplate.create({
-        facility: facilityId,
-        observation_definition: saveTemplateFor.observation_definition.id,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        fields: fields.map(
-          ({ code, value, unit, description: fieldDescription }) => ({
-            code,
-            value: encodeFieldValue(value ?? "", unit),
-            description: fieldDescription,
-          }),
-        ),
-      });
-      toast.success(t("radiology_template_saved_successfully!"));
-      setSaveTemplateFor(null);
-    } catch (err) {
-      console.error("Failed to save observation template", err);
-      toast.error(
-        err instanceof APIError
-          ? err.message
-          : t("radiology_failed_to_save_template"),
-      );
-    } finally {
-      setSaving(false);
-    }
+    createTemplateMutation.mutate({
+      facility: facilityId,
+      observation_definition: saveTemplateFor.observation_definition.id,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      fields: fields.map(
+        ({ code, value, unit, description: fieldDescription }) => ({
+          code,
+          value: encodeFieldValue(value ?? "", unit),
+          description: fieldDescription,
+        }),
+      ),
+    });
   };
 
   return (
@@ -251,52 +244,6 @@ export function DiagnosticReportResultsOverride({
               />
             </div>
 
-            {/* Preview of template data */}
-
-            {/* <div className="rounded-md bg-gray-100">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between p-4"
-                onClick={() => setIsFieldsOpen((prev) => !prev)}
-              >
-                <Label className="cursor-pointer">
-                  {t("radiology_observation_data")}
-                </Label>
-                {isFieldsOpen ? (
-                  <ChevronUp className="size-4 text-gray-500" />
-                ) : (
-                  <ChevronDown className="size-4 text-gray-500" />
-                )}
-              </button>
-              {isFieldsOpen && (
-                <div className="px-4 pb-4">
-                  {fields.map((field, index) => (
-                    <div key={field.code}>
-                      {index > 0 && (
-                        <Separator className="my-4" style={{ height: 1 }} />
-                      )}
-                      <div className="space-y-1.5">
-                        <p className="text-sm text-gray-700">
-                          {field.display}
-                        </p>
-                        <Input
-                          className="bg-white"
-                          placeholder={t("radiology_field_description")}
-                          value={field.description ?? ""}
-                          onChange={(e) =>
-                            updateFieldDescription(index, e.target.value)
-                          }
-                        />
-                        <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">
-                          {field.value || "-"}
-                          {field.unit && <span> {field.unit}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div> */}
           </div>
           <DialogFooter className="pt-4">
             <Button
@@ -310,7 +257,7 @@ export function DiagnosticReportResultsOverride({
               type="button"
               variant="primary"
               onClick={saveTemplate}
-              loading={saving}
+              loading={createTemplateMutation.isPending}
               disabled={!title.trim()}
             >
               {t("radiology_save")}

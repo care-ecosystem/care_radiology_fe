@@ -1,15 +1,13 @@
 import { FC, useState } from "react";
-import { EncounterTabProps } from "../types/EncouterTab";
+import { EncounterTabProps } from "@/types/encounterTab";
 import { useTranslation } from "react-i18next";
-import { Button } from "./ui/button";
-import { Plus, Search } from "lucide-react";
-import { navigate } from "raviger";
-import { Input } from "./ui/input";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { apis } from "@/apis";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import RadiologyStudyTable from "./RadiologyStudyTable";
-import { DicomStudy } from "@/types/Dicom";
+import { DicomStudy } from "@/types/dicom";
 import { PLUGIN_SLUG } from "@/constants";
 
 export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
@@ -43,15 +41,6 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     setSearchInput(e.target.value);
   };
 
-  const handleDicomUploadNavigation = () => {
-    const facilityId = encounter.facility.id;
-
-    // Need logic to find out service request id
-    const serviceRequestId = ":serviceRequestId";
-    
-    navigate(`/facility/${facilityId}/patient/${patient.id}/service_requests/${serviceRequestId}/radiology/uploader`)
-  }
-
   console.log("DATA ", dicomStudies, isLoading, error);
   return (
     <div className="py-4">
@@ -65,13 +54,6 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
             onChange={handleSearch}
           />
         </div>
-        <Button
-          variant="primary"
-          onClick={handleDicomUploadNavigation}
-        >
-          <Plus className="size-4 mr-1" />
-          {t("dicom_upload_data")}
-        </Button>
       </div>
 
       {filteredStudies && filteredStudies.length > 0 ? (

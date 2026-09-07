@@ -1,12 +1,12 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
 import { PlugConfigMeta } from "@/types/plugin";
 import { apis } from "@/apis";
-import { RadiologyServiceRequest } from "@/types/ServiceRequest";
+import { RadiologyServiceRequest } from "@/types/serviceRequest";
 
 export default function DicomViewer({
   serviceRequestId,
@@ -64,7 +64,7 @@ export default function DicomViewer({
     if (ref.current) ref.current.requestFullscreen();
   };
 
-  if (!iframeUrl) return <div>Please Wait...</div>;
+  if (!iframeUrl) return <div>{t("radiology_please_wait")}</div>;
 
   return (
     <div id="dicom-viewer-page" className="flex flex-col bg-white rounded-lg overflow-hidden">
@@ -86,14 +86,14 @@ export default function DicomViewer({
               goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
             }}
           >
-            Fullscreen
+            {t("radiology_fullscreen")}
           </Button>
           <Button
             variant={"outline"}
             color={"red"}
             onClick={() => window.close()}
           >
-            Close
+            {t("radiology_close")}
           </Button>
         </div>
       </div>
