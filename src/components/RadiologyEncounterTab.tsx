@@ -21,11 +21,11 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     isLoading,
     error,
   } = useQuery<DicomStudy[]>({
-    queryKey: ["dicomimagelist", patient.id],
+    queryKey: ["dicomimagelist", encounter.id],
     queryFn: () =>
       apis.dicom.fetchStudies({
         facility: encounter.facility.id,
-        patient: patient.id,
+        encounter: encounter.id,
       }),
     enabled: true,
   });
@@ -57,7 +57,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
       </div>
 
       {filteredStudies && filteredStudies.length > 0 ? (
-        <RadiologyStudyTable studies={filteredStudies} />
+        <RadiologyStudyTable studies={filteredStudies} patientId={patient.id} />
       ) : (
         <Card className="col-span-full">
           <CardContent className="p-6 text-center text-gray-500">
