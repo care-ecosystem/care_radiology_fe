@@ -32,6 +32,7 @@ import { decodeFieldValue, encodeFieldValue } from "@/utils/templateFieldValue";
 import {
   ObservationDefinition,
   DiagnosticReportObservation,
+  DiagnosticReport,
 } from "@/types/diagnosticReports";
 import { ObservationTemplateField } from "@/types/observationTemplate";
 
@@ -234,7 +235,7 @@ export default function ObservationTemplateOverride({
   }
 
   const hasDiagnosticReports =
-    (serviceRequestDetail as any)?.diagnostic_reports?.length > 0;
+    (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
 
   const extractFieldsFromObservation = (
     definition: ObservationDefinition,
@@ -284,7 +285,7 @@ export default function ObservationTemplateOverride({
 
     try {
       // Check if service request has diagnostic reports
-      const diagnosticReports = (serviceRequestDetail as any)?.diagnostic_reports;
+      const diagnosticReports = serviceRequestDetail?.diagnostic_reports;
 
       if (!diagnosticReports || diagnosticReports.length === 0) {
         toast.error(t("radiology_no_diagnostic_report_to_save"));
@@ -295,25 +296,31 @@ export default function ObservationTemplateOverride({
       const latestReport = diagnosticReports[0];
 
       // Get patient ID from service request
-      const patientId = (serviceRequestDetail as any)?.encounter?.patient?.id;
+      const patientId = serviceRequestDetail?.encounter?.patient?.id;
       if (!patientId) {
         toast.error(t("radiology_no_diagnostic_report_to_save"));
         return;
       }
 
       // Fetch full diagnostic report with observations using patient endpoint
-      const fullReport = await request<any>(
+      const fullReport = await request<DiagnosticReport>(
         `/api/v1/patient/${patientId}/diagnostic_report/${latestReport.id}/`,
       );
 
+
       // Find observation for this definition
       const observation = fullReport.observations?.find(
-        (obs: DiagnosticReportObservation) =>
-          obs.observation_definition?.id === definition.id,
+        (obs) => obs.observation_definition?.id === definition.id,
       );
 
       if (!observation) {
-        toast.error(t("radiology_no_diagnostic_report_to_save"));
+        console.error(
+          "No matching observation found. Looking for definition ID:",
+          definition.id,
+          "Available observations:",
+          fullReport.observations,
+        );
+        toast.error(t("radiology_no_observation_found_in_report"));
         return;
       }
 
@@ -324,7 +331,11 @@ export default function ObservationTemplateOverride({
       setShowTemplateFields(false);
     } catch (error) {
       console.error("Failed to fetch diagnostic report", error);
-      toast.error(t("radiology_no_diagnostic_report_to_save"));
+      toast.error(
+        error instanceof APIError
+          ? error.message
+          : t("radiology_failed_to_fetch_diagnostic_report"),
+      );
     }
   };
 

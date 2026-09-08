@@ -28,3 +28,9 @@ export interface DiagnosticReportObservation {
   component?: ObservationComponent[];
   observation_definition?: ObservationDefinition;
 }
+
+export interface DiagnosticReport {
+  id: string;
+  observations?: DiagnosticReportObservation[];
+  [key: string]: unknown;
+}
