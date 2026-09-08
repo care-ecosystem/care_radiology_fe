@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplate } from "@/types/observationTemplate";
 import { PaginatedResponse } from "@/apis/types";
-import { APIError } from "@/apis/request";
+import { APIError, request } from "@/apis/request";
 import { ServiceRequest } from "@/types/serviceRequest";
 import { debounced } from "@/utils/query";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,14 @@ import {
   PLUGIN_SLUG,
   SERVICE_REQUEST_OVERRIDE_CATEGORY,
 } from "@/constants";
-import { ClipboardList, Pencil } from "lucide-react";
-import { decodeFieldValue } from "@/utils/templateFieldValue";
-import { ObservationDefinition } from "@/types/diagnosticReports";
+import { ClipboardList, Pencil, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { decodeFieldValue, encodeFieldValue } from "@/utils/templateFieldValue";
+import {
+  ObservationDefinition,
+  DiagnosticReportObservation,
+  DiagnosticReport,
+} from "@/types/diagnosticReports";
+import { ObservationTemplateField } from "@/types/observationTemplate";
 
 interface Props {
   observationDefinitions: ObservationDefinition[];
@@ -100,6 +105,13 @@ export default function ObservationTemplateOverride({
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+
+  const [saveTemplateFor, setSaveTemplateFor] =
+    useState<ObservationDefinition | null>(null);
+  const [saveTitle, setSaveTitle] = useState("");
+  const [saveDescription, setSaveDescription] = useState("");
+  const [saveFields, setSaveFields] = useState<ObservationTemplateField[]>([]);
+  const [showTemplateFields, setShowTemplateFields] = useState(false);
 
   const selectionTokenRef = useRef(0);
   const bumpSelectionToken = () => {
@@ -198,10 +210,149 @@ export default function ObservationTemplateOverride({
     },
   });
 
+  const createTemplateMutation = useMutation({
+    mutationFn: apis.observationTemplate.create,
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: templatesQueryKey(vars.observation_definition),
+      });
+      toast.success(t("radiology_template_saved_successfully!"));
+      setSaveTemplateFor(null);
+    },
+    onError: (err) => {
+      console.error("Failed to save observation template", err);
+      toast.error(
+        err instanceof APIError
+          ? err.message
+          : t("radiology_failed_to_save_template"),
+      );
+    },
+  });
+
   if (!facilityId || !observationDefinitions?.length) return null;
   if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
     return null;
   }
+
+  const hasDiagnosticReports =
+    (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
+
+  const extractFieldsFromObservation = (
+    definition: ObservationDefinition,
+    observation?: DiagnosticReportObservation,
+  ): ObservationTemplateField[] => {
+    if (!definition.id) return [];
+
+    const hasComponents = (definition.component ?? []).length > 0;
+
+    if (hasComponents) {
+      return definition.component!.map((comp) => {
+        const componentCode = comp.code?.code ?? "";
+        const observationComponent = observation?.component?.find(
+          (c) => c.code?.code === componentCode,
+        );
+        const value = observationComponent?.value?.value ?? "";
+        const unit =
+          observationComponent?.value?.unit?.code ||
+          observationComponent?.value?.unit?.display;
+
+        return {
+          code: componentCode,
+          value: encodeFieldValue(value, unit),
+          description: comp.code?.display ?? "",
+        };
+      });
+    }
+
+    return [
+      {
+        code: definition.code?.code ?? definition.id,
+        value: encodeFieldValue(
+          observation?.value?.value ?? "",
+          observation?.value?.unit?.code ||
+            observation?.value?.unit?.display,
+        ),
+        description: definition.title || definition.code?.display || "",
+      },
+    ];
+  };
+
+  const openSaveTemplate = async (definition: ObservationDefinition) => {
+    if (!facilityId || !serviceRequestId || !definition.id) {
+      toast.error(t("radiology_no_diagnostic_report_to_save"));
+      return;
+    }
+
+    try {
+      // Check if service request has diagnostic reports
+      const diagnosticReports = serviceRequestDetail?.diagnostic_reports;
+
+      if (!diagnosticReports || diagnosticReports.length === 0) {
+        toast.error(t("radiology_no_diagnostic_report_to_save"));
+        return;
+      }
+
+      // Find the latest diagnostic report
+      const latestReport = diagnosticReports[0];
+
+      // Get patient ID from service request
+      const patientId = serviceRequestDetail?.encounter?.patient?.id;
+      if (!patientId) {
+        toast.error(t("radiology_no_diagnostic_report_to_save"));
+        return;
+      }
+
+      // Fetch full diagnostic report with observations using patient endpoint
+      const fullReport = await request<DiagnosticReport>(
+        `/api/v1/patient/${patientId}/diagnostic_report/${latestReport.id}/`,
+      );
+
+
+      // Find observation for this definition
+      const observation = fullReport.observations?.find(
+        (obs) => obs.observation_definition?.id === definition.id,
+      );
+
+      if (!observation) {
+        console.error(
+          "No matching observation found. Looking for definition ID:",
+          definition.id,
+          "Available observations:",
+          fullReport.observations,
+        );
+        toast.error(t("radiology_no_observation_found_in_report"));
+        return;
+      }
+
+      setSaveTemplateFor(definition);
+      setSaveTitle("");
+      setSaveDescription("");
+      setSaveFields(extractFieldsFromObservation(definition, observation));
+      setShowTemplateFields(false);
+    } catch (error) {
+      console.error("Failed to fetch diagnostic report", error);
+      toast.error(
+        error instanceof APIError
+          ? error.message
+          : t("radiology_failed_to_fetch_diagnostic_report"),
+      );
+    }
+  };
+
+  const saveTemplate = () => {
+    if (!saveTemplateFor?.id || !facilityId) return;
+    if (!saveTitle.trim()) {
+      toast.warning(t("radiology_please_enter_template_title"));
+      return;
+    }
+    createTemplateMutation.mutate({
+      facility: facilityId,
+      observation_definition: saveTemplateFor.id,
+      title: saveTitle.trim(),
+      description: saveDescription.trim() || undefined,
+      fields: saveFields,
+    });
+  };
 
   const openUseTemplate = (definition: ObservationDefinition) => {
     bumpSelectionToken();
@@ -319,6 +470,18 @@ export default function ObservationTemplateOverride({
                         <ClipboardList className="size-4" />
                         {t("radiology_use_template")}
                       </Button>
+                      {hasDiagnosticReports && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={disabled}
+                          onClick={() => openSaveTemplate(definition)}
+                        >
+                          <Plus className="size-4" />
+                          {t("radiology_save_as_observation_template")}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -526,6 +689,133 @@ export default function ObservationTemplateOverride({
               }
             >
               {t("radiology_use_template")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!saveTemplateFor}
+        onOpenChange={(open) => !open && setSaveTemplateFor(null)}
+      >
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>
+              {t("radiology_save_as_observation_template")}
+            </DialogTitle>
+            <DialogDescription>
+              {saveTemplateFor?.title || saveTemplateFor?.code?.display}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 px-1.5">
+            <div className="space-y-2">
+              <Label htmlFor="save-template-name">
+                {t("radiology_name")} <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="save-template-name"
+                placeholder={t("radiology_enter_name")}
+                value={saveTitle}
+                onChange={(e) => setSaveTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="save-template-description">
+                {t("radiology_description")}
+              </Label>
+              <Input
+                id="save-template-description"
+                placeholder={t("radiology_description")}
+                value={saveDescription}
+                onChange={(e) => setSaveDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowTemplateFields(!showTemplateFields)}
+                className="flex items-center gap-2 w-full text-left text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
+              >
+                {showTemplateFields ? (
+                  <ChevronDown className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
+                )}
+                {t("radiology_template_fields")} ({saveFields.length})
+              </button>
+
+              {showTemplateFields && (
+                <div className="space-y-3 pt-2">
+                  {saveFields.map((field, index) => (
+                    <div
+                      key={field.code}
+                      className="rounded-md bg-gray-50 p-3 space-y-2"
+                    >
+                      <p className="text-sm font-medium text-gray-900">
+                        {field.description || field.code}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">
+                            {t("radiology_value")}
+                          </Label>
+                          <Input
+                            placeholder={t("radiology_enter_value")}
+                            value={decodeFieldValue(field.value).value}
+                            onChange={(e) => {
+                              const newFields = [...saveFields];
+                              const { unit } = decodeFieldValue(field.value);
+                              newFields[index] = {
+                                ...field,
+                                value: encodeFieldValue(e.target.value, unit),
+                              };
+                              setSaveFields(newFields);
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">
+                            {t("radiology_unit")}
+                          </Label>
+                          <Input
+                            placeholder={t("radiology_unit")}
+                            value={decodeFieldValue(field.value).unit || ""}
+                            onChange={(e) => {
+                              const newFields = [...saveFields];
+                              const { value } = decodeFieldValue(field.value);
+                              newFields[index] = {
+                                ...field,
+                                value: encodeFieldValue(value, e.target.value),
+                              };
+                              setSaveFields(newFields);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSaveTemplateFor(null)}
+            >
+              {t("radiology_cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={saveTemplate}
+              loading={createTemplateMutation.isPending}
+              disabled={!saveTitle.trim()}
+            >
+              {t("radiology_save")}
             </Button>
           </DialogFooter>
         </DialogContent>

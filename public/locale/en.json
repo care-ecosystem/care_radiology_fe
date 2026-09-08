@@ -47,5 +47,12 @@
   "radiology_info": "Info",
   "radiology_no_series_found": "No series found",
   "radiology_please_wait": "Please Wait...",
-  "radiology_fullscreen": "Fullscreen"
+  "radiology_fullscreen": "Fullscreen",
+  "radiology_template_fields": "Template Fields",
+  "radiology_value": "Value",
+  "radiology_enter_value": "Enter Value",
+  "radiology_unit": "Unit",
+  "radiology_no_diagnostic_report_to_save": "No diagnostic report to save as template. Please save your observations first.",
+  "radiology_no_observation_found_in_report": "No matching observation found in the diagnostic report for this definition.",
+  "radiology_failed_to_fetch_diagnostic_report": "Failed to fetch diagnostic report. Please try again."
 }

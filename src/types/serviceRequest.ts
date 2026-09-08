@@ -8,6 +8,11 @@ export interface Coding {
   system: string;
 }
 
+export interface DiagnosticReportReference {
+  id: string;
+  [key: string]: unknown;
+}
+
 export interface ServiceRequest {
   id: string;
   encounter: Encounter;
@@ -15,6 +20,7 @@ export interface ServiceRequest {
   code?: Coding;
   body_site?: Coding;
   category?: string;
+  diagnostic_reports?: DiagnosticReportReference[];
 
   [key: string]: unknown;
 }
