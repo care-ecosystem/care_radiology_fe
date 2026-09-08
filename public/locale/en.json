@@ -47,5 +47,10 @@
   "radiology_info": "Info",
   "radiology_no_series_found": "No series found",
   "radiology_please_wait": "Please Wait...",
-  "radiology_fullscreen": "Fullscreen"
+  "radiology_fullscreen": "Fullscreen",
+  "radiology_template_fields": "Template Fields",
+  "radiology_value": "Value",
+  "radiology_enter_value": "Enter Value",
+  "radiology_unit": "Unit",
+  "radiology_no_diagnostic_report_to_save": "No diagnostic report to save as template. Please save your observations first."
 }

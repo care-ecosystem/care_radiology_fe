@@ -1,11 +1,75 @@
 {
   "version": "1.0.0",
-  "buildDate": "2026-02-03T04:22:58.024Z",
+  "buildDate": "2026-09-08T06:25:30.421Z",
   "environment": "unknown",
-  "timestamp": 1770092578046,
-  "commitHash": "7ef8390",
-  "branch": "dev",
+  "timestamp": 1788848730461,
+  "commitHash": "0f1722b",
+  "branch": "develop",
   "buildHistory": [
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:25:30.421Z",
+      "environment": "unknown",
+      "timestamp": 1788848730461,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:25:27.095Z",
+      "environment": "unknown",
+      "timestamp": 1788848727136,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:24:34.773Z",
+      "environment": "unknown",
+      "timestamp": 1788848674813,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:24:30.418Z",
+      "environment": "unknown",
+      "timestamp": 1788848670467,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:15:06.451Z",
+      "environment": "unknown",
+      "timestamp": 1788848106495,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:12:01.584Z",
+      "environment": "unknown",
+      "timestamp": 1788847921625,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:04:41.713Z",
+      "environment": "unknown",
+      "timestamp": 1788847481753,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-08T06:03:17.543Z",
+      "environment": "unknown",
+      "timestamp": 1788847397594,
+      "commitHash": "0f1722b",
+      "branch": "develop"
+    },
     {
       "version": "1.0.0",
       "buildDate": "2026-02-03T04:22:58.024Z",
@@ -20,70 +84,6 @@
       "environment": "unknown",
       "timestamp": 1770087526961,
       "commitHash": "7ef8390",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-02-03T02:56:24.021Z",
-      "environment": "unknown",
-      "timestamp": 1770087384034,
-      "commitHash": "7ef8390",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-02-03T02:53:30.661Z",
-      "environment": "unknown",
-      "timestamp": 1770087210675,
-      "commitHash": "7ef8390",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-01-27T10:54:32.588Z",
-      "environment": "unknown",
-      "timestamp": 1769511272603,
-      "commitHash": "0b90c8f",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-01-27T10:46:52.780Z",
-      "environment": "unknown",
-      "timestamp": 1769510812795,
-      "commitHash": "0b90c8f",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-01-27T09:41:09.849Z",
-      "environment": "unknown",
-      "timestamp": 1769506869863,
-      "commitHash": "0b90c8f",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-01-27T09:39:59.253Z",
-      "environment": "unknown",
-      "timestamp": 1769506799267,
-      "commitHash": "0b90c8f",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-01-27T09:36:59.175Z",
-      "environment": "unknown",
-      "timestamp": 1769506619191,
-      "commitHash": "0b90c8f",
-      "branch": "dev"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-01-24T09:08:19.679Z",
-      "environment": "unknown",
-      "timestamp": 1769245699692,
-      "commitHash": "0b90c8f",
       "branch": "dev"
     }
   ]
