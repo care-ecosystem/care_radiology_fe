@@ -9,13 +9,11 @@ export const apis = {
   dicom: {
     fetchStudies: async (query?: {
       facility?: string;
-      patient?: string;
       encounter?: string;
       ordering?: string;
     }) => {
       return await request<any>(
         `/api/care_radiology/dicom/studies/${queryString({
-          patientId: query?.patient ?? "",
           encounterId: query?.encounter ?? "",
         })}`,
       );

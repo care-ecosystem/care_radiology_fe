@@ -26,11 +26,13 @@ interface DicomFile {
 
 export default function DicomUploader({
   patientId,
+  facilityId,
   serviceRequestId,
   onClose,
   onUploadSuccess,
 }: {
   patientId: string;
+  facilityId: string;
   serviceRequestId: string;
   onClose: () => void;
   onUploadSuccess?: () => void;
@@ -79,6 +81,7 @@ export default function DicomUploader({
       formData.append("file", file.file);
       formData.append("filename", file.name);
       formData.append("patient_id", patientId);
+      formData.append("facility_id", facilityId);
 
       try {
         const response = await apis.dicom.upload(formData);
