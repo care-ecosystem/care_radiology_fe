@@ -8,14 +8,14 @@ import {
 export const apis = {
   dicom: {
     fetchStudies: async (query?: {
-      facility?: string;
       encounter?: string;
-      ordering?: string;
+      serviceRequestId?: string;
     }) => {
+      const params: Record<string, string> = {};
+      if (query?.serviceRequestId) params.serviceRequestId = query.serviceRequestId;
+      else if (query?.encounter) params.encounterId = query.encounter;
       return await request<any>(
-        `/api/care_radiology/dicom/studies/${queryString({
-          encounterId: query?.encounter ?? "",
-        })}`,
+        `/api/care_radiology/dicom/studies/${queryString(params)}`,
       );
     },
 
@@ -47,14 +47,6 @@ export const apis = {
   },
 
   servicerequest: {
-    fetch: async (query: { serviceRequestId: string }) => {
-      return await request<any>(
-        `/api/care_radiology/dicom/service-requests${queryString({
-          serviceRequestId: query?.serviceRequestId ?? "",
-        })}`,
-      );
-    },
-
     retrieve: async (facilityId: string, serviceRequestId: string) => {
       return await request<any>(
         `/api/v1/facility/${facilityId}/service_request/${serviceRequestId}/`,

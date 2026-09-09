@@ -1,4 +1,3 @@
-import { DicomStudy } from "./dicom";
 import { Encounter } from "./encounter";
 import { User } from "./user";
 
@@ -23,9 +22,4 @@ export interface ServiceRequest {
   diagnostic_reports?: DiagnosticReportReference[];
 
   [key: string]: unknown;
-}
-
-export interface RadiologyServiceRequest {
-  service_request: ServiceRequest;
-  dicom_study: DicomStudy;
 }

@@ -23,7 +23,6 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     queryKey: ["dicomimagelist", encounter.id],
     queryFn: () =>
       apis.dicom.fetchStudies({
-        facility: encounter.facility.id,
         encounter: encounter.id,
       }),
     enabled: true,
