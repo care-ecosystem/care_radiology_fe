@@ -128,6 +128,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
           >
             <DicomUploader
               patientId={patientId}
+              facilityId={facilityId}
               serviceRequestId={serviceRequestId}
               onClose={handleUploaderClose}
               onUploadSuccess={invalidateServiceRequestQueries}

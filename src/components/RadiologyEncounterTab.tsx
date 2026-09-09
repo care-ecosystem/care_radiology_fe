@@ -11,7 +11,6 @@ import { DicomStudy } from "@/types/dicom";
 import { PLUGIN_SLUG } from "@/constants";
 
 export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
-  patient,
   encounter,
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
@@ -41,7 +40,6 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     setSearchInput(e.target.value);
   };
 
-  console.log("DATA ", dicomStudies, isLoading, error);
   return (
     <div className="py-4">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -57,7 +55,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
       </div>
 
       {filteredStudies && filteredStudies.length > 0 ? (
-        <RadiologyStudyTable studies={filteredStudies} patientId={patient.id} />
+        <RadiologyStudyTable studies={filteredStudies} />
       ) : (
         <Card className="col-span-full">
           <CardContent className="p-6 text-center text-gray-500">
