@@ -10,7 +10,7 @@ export default defineConfig({
       name: "care_radiology_fe",
       filename: "remoteEntry.js",
       exposes: {
-        "./manifest": "./src/manifest.ts",
+        "./manifest": "./src/manifest.tsx",
       },
       shared: [
         "react",
