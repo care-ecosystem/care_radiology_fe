@@ -54,5 +54,6 @@
   "radiology_unit": "Unit",
   "radiology_no_diagnostic_report_to_save": "No diagnostic report to save as template. Please save your observations first.",
   "radiology_no_observation_found_in_report": "No matching observation found in the diagnostic report for this definition.",
-  "radiology_failed_to_fetch_diagnostic_report": "Failed to fetch diagnostic report. Please try again."
+  "radiology_failed_to_fetch_diagnostic_report": "Failed to fetch diagnostic report. Please try again.",
+  "dicom_files_skipped_not_dcm": "{{count}} file(s) skipped — only .dcm and .dicom files are supported."
 }
