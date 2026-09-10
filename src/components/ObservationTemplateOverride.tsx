@@ -314,10 +314,8 @@ export default function ObservationTemplateOverride({
 
       if (!observation) {
         console.error(
-          "No matching observation found. Looking for definition ID:",
+          "No matching observation found for definition ID:",
           definition.id,
-          "Available observations:",
-          fullReport.observations,
         );
         toast.error(t("radiology_no_observation_found_in_report"));
         return;
