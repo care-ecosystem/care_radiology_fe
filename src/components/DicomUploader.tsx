@@ -74,6 +74,7 @@ export default function DicomUploader({
         }),
       );
     }
+    if (accepted.length === 0) return;
     setFiles((prev) => [...prev, ...dicomFiles]);
     setUploadDone(false);
   };
