@@ -1,11 +1,19 @@
 {
   "version": "1.0.0",
-  "buildDate": "2026-09-08T06:53:47.672Z",
+  "buildDate": "2026-09-10T11:06:05.918Z",
   "environment": "unknown",
-  "timestamp": 1788850427754,
-  "commitHash": "81ca6b3",
-  "branch": "template",
+  "timestamp": 1789038365977,
+  "commitHash": "8486804",
+  "branch": "prod_fixes",
   "buildHistory": [
+    {
+      "version": "1.0.0",
+      "buildDate": "2026-09-10T11:06:05.918Z",
+      "environment": "unknown",
+      "timestamp": 1789038365976,
+      "commitHash": "8486804",
+      "branch": "prod_fixes"
+    },
     {
       "version": "1.0.0",
       "buildDate": "2026-09-08T06:53:47.672Z",
@@ -75,14 +83,6 @@
       "buildDate": "2026-09-08T06:12:01.584Z",
       "environment": "unknown",
       "timestamp": 1788847921625,
-      "commitHash": "0f1722b",
-      "branch": "develop"
-    },
-    {
-      "version": "1.0.0",
-      "buildDate": "2026-09-08T06:04:41.713Z",
-      "environment": "unknown",
-      "timestamp": 1788847481753,
       "commitHash": "0f1722b",
       "branch": "develop"
     }
