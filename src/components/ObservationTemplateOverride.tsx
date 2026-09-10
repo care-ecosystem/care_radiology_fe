@@ -4,8 +4,8 @@ import { apis } from "@/apis";
 import { ObservationTemplate } from "@/types/observationTemplate";
 import { PaginatedResponse } from "@/apis/types";
 import { APIError, request } from "@/apis/request";
-import { ServiceRequest } from "@/types/serviceRequest";
 import { debounced } from "@/utils/query";
+import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -89,11 +89,10 @@ export default function ObservationTemplateOverride({
     [],
   );
 
-  const { data: serviceRequestDetail } = useQuery<ServiceRequest>({
-    queryKey: ["serviceRequestDetail", facilityId, serviceRequestId],
-    queryFn: () => apis.servicerequest.retrieve(facilityId!, serviceRequestId!),
-    enabled: !!facilityId && !!serviceRequestId,
-  });
+  const { data: serviceRequestDetail } = useServiceRequestDetail(
+    facilityId,
+    serviceRequestId,
+  );
 
   const queryClient = useQueryClient();
 

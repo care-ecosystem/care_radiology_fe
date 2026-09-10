@@ -56,12 +56,25 @@ export default function DicomUploader({
   const handleFilesPicked = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (!selectedFiles) return;
-    const dicomFiles = Array.from(selectedFiles).map((file, index) => ({
+    const picked = Array.from(selectedFiles);
+    const accepted = picked.filter((file) => {
+      const name = file.name.toLowerCase();
+      return name.endsWith(".dcm") || name.endsWith(".dicom");
+    });
+    const dicomFiles = accepted.map((file, index) => ({
       id: `${Date.now()}-${index}`,
       name: file.name,
       file,
       status: "pending" as FileStatus,
     }));
+    if (accepted.length < picked.length) {
+      toast.error(
+        t("dicom_files_skipped_not_dcm", {
+          count: picked.length - accepted.length,
+        }),
+      );
+    }
+    if (accepted.length === 0) return;
     setFiles((prev) => [...prev, ...dicomFiles]);
     setUploadDone(false);
   };

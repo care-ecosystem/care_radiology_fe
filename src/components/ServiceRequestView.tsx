@@ -6,7 +6,8 @@ import DicomUploader from "./DicomUploader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
-import { RadiologyServiceRequest, ServiceRequest } from "@/types/serviceRequest";
+import { DicomStudy } from "@/types/dicom";
+import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
@@ -21,33 +22,24 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
   const queryClient = useQueryClient();
   const [showUploader, setShowUploader] = useState(false);
 
-  const { data: radiologyServiceRequests } = useQuery<
-    RadiologyServiceRequest[]
-  >({
+  const { data: dicomStudies } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
     queryFn: () =>
-      apis.servicerequest.fetch({
+      apis.dicom.fetchStudies({
         serviceRequestId,
       }),
     enabled: !!serviceRequestId,
   });
-  
-  const dicomStudies = useMemo(
-    () =>
-      radiologyServiceRequests?.map((rsr) => rsr.dicom_study).filter(Boolean),
-    [radiologyServiceRequests],
-  );
 
   const facilityId = useMemo(() => {
     const match = window.location.pathname.match(/\/facility\/([^/]+)/);
     return match?.[1];
   }, []);
   
-  const { data: serviceRequestDetail } = useQuery<ServiceRequest>({
-    queryKey: ["serviceRequestDetail", facilityId, serviceRequestId],
-    queryFn: () => apis.servicerequest.retrieve(facilityId!, serviceRequestId),
-    enabled: !!facilityId && !!serviceRequestId,
-  });
+  const { data: serviceRequestDetail } = useServiceRequestDetail(
+    facilityId,
+    serviceRequestId,
+  );
 
   if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
     return null;

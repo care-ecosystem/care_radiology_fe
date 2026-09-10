@@ -6,14 +6,17 @@ import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
 import { PlugConfigMeta } from "@/types/plugin";
 import { apis } from "@/apis";
-import { RadiologyServiceRequest } from "@/types/serviceRequest";
+import { DicomStudy } from "@/types/dicom";
+import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 
 export default function DicomViewer({
+  facilityId,
   serviceRequestId,
   studyUid,
   seriesUid,
   instanceUid,
 }: {
+  facilityId?: string;
   serviceRequestId?: string;
   studyUid: string;
   seriesUid?: string;
@@ -23,21 +26,22 @@ export default function DicomViewer({
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const { t } = useTranslation(PLUGIN_SLUG);
 
-  const { data: radiologyServiceRequests } = useQuery<RadiologyServiceRequest[]>({
+  const { data: studies } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
-    queryFn: () => apis.servicerequest.fetch({ serviceRequestId: serviceRequestId! }),
+    queryFn: () => apis.dicom.fetchStudies({ serviceRequestId: serviceRequestId! }),
     enabled: !!serviceRequestId,
   });
 
-  const { serviceRequestName, studyDate } = useMemo(() => {
-    const match = radiologyServiceRequests?.find(
-      (rsr) => rsr.dicom_study?.study_uid === studyUid,
-    );
-    return {
-      serviceRequestName: match?.service_request?.title as string | undefined,
-      studyDate: match?.dicom_study?.study_date,
-    };
-  }, [radiologyServiceRequests, studyUid]);
+  const { data: serviceRequestDetail } = useServiceRequestDetail(
+    facilityId,
+    serviceRequestId,
+  );
+
+  const studyDate = useMemo(
+    () => studies?.find((s) => s.study_uid === studyUid)?.study_date,
+    [studies, studyUid],
+  );
+  const serviceRequestName = serviceRequestDetail?.title as string | undefined;
 
   const queryClient = useQueryClient();
   useEffect(() => {
