@@ -164,8 +164,8 @@ export default function DicomUploader({
   return (
     <div>
       <Card className="h-full shadow-sm border border-gray-200 bg-white">
-        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 p-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pb-3">
-          <CardTitle className="text-lg font-semibold text-gray-800 sm:text-xl sm:whitespace-nowrap">
+        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 p-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pb-4">
+          <CardTitle className="text-xl font-semibold text-gray-800">
             {t("dicom_uploader")}
           </CardTitle>
           <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
@@ -216,8 +216,8 @@ export default function DicomUploader({
 
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {files.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500 sm:py-20">
-              <FolderPlus className="h-12 w-12 text-gray-300 mb-4 sm:h-16 sm:w-16" />
+            <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
+              <FolderPlus className="h-16 w-16 text-gray-300 mb-4" />
               <h3 className="text-lg font-medium mb-2">
                 {baseTranslate("no_files_attached")}
               </h3>
@@ -260,7 +260,7 @@ export default function DicomUploader({
                       key={file.id}
                       className="flex items-center gap-3 p-2 rounded-md bg-white border border-gray-100 hover:bg-gray-50 transition"
                     >
-                      <span className="w-8 shrink-0 text-xs font-medium text-gray-400 sm:w-10">
+                      <span className="w-10 shrink-0 text-xs font-medium text-gray-400">
                         #{index + 1}
                       </span>
                       <span className="min-w-0 flex-1 text-sm text-gray-700 truncate">

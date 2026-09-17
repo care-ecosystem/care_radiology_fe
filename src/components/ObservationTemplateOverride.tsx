@@ -5,6 +5,7 @@ import { ObservationTemplate } from "@/types/observationTemplate";
 import { PaginatedResponse } from "@/apis/types";
 import { APIError, request } from "@/apis/request";
 import { debounced } from "@/utils/query";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,6 +80,7 @@ export default function ObservationTemplateOverride({
   disabled,
 }: Props) {
   const { t } = useTranslation(PLUGIN_SLUG);
+  const isSideBySide = useMediaQuery("(min-width: 768px)");
   const facilityId = useMemo(
     () => window.location.pathname.match(/\/facility\/([^/]+)/)?.[1],
     [],
@@ -494,7 +496,7 @@ export default function ObservationTemplateOverride({
         open={!!useTemplateFor}
         onOpenChange={(open) => !open && closeUseTemplateDialog()}
       >
-        <DialogContent className="w-[calc(100%-2rem)] sm:w-full sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{t("radiology_use_template")}</DialogTitle>
             <DialogDescription className="break-words">
@@ -502,8 +504,20 @@ export default function ObservationTemplateOverride({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden md:flex-row md:gap-4">
-            <div className="h-[30vh] w-full shrink-0 flex flex-col border-b border-gray-100 pb-3 md:h-full md:w-72 md:border-b-0 md:border-r md:pb-0 md:pr-4">
+          <div
+            className={`flex-1 min-h-0 flex ${
+              isSideBySide
+                ? "flex-row gap-4 overflow-hidden"
+                : "flex-col gap-3 overflow-y-auto"
+            }`}
+          >
+            <div
+              className={`shrink-0 flex flex-col border-gray-100 ${
+                isSideBySide
+                  ? "w-72 h-full border-r pr-4"
+                  : "w-full border-b pb-3"
+              }`}
+            >
               <div className="p-1.5 shrink-0">
                 <Input
                   placeholder={t("radiology_search_templates")}
@@ -511,7 +525,9 @@ export default function ObservationTemplateOverride({
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <ScrollArea className="flex-1 min-h-0 px-1.5">
+              <ScrollArea
+                className={isSideBySide ? "flex-1 min-h-0 px-1.5" : "px-1.5"}
+              >
                 {loadingTemplates && (
                   <div className="flex flex-col gap-2 py-1">
                     {Array.from({ length: 4 }).map((_, index) => (
@@ -557,7 +573,11 @@ export default function ObservationTemplateOverride({
               </ScrollArea>
             </div>
 
-            <div className="flex-1 min-w-0 min-h-0 flex flex-col md:h-full">
+            <div
+              className={`min-w-0 flex flex-col ${
+                isSideBySide ? "flex-1 h-full" : "w-full shrink-0"
+              }`}
+            >
               {selectedTemplate ? (
                 <>
                   {isEditingTemplate ? (
@@ -628,7 +648,11 @@ export default function ObservationTemplateOverride({
                     </div>
                   )}
 
-                  <ScrollArea className="flex-1 min-h-0 px-1.5">
+                  <ScrollArea
+                    className={
+                      isSideBySide ? "flex-1 min-h-0 px-1.5" : "px-1.5"
+                    }
+                  >
                     <div className="space-y-2 py-1">
                       {selectedTemplate.fields.map((field) => {
                         const { value, unit } = decodeFieldValue(field.value);
@@ -697,7 +721,7 @@ export default function ObservationTemplateOverride({
         open={!!saveTemplateFor}
         onOpenChange={(open) => !open && setSaveTemplateFor(null)}
       >
-        <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               {t("radiology_save_as_observation_template")}

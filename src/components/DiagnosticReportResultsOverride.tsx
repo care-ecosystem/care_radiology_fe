@@ -210,7 +210,7 @@ export function DiagnosticReportResultsOverride({
         open={!!saveTemplateFor}
         onOpenChange={(open) => !open && setSaveTemplateFor(null)}
       >
-        <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               {t("radiology_save_as_observation_template")}

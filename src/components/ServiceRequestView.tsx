@@ -119,7 +119,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
           onOpenChange={(open) => !open && handleUploaderClose()}
         >
           <DialogContent
-            className="w-[calc(100%-2rem)] max-w-4xl max-h-[95vh] overflow-auto gap-0 p-0 sm:w-full"
+            className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] overflow-auto gap-0 p-0"
             hideCloseButton
           >
             <DicomUploader
