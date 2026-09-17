@@ -449,19 +449,20 @@ export default function ObservationTemplateOverride({
                 return (
                   <div
                     key={definition.id}
-                    className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 bg-gray-100/50"
+                    className="flex flex-col items-start gap-2 rounded-lg border border-gray-200 px-4 py-2.5 bg-gray-100/50 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                   >
-                    <span className="text-sm font-medium text-gray-700 truncate">
+                    <span className="w-full min-w-0 truncate text-sm font-medium text-gray-700 sm:w-auto">
                       {definition.title ||
                         definition.code?.display ||
                         t("radiology_observation")}
                     </span>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap sm:shrink-0">
                       <Button
                         type="button"
                         variant="primary"
                         size="sm"
                         disabled={disabled}
+                        className="flex-1 sm:flex-none"
                         onClick={() => openUseTemplate(definition)}
                       >
                         <ClipboardList className="size-4" />
@@ -473,6 +474,7 @@ export default function ObservationTemplateOverride({
                           variant="outline"
                           size="sm"
                           disabled={disabled}
+                          className="flex-1 sm:flex-none"
                           onClick={() => openSaveTemplate(definition)}
                         >
                           <Plus className="size-4" />
@@ -492,16 +494,16 @@ export default function ObservationTemplateOverride({
         open={!!useTemplateFor}
         onOpenChange={(open) => !open && closeUseTemplateDialog()}
       >
-        <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+        <DialogContent className="w-[calc(100%-2rem)] sm:w-full sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{t("radiology_use_template")}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="break-words">
               {useTemplateFor?.title || useTemplateFor?.code?.display}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
-            <div className="w-72 shrink-0 h-full flex flex-col border-r border-gray-100 pr-4">
+          <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden md:flex-row md:gap-4">
+            <div className="h-[30vh] w-full shrink-0 flex flex-col border-b border-gray-100 pb-3 md:h-full md:w-72 md:border-b-0 md:border-r md:pb-0 md:pr-4">
               <div className="p-1.5 shrink-0">
                 <Input
                   placeholder={t("radiology_search_templates")}
@@ -555,7 +557,7 @@ export default function ObservationTemplateOverride({
               </ScrollArea>
             </div>
 
-            <div className="flex-1 min-w-0 h-full flex flex-col">
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col md:h-full">
               {selectedTemplate ? (
                 <>
                   {isEditingTemplate ? (
@@ -604,12 +606,12 @@ export default function ObservationTemplateOverride({
                     </div>
                   ) : (
                     <div className="flex items-start justify-between gap-3 px-1.5 pb-3 shrink-0">
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium text-gray-900">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-sm font-medium text-gray-900 break-words">
                           {selectedTemplate.title}
                         </p>
                         {selectedTemplate.description && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 break-words">
                             {selectedTemplate.description}
                           </p>
                         )}
@@ -667,7 +669,7 @@ export default function ObservationTemplateOverride({
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-100 pt-4">
+          <DialogFooter className="shrink-0 gap-2 border-t border-gray-100 pt-4">
             <Button
               type="button"
               variant="outline"

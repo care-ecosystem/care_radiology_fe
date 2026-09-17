@@ -162,8 +162,8 @@ export function DiagnosticReportResultsOverride({
             key={observation.id}
             className="space-y-4 mb-8 rounded-lg border border-gray-200 bg-white p-4"
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-gray-700 truncate">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <span className="w-full min-w-0 truncate text-sm font-medium text-gray-700 sm:w-auto">
                 {observation.observation_definition?.title ||
                   observation.observation_definition?.code?.display}
               </span>
@@ -174,6 +174,7 @@ export function DiagnosticReportResultsOverride({
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full shrink-0 sm:w-auto"
                     onClick={() => openSaveTemplate(observation)}
                   >
                     <Plus className="size-4" />

@@ -164,20 +164,20 @@ export default function DicomUploader({
   return (
     <div>
       <Card className="h-full shadow-sm border border-gray-200 bg-white">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-xl font-semibold text-gray-800">
+        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 p-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pb-3">
+          <CardTitle className="text-lg font-semibold text-gray-800 sm:text-xl sm:whitespace-nowrap">
             {t("dicom_uploader")}
           </CardTitle>
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             <Button
               onClick={() => folderInputRef.current?.click()}
               disabled={isUploading}
-              className="gap-2"
+              className="flex-1 gap-2 sm:flex-none"
               variant="outline"
             >
               <div className="flex items-center gap-2">
-                <FolderPlus className="h-4 w-4" />
-                {t("dicom_upload_folder")}
+                <FolderPlus className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("dicom_upload_folder")}</span>
               </div>
             </Button>
             <input
@@ -193,12 +193,14 @@ export default function DicomUploader({
             <Button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="gap-2"
+              className="flex-1 gap-2 sm:flex-none"
               variant="outline"
             >
               <div className="flex items-center gap-2">
-                <FilePlus className="h-4 w-4" />
-                {t("dicom_upload_files_button")}
+                <FilePlus className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {t("dicom_upload_files_button")}
+                </span>
               </div>
             </Button>
             <input
@@ -212,10 +214,10 @@ export default function DicomUploader({
           </div>
         </CardHeader>
 
-        <CardContent className="pt-0">
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {files.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500">
-              <FolderPlus className="h-16 w-16 text-gray-300 mb-4" />
+            <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500 sm:py-20">
+              <FolderPlus className="h-12 w-12 text-gray-300 mb-4 sm:h-16 sm:w-16" />
               <h3 className="text-lg font-medium mb-2">
                 {baseTranslate("no_files_attached")}
               </h3>
@@ -258,13 +260,13 @@ export default function DicomUploader({
                       key={file.id}
                       className="flex items-center gap-3 p-2 rounded-md bg-white border border-gray-100 hover:bg-gray-50 transition"
                     >
-                      <span className="text-xs font-medium text-gray-400 w-10">
+                      <span className="w-8 shrink-0 text-xs font-medium text-gray-400 sm:w-10">
                         #{index + 1}
                       </span>
-                      <span className="flex-1 text-sm text-gray-700 truncate">
+                      <span className="min-w-0 flex-1 text-sm text-gray-700 truncate">
                         {file.name}
                       </span>
-                      <div className="flex gap-3">
+                      <div className="flex shrink-0 gap-3">
                         {getStatusIcon(file.status)}
                       </div>
                     </div>
@@ -273,12 +275,12 @@ export default function DicomUploader({
               </ScrollArea>
             </>
           )}
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
             <Button
               onClick={onClose}
               size="sm"
               variant={isUploadDone ? "primary" : "outline"}
-              className="min-w-[100px]"
+              className="flex-1 min-w-[100px] sm:flex-none"
             >
               {isUploadDone ? baseTranslate("done") : baseTranslate("cancel")}
             </Button>
@@ -292,7 +294,7 @@ export default function DicomUploader({
                   )
                 }
                 size="sm"
-                className="min-w-[100px]"
+                className="flex-1 min-w-[100px] sm:flex-none"
               >
                 {isUploading ? t("dicom_uploading") : baseTranslate("upload")}
               </Button>
