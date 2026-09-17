@@ -7,7 +7,7 @@ export function useServiceRequestDetail(
   serviceRequestId?: string,
 ) {
   return useQuery<ServiceRequest>({
-    queryKey: ["serviceRequestDetail", facilityId, serviceRequestId],
+    queryKey: ["serviceRequest", facilityId, serviceRequestId],
     queryFn: () => apis.servicerequest.retrieve(facilityId!, serviceRequestId!),
     enabled: !!facilityId && !!serviceRequestId,
   });
