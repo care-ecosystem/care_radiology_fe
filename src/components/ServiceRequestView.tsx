@@ -46,6 +46,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
+  const canUploadDicom = serviceRequestDetail?.status === "active";
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
@@ -67,13 +68,15 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
                 <Label className="text-base font-semibold text-gray-950">
                   {t("radiology_studies")}
                 </Label>
-                <Button
-                  variant="primary"
-                  onClick={() => setShowUploader(true)}
-                >
-                  <Plus className="size-4 mr-1" />
-                  {t("dicom_upload_data")}
-                </Button>
+                {canUploadDicom && (
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowUploader(true)}
+                  >
+                    <Plus className="size-4 mr-1" />
+                    {t("dicom_upload_data")}
+                  </Button>
+                )}
               </div>
               <RadiologyStudyTable studies={dicomStudies} />
             </div>
@@ -82,6 +85,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
       )}
 
       {
+        canUploadDicom &&
         (dicomStudies === undefined || dicomStudies.length == 0) && (
           <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
             <CardContent className="p-8">
@@ -109,13 +113,13 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
         )
       }
 
-      {facilityId && patientId && (
+      {canUploadDicom && facilityId && patientId && (
         <Dialog
           open={showUploader}
           onOpenChange={(open) => !open && handleUploaderClose()}
         >
           <DialogContent
-            className="max-w-4xl max-h-[95vh] overflow-auto gap-0 p-0"
+            className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] overflow-auto gap-0 p-0"
             hideCloseButton
           >
             <DicomUploader
