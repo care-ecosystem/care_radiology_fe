@@ -24,6 +24,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     queryFn: () =>
       apis.dicom.fetchStudies({
         encounter: encounter.id,
+        includeArchived: false,
       }),
     enabled: true,
   });

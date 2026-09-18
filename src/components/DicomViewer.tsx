@@ -28,7 +28,11 @@ export default function DicomViewer({
 
   const { data: studies } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
-    queryFn: () => apis.dicom.fetchStudies({ serviceRequestId: serviceRequestId! }),
+    queryFn: () =>
+      apis.dicom.fetchStudies({
+        serviceRequestId: serviceRequestId!,
+        includeArchived: true,
+      }),
     enabled: !!serviceRequestId,
   });
 
@@ -72,20 +76,23 @@ export default function DicomViewer({
 
   return (
     <div id="dicom-viewer-page" className="flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="flex flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xl font-semibold text-gray-800">
+      <div className="flex flex-col items-stretch gap-2 px-4 py-3 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-xl font-semibold text-gray-800 break-words">
             {serviceRequestName
               ? `${t("dicom_study_viewer")} (${serviceRequestName})`
               : t("dicom_study_viewer")}
           </span>
-          <span className="text-sm text-gray-500">
-            {studyDate && format(studyDate, "dd/MM/yyyy, hh:mm a")}
-          </span>
+          {studyDate && (
+            <span className="text-sm text-gray-500">
+              {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+            </span>
+          )}
         </div>
-        <div className="flex gap-5 justify-end">
+        <div className="flex gap-2 sm:justify-end sm:gap-5">
           <Button
             variant={"primary"}
+            className="flex-1 sm:flex-none"
             onClick={() => {
               goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
             }}
@@ -95,16 +102,17 @@ export default function DicomViewer({
           <Button
             variant={"outline"}
             color={"red"}
+            className="flex-1 sm:flex-none"
             onClick={() => window.close()}
           >
             {t("radiology_close")}
           </Button>
         </div>
       </div>
-      <div className="flex-1 min-h-0 p-4">
+      <div className="flex-1 min-h-0 p-0 sm:p-4">
         <iframe
           ref={dicomViewerRef}
-          className="w-full h-full rounded-lg border border-gray-200"
+          className="w-full h-full rounded-none border border-gray-200 sm:rounded-lg"
           src={iframeUrl}
         ></iframe>
       </div>

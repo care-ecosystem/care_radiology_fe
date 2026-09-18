@@ -1,5 +1,6 @@
 import { queryString, request } from "./request";
 import { PaginatedResponse } from "./types";
+import { DicomStudyArchiveResponse } from "@/types/dicom";
 import {
   ObservationTemplate,
   ObservationTemplateField,
@@ -10,10 +11,12 @@ export const apis = {
     fetchStudies: async (query?: {
       encounter?: string;
       serviceRequestId?: string;
+      includeArchived?: boolean;
     }) => {
       const params: Record<string, string> = {};
       if (query?.serviceRequestId) params.serviceRequestId = query.serviceRequestId;
       else if (query?.encounter) params.encounterId = query.encounter;
+      params.includeArchived = String(query?.includeArchived ?? false);
       return await request<any>(
         `/api/care_radiology/dicom/studies/${queryString(params)}`,
       );
@@ -38,6 +41,19 @@ export const apis = {
     }): Promise<unknown> => {
       return await request<unknown>(
         "/api/care_radiology/dicom/link-service-request/",
+        {
+          body: JSON.stringify(payload),
+          method: "POST",
+        },
+      );
+    },
+
+    archive: async (
+      id: string,
+      payload: { archive_reason: string },
+    ): Promise<DicomStudyArchiveResponse> => {
+      return await request<DicomStudyArchiveResponse>(
+        `/api/care_radiology/dicom/${id}/archive/`,
         {
           body: JSON.stringify(payload),
           method: "POST",
