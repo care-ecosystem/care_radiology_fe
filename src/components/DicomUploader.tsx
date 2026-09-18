@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  CopyX,
   FolderPlus,
   FilePlus,
 } from "lucide-react";
@@ -11,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { apis } from "@/apis";
+import { APIError } from "@/apis/request";
 import { toast } from "@/lib/utils";
 import { PLUGIN_SLUG } from "@/constants";
 
-type FileStatus = "pending" | "uploading" | "success" | "failed";
+type FileStatus = "pending" | "uploading" | "success" | "failed" | "duplicate";
 
 interface DicomFile {
   id: string;
@@ -82,7 +84,7 @@ export default function DicomUploader({
   const handleSave = async () => {
     if (files.length === 0 || isUploading) return;
     setIsUploading(true);
-    const counts = { success: 0, failed: 0 };
+    const counts = { success: 0, failed: 0, duplicate: 0 };
     let uploadedStudyUid: string | undefined;
 
     for (let i = 0; i < files.length; i++) {
@@ -107,9 +109,15 @@ export default function DicomUploader({
           status: isSuccess ? "success" : "failed",
           study_uid: response.study_uid,
         });
-      } catch (_) {
-        setFileStatus(i, { status: "failed" });
+      } catch (error) {
+        const isDuplicate = error instanceof APIError && error.status === 409;
+        counts[isDuplicate ? "duplicate" : "failed"] += 1;
+        setFileStatus(i, { status: isDuplicate ? "duplicate" : "failed" });
       }
+    }
+
+    if (counts.duplicate) {
+      toast.error(t("dicom_duplicate_file"));
     }
 
     if (counts.failed) {
@@ -136,7 +144,7 @@ export default function DicomUploader({
       }
     }
 
-    if (counts.failed === 0) {
+    if (counts.failed === 0 && counts.duplicate === 0) {
       setUploadDone(true);
     }
 
@@ -149,6 +157,8 @@ export default function DicomUploader({
         return <CheckCircle2 className="h-5 w-5 text-green-500" />;
       case "failed":
         return <XCircle className="h-5 w-5 text-red-500" />;
+      case "duplicate":
+        return <CopyX className="h-5 w-5 text-amber-500" />;
       case "uploading":
         return <Clock className="h-5 w-5 text-blue-500 animate-pulse" />;
       default:
@@ -158,6 +168,7 @@ export default function DicomUploader({
 
   const uploadedCount = files.filter((f) => f.status === "success").length;
   const failedCount = files.filter((f) => f.status === "failed").length;
+  const duplicateCount = files.filter((f) => f.status === "duplicate").length;
   const pendingCount = files.filter((f) => f.status === "pending").length;
   const isUploadDone = uploadDone && !isUploading;
 
@@ -238,6 +249,13 @@ export default function DicomUploader({
                     {t("dicom_files_failed_count", { count: failedCount })}{" "}
                   </span>
                 )}
+                {duplicateCount > 0 && (
+                  <span className="text-amber-600">
+                    {t("dicom_files_duplicate_count", {
+                      count: duplicateCount,
+                    })}{" "}
+                  </span>
+                )}
                 {pendingCount > 0 && !isUploading && (
                   <span className="text-gray-500">
                     {t("dicom_files_ready_count", { count: pendingCount })}
@@ -246,7 +264,7 @@ export default function DicomUploader({
                 {isUploading && (
                   <span className="text-blue-600">
                     {t("dicom_uploading_progress", {
-                      current: uploadedCount + failedCount,
+                      current: uploadedCount + failedCount + duplicateCount,
                       total: files.length,
                     })}
                   </span>
