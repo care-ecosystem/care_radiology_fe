@@ -47,9 +47,10 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
-  const canUploadDicom = serviceRequestDetail?.status === "active";
+  const isServiceRequestActive = serviceRequestDetail?.status === "active";
   const hasDiagnosticReports =
     (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
+  const canUploadDicom = isServiceRequestActive && !hasDiagnosticReports;
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
@@ -84,7 +85,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
               </div>
               <RadiologyStudyTable
                 studies={dicomStudies}
-                canArchive={canUploadDicom && !hasDiagnosticReports}
+                canArchive={canUploadDicom}
                 onArchived={invalidateServiceRequestQueries}
               />
             </div>
