@@ -31,7 +31,7 @@ export default function DicomViewer({
     queryFn: () =>
       apis.dicom.fetchStudies({
         serviceRequestId: serviceRequestId!,
-        includeArchived: true,
+        includeArchived: false,
       }),
     enabled: !!serviceRequestId,
   });
