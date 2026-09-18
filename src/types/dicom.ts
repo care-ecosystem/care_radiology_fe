@@ -6,6 +6,7 @@ export interface DicomStudy {
   study_modalities: string[];
   study_series: DicomSeries[];
   is_archived?: boolean;
+  archive_reason?: string | null;
   archived_datetime?: string | null;
 }
 
