@@ -5,6 +5,8 @@ export interface DicomStudy {
   study_description: string;
   study_modalities: string[];
   study_series: DicomSeries[];
+  is_archived?: boolean;
+  archived_datetime?: string | null;
 }
 
 export interface DicomSeries {
@@ -12,4 +14,18 @@ export interface DicomSeries {
   series_number: string;
   series_instance_count: string;
   series_description: string;
+}
+
+export interface DicomStudyArchiveResponse {
+  id: string;
+  dicom_study_uid: string;
+  is_archived: boolean;
+  archive_reason: string;
+  archived_datetime: string;
+  archived_by: {
+    external_id: string;
+    first_name: string;
+    last_name: string;
+    username: string;
+  };
 }
