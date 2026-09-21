@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useState } from "react";
+import { FC, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import RadiologyStudyTable from "./RadiologyStudyTable";
@@ -7,7 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
 import { DicomStudy } from "@/types/dicom";
+import { PlugConfigMeta } from "@/types/plugin";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { useHostSiblingsHidden } from "@/hooks/useHostSiblingsHidden";
+import { allowsDiagnosticReportWithoutActiveStudy } from "@/utils/pluginConfig";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
@@ -15,14 +18,21 @@ import { Plus } from "lucide-react";
 
 type SRProps = {
   serviceRequestId: string;
+  __meta?: PlugConfigMeta;
 };
 
-export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
+export const ServiceRequestView: FC<SRProps> = ({
+  serviceRequestId,
+  __meta,
+}) => {
   const { t } = useTranslation(PLUGIN_SLUG);
   const queryClient = useQueryClient();
   const [showUploader, setShowUploader] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: dicomStudies } = useQuery<DicomStudy[]>({
+  const { data: dicomStudies, isSuccess: studiesLoaded } = useQuery<
+    DicomStudy[]
+  >({
     queryKey: ["radiologyservicerequest", serviceRequestId],
     queryFn: () =>
       apis.dicom.fetchStudies({
@@ -36,20 +46,35 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
     const match = window.location.pathname.match(/\/facility\/([^/]+)/);
     return match?.[1];
   }, []);
-  
+
   const { data: serviceRequestDetail } = useServiceRequestDetail(
     facilityId,
     serviceRequestId,
   );
 
-  if (serviceRequestDetail?.category !== SERVICE_REQUEST_OVERRIDE_CATEGORY) {
+  const isRadiologyRequest =
+    serviceRequestDetail?.category === SERVICE_REQUEST_OVERRIDE_CATEGORY;
+  const hasDiagnosticReports =
+    (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
+  const hasActiveStudy = (dicomStudies ?? []).some(
+    (study) => !study.is_archived,
+  );
+
+  const blockReportCreation =
+    isRadiologyRequest &&
+    studiesLoaded &&
+    !hasDiagnosticReports &&
+    !hasActiveStudy &&
+    !allowsDiagnosticReportWithoutActiveStudy(__meta);
+
+  useHostSiblingsHidden(rootRef, blockReportCreation);
+
+  if (!isRadiologyRequest) {
     return null;
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
   const isServiceRequestActive = serviceRequestDetail?.status === "active";
-  const hasDiagnosticReports =
-    (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
   const canUploadDicom = isServiceRequestActive && !hasDiagnosticReports;
 
   const invalidateServiceRequestQueries = () => {
@@ -63,7 +88,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
   };
 
   return (
-    <React.Fragment>
+    <div ref={rootRef}>
       {dicomStudies && dicomStudies.length > 0 && (
         <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
           <CardContent className="p-4">
@@ -123,6 +148,16 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
         )
       }
 
+      {blockReportCreation && (
+        <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
+          <CardContent className="flex items-start gap-3 p-4">
+            <p className="text-sm text-gray-700">
+              {t("radiology_report_needs_active_study")}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {canUploadDicom && facilityId && patientId && (
         <Dialog
           open={showUploader}
@@ -142,7 +177,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
           </DialogContent>
         </Dialog>
       )}
-    </React.Fragment>
+    </div>
   );
 };
 
