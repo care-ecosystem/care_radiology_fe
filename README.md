@@ -36,7 +36,7 @@ Routes (`src/routes.tsx`):
 | Path | Component |
 |------|-----------|
 | `/facility/:facilityId/service_requests/:serviceRequestId/radiology/view/:studyid` | `DicomViewer` — iframes the OHIF viewer at `meta.radiologyViewerBaseUrl` |
-| `/facility/:facilityId/settings/general/report_templates` | `ObservationTemplateSettings`; must stay in sync with `reportTemplatesPath` in `src/constants.ts` |
+| `/facility/:facilityId/settings/general/report_templates` | `ObservationTemplateSettings`. Nested under `settings/general/` so the host's settings sidebar keeps **General** highlighted.  |
 
 ## Configuration
 
@@ -92,18 +92,18 @@ report-creation UI) via `useHostSiblingsHidden` and renders the
 
 #### Possible values
 
-The check is a strict identity comparison —
-`getPluginConfig(meta).allowDiagnosticReportWithoutActiveStudy === true` — so
-only the JSON boolean `true` opts in. Everything else falls through to the
-blocking behaviour.
+The check is
+`getPluginConfig(meta).allowDiagnosticReportWithoutActiveStudy !== false`, so
+report creation stays visible unless a deployment explicitly sets the JSON
+boolean `false`. A missing, partial or typo'd config therefore degrades to the
+permissive behaviour rather than silently withholding the button.
 
 | Value in `meta.config` | Effect |
 |------------------------|--------|
-| `true` (JSON boolean) | **Allowed.** Report creation stays visible even with no unarchived study. |
-| `false` (JSON boolean) | **Blocked** (the explicit default). |
-| key omitted / `meta.config` absent / `meta` absent | **Blocked.** Same as `false`. |
-| `"true"` (string), `1`, `"yes"`, any other truthy value | **Blocked.** ⚠️ Not coerced — a quoted `"true"` in the JSON silently behaves like `false`. |
-| `null` | **Blocked.** |
+| key omitted / `meta.config` absent / `meta` absent | **Allowed** (the default). |
+| `false` (JSON boolean) | **Blocked.** The only value that gates creation. |
+| `true` (JSON boolean) | **Allowed.** Explicit form of the default. |
+| `"false"` (string), `0`, `null`, anything else | **Allowed.** ⚠️ Not coerced — only an unquoted JSON `false` blocks, so a quoted `"false"` silently does nothing. |
 
 #### Applying a change
 
@@ -120,7 +120,7 @@ read in four places:
 |------|---------------|
 | `src/components/DiagnosticReportResultsOverride.tsx:152` | Skips any observation whose `observation_definition.category` is not the category |
 | `src/components/ObservationTemplateOverride.tsx:397` | Scopes the templates offered inside the host's report form |
-| `src/pages/ObservationTemplateSettings.tsx:106` | Filters the observation definitions a template can be built from |
+| `src/pages/ObservationTemplateSettings.tsx:104` | Filters the observation definitions a template can be built from |
 | `src/manifest.tsx:106` | Published to the host as the `diagnosticReportResultsOverrideCategory` manifest field |
 
 All four import `DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY` from
@@ -136,6 +136,41 @@ setting it to any other value would prove otherwise. `RadiologyPluginConfig`
 declares the key, which is what makes it look configurable (see
 [Gotchas](#gotchas)). To change the category today, edit `src/constants.ts` and
 rebuild.
+
+## Report templates
+
+An observation template is a named set of pre-filled field values for one
+observation definition, stored by the `care_radiology` backend at
+`/api/care_radiology/observation_template/`. There are two places they are
+handled, and **they do not see the same rows**:
+
+| | Settings → General → Manage Report Templates | "Save as Template" in the host's report form |
+|---|---|---|
+| Component | `pages/ObservationTemplateSettings.tsx` | `components/ObservationTemplateOverride.tsx` |
+| Fields come from | the observation definition (blank values) | the observations recorded on the latest report |
+| `activity_definition` on create | the selected activity | `null` |
+| Lists templates where | `activity_definition` **and** `observation_definition` both match | `observation_definition` matches, any activity |
+
+Because the settings page always filters by activity, **templates saved from
+the report form (`activity_definition: null`) never appear there.** If the two
+should share one pool, either have `ObservationTemplateOverride` tag its saves
+with the service request's activity, or make the activity filter optional.
+
+Two further constraints, both from the backend:
+
+- **Field values are write-once.** `ObservationTemplateUpdateSpec` accepts only
+  `title` and `description`, so the edit dialog shows the fields read-only and
+  the create dialog warns that values cannot be changed later. Lift the spec to
+  accept `fields` and both notes can go.
+- **Titles are unique per facility**, not per activity/observation
+  (`unique_facility_observation_template_title`), so two different observations
+  cannot both have a template called "Normal". The backend's `IntegrityError`
+  surfaces as a toast.
+
+Units are seeded from the definition's `permitted_unit` and rendered as a fixed
+suffix, never as an input: care_fe's report form offers a unit only where a
+`permitted_unit` exists, and only that one code, so a free-text unit would
+produce a template the form cannot apply.
 
 ## i18n
 
@@ -157,7 +192,7 @@ Only `en` ships today; adding a language means adding `public/locale/<lang>.json
 |------|------|
 | `src/manifest.tsx` | Registers the slots, the encounter tab and the routes; every entry is lazy + `ErrorBoundary` wrapped |
 | `src/routes.tsx` | Viewer route and report-templates settings route |
-| `src/constants.ts` | Slug, category constants, access-token key, `reportTemplatesPath` |
+| `src/constants.ts` | Slug, category constants, access-token key |
 | `src/utils/pluginConfig.ts` | `meta` / `meta.config` accessors, including the flag above |
 | `src/types/plugin.ts` | Re-declared host meta types + `window` globals |
 | `src/components/ServiceRequestView.tsx` | Study table, upload entry point, report-creation gate |
@@ -168,7 +203,10 @@ Only `en` ships today; adding a language means adding `public/locale/<lang>.json
 | `src/components/ObservationTemplateOverride.tsx` | Applies a saved template inside the host's report form |
 | `src/components/DiagnosticReportResultsOverride.tsx` | Template-driven results entry |
 | `src/components/FacilityHomeActions.tsx` | Settings → General entry to the template manager |
-| `src/pages/ObservationTemplateSettings.tsx` | Template CRUD page |
+| `src/pages/ObservationTemplateSettings.tsx` | Template create/list/update page |
+| `src/utils/observationTemplateFields.ts` | Derives a template's fields from an observation definition; shared by the settings page and `ObservationTemplateOverride` |
+| `src/components/ui/combobox.tsx` | Searchable select (local or server-side search); this plug has no popover/command primitive |
+| `src/components/ui/pagination.tsx` | Port of care_fe's `Common/Pagination`, so lists page like the host |
 | `src/hooks/useHostSiblingsHidden.ts` | Hides the host's sibling nodes below our root (the report-creation gate) |
 | `src/apis/` | Endpoint definitions, `fetch` wrapper, `APIError` |
 
@@ -198,7 +236,18 @@ Only `en` ships today; adding a language means adding `public/locale/<lang>.json
   Verify against the care_fe version you deploy against.
 - **Route order matters.** The settings route is matched ahead of core's
   `/facility/:facilityId/settings*` layout because care_fe merges plugin routes
-  before app routes. Keep it in sync with `reportTemplatesPath`.
+  before app routes (`{...pluginRoutes, ...Routes}`, and raviger takes the first
+  match in insertion order). If the host ever reverses that merge, the settings
+  page 404s into core's `ErrorPage`.
+- **The host never loads this plugin's stylesheet.** care_fe's `PluginEngine`
+  imports the federated JS only; `src/index.css` is reachable from
+  `src/index.ts`, which is the Vite build *input* but is not in the `./manifest`
+  graph the host loads. Every class the plugin renders therefore resolves
+  against **care_fe's** Tailwind build, and Tailwind only emits what it finds in
+  the files it scans — which do not include this repo. Any utility care_fe does
+  not itself use is a silent no-op: `py-39`, `h-[1px]`, `focus-visible:bg-gray-100`
+  all rendered as nothing. Before using an unusual class, check it exists in
+  care_fe (`grep -rlF 'py-24' ../care_fe/src`), or use an inline `style`.
 - **Shared deps must stay shared.** `vite.config.mjs` shares `react`,
   `react-dom`, `react-i18next`, `@tanstack/react-query`, `raviger` and `sonner`
   with the host. Un-sharing one gives the plugin a second copy of React or of
@@ -208,8 +257,9 @@ Only `en` ships today; adding a language means adding `public/locale/<lang>.json
 
 | Symptom | Look at |
 |---------|---------|
-| Report creation is hidden with a "needs an active study" notice | The flag and its gating conditions above; is every study archived? |
-| Setting the flag to `true` changed nothing | Is it a JSON boolean, not a string? Did the page reload? Is a build-time plugin entry overriding it? |
+| Report creation is hidden with a "needs an active study" notice | The flag is set to JSON `false`; is every study archived? |
+| Setting the flag to `false` changed nothing | Is it an unquoted JSON boolean? Did the page reload? Is a build-time plugin entry overriding it? |
+| Spacing, borders or colours in the plugin render as if the class were absent | The class probably is absent — see "The host never loads this plugin's stylesheet" in [Gotchas](#gotchas) |
 | All labels render as raw keys (`radiology_studies`) | i18n namespace — is `meta.name` set to something other than the slug? Is `/locale/en.json` reachable at the `meta.url` origin? |
 | Studies never load, uploads 404 | The `care_radiology` backend plug, and `window.__CORE_ENV__.apiUrl` |
 | The viewer opens blank | `meta.radiologyViewerBaseUrl` |

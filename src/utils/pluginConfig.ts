@@ -13,5 +13,7 @@ export function getPluginConfig(meta?: PlugConfigMeta): RadiologyPluginConfig {
 export function allowsDiagnosticReportWithoutActiveStudy(
   meta?: PlugConfigMeta,
 ) {
-  return getPluginConfig(meta).allowDiagnosticReportWithoutActiveStudy === true;
+  return (
+    getPluginConfig(meta).allowDiagnosticReportWithoutActiveStudy !== false
+  );
 }
