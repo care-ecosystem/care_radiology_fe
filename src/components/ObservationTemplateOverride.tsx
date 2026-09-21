@@ -31,8 +31,11 @@ import {
 import { ClipboardList, Pencil, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { decodeFieldValue, encodeFieldValue } from "@/utils/templateFieldValue";
 import {
+  buildTemplateFields,
+  displayForCode,
+} from "@/utils/observationTemplateFields";
+import {
   ObservationDefinition,
-  DiagnosticReportObservation,
   DiagnosticReport,
 } from "@/types/diagnosticReports";
 import { ObservationTemplateField } from "@/types/observationTemplate";
@@ -57,19 +60,6 @@ interface Props {
     unit: string,
   ) => void;
   disabled?: boolean;
-}
-
-function displayForCode(
-  definition: ObservationDefinition,
-  code: string,
-): string {
-  if (code === (definition.code?.code ?? definition.id)) {
-    return definition.title || definition.code?.display || code;
-  }
-  const component = (definition.component ?? []).find(
-    (c) => c?.code?.code === code,
-  );
-  return component?.code?.display || code;
 }
 
 export default function ObservationTemplateOverride({
@@ -238,46 +228,6 @@ export default function ObservationTemplateOverride({
   const hasDiagnosticReports =
     (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
 
-  const extractFieldsFromObservation = (
-    definition: ObservationDefinition,
-    observation?: DiagnosticReportObservation,
-  ): ObservationTemplateField[] => {
-    if (!definition.id) return [];
-
-    const hasComponents = (definition.component ?? []).length > 0;
-
-    if (hasComponents) {
-      return definition.component!.map((comp) => {
-        const componentCode = comp.code?.code ?? "";
-        const observationComponent = observation?.component?.find(
-          (c) => c.code?.code === componentCode,
-        );
-        const value = observationComponent?.value?.value ?? "";
-        const unit =
-          observationComponent?.value?.unit?.code ||
-          observationComponent?.value?.unit?.display;
-
-        return {
-          code: componentCode,
-          value: encodeFieldValue(value, unit),
-          description: comp.code?.display ?? "",
-        };
-      });
-    }
-
-    return [
-      {
-        code: definition.code?.code ?? definition.id,
-        value: encodeFieldValue(
-          observation?.value?.value ?? "",
-          observation?.value?.unit?.code ||
-            observation?.value?.unit?.display,
-        ),
-        description: definition.title || definition.code?.display || "",
-      },
-    ];
-  };
-
   const openSaveTemplate = async (definition: ObservationDefinition) => {
     if (!facilityId || !serviceRequestId || !definition.id) {
       toast.error(t("radiology_no_diagnostic_report_to_save"));
@@ -326,7 +276,7 @@ export default function ObservationTemplateOverride({
       setSaveTemplateFor(definition);
       setSaveTitle("");
       setSaveDescription("");
-      setSaveFields(extractFieldsFromObservation(definition, observation));
+      setSaveFields(buildTemplateFields(definition, observation));
       setShowTemplateFields(false);
     } catch (error) {
       console.error("Failed to fetch diagnostic report", error);
@@ -771,25 +721,26 @@ export default function ObservationTemplateOverride({
 
               {showTemplateFields && (
                 <div className="space-y-3 pt-2">
-                  {saveFields.map((field, index) => (
-                    <div
-                      key={field.code}
-                      className="rounded-md bg-gray-50 p-3 space-y-2"
-                    >
-                      <p className="text-sm font-medium text-gray-900">
-                        {field.description || field.code}
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-gray-600">
-                            {t("radiology_value")}
-                          </Label>
+                  {saveFields.map((field, index) => {
+                    const { value, unit } = decodeFieldValue(field.value);
+                    return (
+                      <div
+                        key={field.code}
+                        className="rounded-md bg-gray-50 p-3 space-y-2"
+                      >
+                        <Label
+                          htmlFor={`save-field-${field.code}`}
+                          className="text-sm font-medium text-gray-900"
+                        >
+                          {field.description || field.code}
+                        </Label>
+                        <div className="flex items-center gap-2">
                           <Input
+                            id={`save-field-${field.code}`}
                             placeholder={t("radiology_enter_value")}
-                            value={decodeFieldValue(field.value).value}
+                            value={value}
                             onChange={(e) => {
                               const newFields = [...saveFields];
-                              const { unit } = decodeFieldValue(field.value);
                               newFields[index] = {
                                 ...field,
                                 value: encodeFieldValue(e.target.value, unit),
@@ -797,28 +748,16 @@ export default function ObservationTemplateOverride({
                               setSaveFields(newFields);
                             }}
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-gray-600">
-                            {t("radiology_unit")}
-                          </Label>
-                          <Input
-                            placeholder={t("radiology_unit")}
-                            value={decodeFieldValue(field.value).unit || ""}
-                            onChange={(e) => {
-                              const newFields = [...saveFields];
-                              const { value } = decodeFieldValue(field.value);
-                              newFields[index] = {
-                                ...field,
-                                value: encodeFieldValue(value, e.target.value),
-                              };
-                              setSaveFields(newFields);
-                            }}
-                          />
+                          {/* Fixed: the report form accepts only this one unit. */}
+                          {unit && (
+                            <span className="shrink-0 text-sm text-gray-600">
+                              {unit}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

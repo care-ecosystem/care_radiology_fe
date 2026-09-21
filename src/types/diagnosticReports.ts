@@ -11,6 +11,7 @@ export interface ObservationComponent {
 export interface ObservationDefinitionComponent {
   code?: { code?: string; display?: string };
   permitted_data_type?: string;
+  permitted_unit?: { code?: string; display?: string } | null;
 }
 
 export interface ObservationDefinition {
@@ -19,7 +20,8 @@ export interface ObservationDefinition {
   code?: { code?: string; display?: string };
   category?: string;
   permitted_data_type?: string;
-  component?: ObservationDefinitionComponent[];
+  permitted_unit?: { code?: string; display?: string } | null;
+  component?: ObservationDefinitionComponent[] | null;
 }
 
 export interface DiagnosticReportObservation {

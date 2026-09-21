@@ -8,6 +8,9 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 const ServiceRequestActionComponent = lazy(
   () => import("@/components/ServiceRequestView"),
 );
+const FacilityHomeActionsComponent = lazy(
+  () => import("@/components/FacilityHomeActions"),
+);
 const DiagnosticReportResultsOverrideComponent = lazy(
   () => import("@/components/DiagnosticReportResultsOverride"),
 );
@@ -36,6 +39,17 @@ function ServiceRequestActionWrapper(props: any) {
     <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
         <ServiceRequestActionComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// Wrapper for FacilityHomeActions
+function FacilityHomeActionsWrapper(props: any) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <FacilityHomeActionsComponent {...props} />
       </Suspense>
     </ErrorBoundary>
   );
@@ -80,6 +94,7 @@ const manifest = {
   extends: [],
   components: {
     ServiceRequestAction: ServiceRequestActionWrapper,
+    FacilityHomeActions: FacilityHomeActionsWrapper,
     DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideWrapper,
     DiagnosticReportOverride: DiagnosticReportOverrideWrapper,
   },

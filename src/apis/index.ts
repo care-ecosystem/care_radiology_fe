@@ -5,6 +5,10 @@ import {
   ObservationTemplate,
   ObservationTemplateField,
 } from "@/types/observationTemplate";
+import {
+  ActivityDefinitionDetail,
+  ActivityDefinitionListItem,
+} from "@/types/activityDefinition";
 
 export const apis = {
   dicom: {
@@ -78,6 +82,7 @@ export const apis = {
       activity_definition?: string;
       title?: string;
       limit?: number;
+      offset?: number;
     }): Promise<PaginatedResponse<ObservationTemplate>> => {
       const params: Record<string, string | number> = {
         facility: query.facility,
@@ -91,6 +96,9 @@ export const apis = {
       }
       if (query.limit) {
         params.limit = query.limit;
+      }
+      if (query.offset) {
+        params.offset = query.offset;
       }
       return await request<PaginatedResponse<ObservationTemplate>>(
         `/api/care_radiology/observation_template/${queryString(params)}`,
@@ -126,6 +134,39 @@ export const apis = {
           method: "PATCH",
           body: JSON.stringify(payload),
         },
+      );
+    },
+  },
+
+  activityDefinition: {
+    // Only `imaging` activity definitions are relevant to the radiology plug.
+    list: async (query: {
+      facility: string;
+      title?: string;
+      limit?: number;
+    }): Promise<PaginatedResponse<ActivityDefinitionListItem>> => {
+      const params: Record<string, string | number> = {
+        classification: "imaging",
+        status: "active",
+        limit: query.limit ?? 20,
+      };
+      if (query.title) {
+        params.title = encodeURIComponent(query.title);
+      }
+      return await request<PaginatedResponse<ActivityDefinitionListItem>>(
+        `/api/v1/facility/${query.facility}/activity_definition/${queryString(
+          params,
+        )}`,
+      );
+    },
+
+    // The list spec omits `observation_result_requirements`; only retrieve has it.
+    retrieve: async (
+      facilityId: string,
+      slug: string,
+    ): Promise<ActivityDefinitionDetail> => {
+      return await request<ActivityDefinitionDetail>(
+        `/api/v1/facility/${facilityId}/activity_definition/${slug}/`,
       );
     },
   },
