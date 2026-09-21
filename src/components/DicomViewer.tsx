@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
-import { PlugConfigMeta } from "@/types/plugin";
+import { getPluginMeta } from "@/utils/pluginConfig";
 import { apis } from "@/apis";
 import { DicomStudy } from "@/types/dicom";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
@@ -54,8 +54,7 @@ export default function DicomViewer({
       .then((val) => {
         const token = (val as { access: string; refresh: string }).access;
 
-        const meta = window.__CARE_PLUGIN_RUNTIME__?.meta[PLUGIN_SLUG] as PlugConfigMeta;
-        const ohifBaseUrl = `${ meta?.radiologyViewerBaseUrl || "" }`;
+        const ohifBaseUrl = `${ getPluginMeta()?.radiologyViewerBaseUrl || "" }`;
         if (studyUid && seriesUid && instanceUid) {
           setIframeUrl(
             `${ohifBaseUrl}/viewer?StudyInstanceUIDs=${studyUid}&initialSeriesInstanceUID=${seriesUid}&initialSopInstanceUID=${instanceUid}&token=${token}`
