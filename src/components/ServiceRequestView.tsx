@@ -87,6 +87,7 @@ export const ServiceRequestView: FC<SRProps> = ({ serviceRequestId }) => {
                 studies={dicomStudies}
                 canArchive={canUploadDicom}
                 onArchived={invalidateServiceRequestQueries}
+                patientId={patientId}
               />
             </div>
           </CardContent>

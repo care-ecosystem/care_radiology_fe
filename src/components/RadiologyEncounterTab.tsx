@@ -12,6 +12,7 @@ import { PLUGIN_SLUG } from "@/constants";
 
 export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   encounter,
+  patient,
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
   const [searchInput, setSearchInput] = useState("");
@@ -55,7 +56,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
       </div>
 
       {filteredStudies && filteredStudies.length > 0 ? (
-        <RadiologyStudyTable studies={filteredStudies} />
+        <RadiologyStudyTable studies={filteredStudies} patientId={patient.id} />
       ) : (
         <Card className="col-span-full">
           <CardContent className="p-6 text-center text-gray-500">
