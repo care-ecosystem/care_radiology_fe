@@ -8,6 +8,10 @@ export interface DicomStudy {
   is_archived?: boolean;
   archive_reason?: string | null;
   archived_datetime?: string | null;
+  service_request?: {
+    id: string;
+    diagnostic_report_id: string | null;
+  } | null;
 }
 
 export interface DicomSeries {

@@ -3,6 +3,7 @@
   "dicom_uploader": "DICOM Uploader",
   "dicom_study_viewer": "DICOM Study Viewer",
   "dicom_view_study": "View Study",
+  "dicom_view_report": "View Report",
   "dicom_upload_data": "Add DICOM Images",
   "dicom_search_records": "Search Radiology Records",
   "dicom_upload_prompt": "Click 'Folder' or 'Files' to upload your DICOM files.",

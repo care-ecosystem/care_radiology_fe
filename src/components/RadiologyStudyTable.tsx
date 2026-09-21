@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Archive, Eye, Info, MoreHorizontal } from "lucide-react";
+import { Archive, Eye, FileText, Info, MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
 import { useTranslation } from "react-i18next";
@@ -38,6 +38,7 @@ type RadiologyStudyTableProps = {
   studies?: DicomStudy[],
   canArchive?: boolean,
   onArchived?: () => void,
+  patientId?: string,
 };
 
 export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
@@ -45,6 +46,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   studies,
   canArchive = false,
   onArchived,
+  patientId,
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
 
@@ -70,6 +72,14 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   const handleViewStudy = (studyUid: string) => {
     window.open(
       `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  const handleViewReport = (diagnosticReportId: string) => {
+    window.open(
+      `/facility/${facilityId}/patient/${patientId}/diagnostic_reports/${diagnosticReportId}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -158,6 +168,21 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                       >
                         <Eye size={16} className="mr-1" />
                         {t("dicom_view_study")}
+                      </Button>
+                    )}
+                    {patientId && study.service_request?.diagnostic_report_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleViewReport(
+                            study.service_request!.diagnostic_report_id!,
+                          )
+                        }
+                        className="text-xs h-auto py-1 px-2"
+                      >
+                        <FileText size={16} className="mr-1" />
+                        {t("dicom_view_report")}
                       </Button>
                     )}
                     <DropdownMenu modal={false}>
