@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 export default function ObservationTemplateSettings({
   facilityId,
