@@ -10,5 +10,6 @@ export function useServiceRequestDetail(
     queryKey: ["serviceRequest", facilityId, serviceRequestId],
     queryFn: () => apis.servicerequest.retrieve(facilityId!, serviceRequestId!),
     enabled: !!facilityId && !!serviceRequestId,
+    staleTime: 5 * 60 * 1000,
   });
 }

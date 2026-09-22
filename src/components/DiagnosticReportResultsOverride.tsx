@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplateField } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
@@ -101,6 +101,8 @@ export function DiagnosticReportResultsOverride({
       isServiceRequestPage ? serviceRequestId : undefined,
     );
 
+  const queryClient = useQueryClient();
+
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
   const [title, setTitle] = useState("");
@@ -110,6 +112,10 @@ export function DiagnosticReportResultsOverride({
   const createTemplateMutation = useMutation({
     mutationFn: apis.observationTemplate.create,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["observationTemplates"] });
+      queryClient.invalidateQueries({
+        queryKey: ["radiologyObservationTemplates"],
+      });
       toast.success(t("radiology_template_saved_successfully!"));
       setSaveTemplateFor(null);
     },

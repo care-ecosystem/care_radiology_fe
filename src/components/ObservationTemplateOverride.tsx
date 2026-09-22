@@ -207,6 +207,9 @@ export default function ObservationTemplateOverride({
       queryClient.invalidateQueries({
         queryKey: templatesQueryKey(vars.observation_definition),
       });
+      queryClient.invalidateQueries({
+        queryKey: ["radiologyObservationTemplates"],
+      });
       toast.success(t("radiology_template_saved_successfully!"));
       setSaveTemplateFor(null);
     },
