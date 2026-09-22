@@ -95,10 +95,11 @@ export function DiagnosticReportResultsOverride({
     [],
   );
 
-  const { data: serviceRequestDetail } = useServiceRequestDetail(
-    isServiceRequestPage ? facilityId : undefined,
-    isServiceRequestPage ? serviceRequestId : undefined,
-  );
+  const { data: serviceRequestDetail, isLoading: loadingServiceRequest } =
+    useServiceRequestDetail(
+      isServiceRequestPage ? facilityId : undefined,
+      isServiceRequestPage ? serviceRequestId : undefined,
+    );
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
@@ -196,6 +197,7 @@ export function DiagnosticReportResultsOverride({
                     variant="outline"
                     size="sm"
                     className="w-full shrink-0 sm:w-auto"
+                    disabled={loadingServiceRequest}
                     onClick={() => openSaveTemplate(observation)}
                   >
                     <Plus className="size-4" />
