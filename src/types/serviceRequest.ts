@@ -12,6 +12,11 @@ export interface DiagnosticReportReference {
   [key: string]: unknown;
 }
 
+export interface ActivityDefinitionReference {
+  id: string;
+  [key: string]: unknown;
+}
+
 export interface ServiceRequest {
   id: string;
   encounter: Encounter;
@@ -19,6 +24,7 @@ export interface ServiceRequest {
   code?: Coding;
   body_site?: Coding;
   category?: string;
+  activity_definition?: ActivityDefinitionReference | null;
   diagnostic_reports?: DiagnosticReportReference[];
 
   [key: string]: unknown;
