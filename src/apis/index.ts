@@ -108,7 +108,7 @@ export const apis = {
     create: async (payload: {
       facility: string;
       observation_definition: string;
-      activity_definition?: string;
+      activity_definition: string;
       title: string;
       description?: string;
       fields: ObservationTemplateField[];

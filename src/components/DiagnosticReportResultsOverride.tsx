@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplateField } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
+import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
   PLUGIN_SLUG,
@@ -89,6 +90,18 @@ export function DiagnosticReportResultsOverride({
       ),
     [],
   );
+  const serviceRequestId = useMemo(
+    () => window.location.pathname.match(/\/service_requests\/([^/]+)/)?.[1],
+    [],
+  );
+
+  const { data: serviceRequestDetail, isLoading: loadingServiceRequest } =
+    useServiceRequestDetail(
+      isServiceRequestPage ? facilityId : undefined,
+      isServiceRequestPage ? serviceRequestId : undefined,
+    );
+
+  const queryClient = useQueryClient();
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
@@ -99,6 +112,10 @@ export function DiagnosticReportResultsOverride({
   const createTemplateMutation = useMutation({
     mutationFn: apis.observationTemplate.create,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["observationTemplates"] });
+      queryClient.invalidateQueries({
+        queryKey: ["radiologyObservationTemplates"],
+      });
       toast.success(t("radiology_template_saved_successfully!"));
       setSaveTemplateFor(null);
     },
@@ -116,7 +133,13 @@ export function DiagnosticReportResultsOverride({
     return null;
   }
 
+  const activityDefinitionId = serviceRequestDetail?.activity_definition?.id;
+
   const openSaveTemplate = (observation: DiagnosticReportObservation) => {
+    if (!activityDefinitionId) {
+      toast.error(t("radiology_no_activity_definition_for_service_request"));
+      return;
+    }
     setSaveTemplateFor(observation);
     setTitle("");
     setDescription("");
@@ -129,9 +152,14 @@ export function DiagnosticReportResultsOverride({
       toast.warning(t("radiology_please_enter_template_title"));
       return;
     }
+    if (!activityDefinitionId) {
+      toast.error(t("radiology_no_activity_definition_for_service_request"));
+      return;
+    }
     createTemplateMutation.mutate({
       facility: facilityId,
       observation_definition: saveTemplateFor.observation_definition.id,
+      activity_definition: activityDefinitionId,
       title: title.trim(),
       description: description.trim() || undefined,
       fields: fields.map(
@@ -175,6 +203,7 @@ export function DiagnosticReportResultsOverride({
                     variant="outline"
                     size="sm"
                     className="w-full shrink-0 sm:w-auto"
+                    disabled={loadingServiceRequest}
                     onClick={() => openSaveTemplate(observation)}
                   >
                     <Plus className="size-4" />

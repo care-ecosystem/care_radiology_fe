@@ -207,6 +207,9 @@ export default function ObservationTemplateOverride({
       queryClient.invalidateQueries({
         queryKey: templatesQueryKey(vars.observation_definition),
       });
+      queryClient.invalidateQueries({
+        queryKey: ["radiologyObservationTemplates"],
+      });
       toast.success(t("radiology_template_saved_successfully!"));
       setSaveTemplateFor(null);
     },
@@ -228,9 +231,15 @@ export default function ObservationTemplateOverride({
   const hasDiagnosticReports =
     (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
 
+  const activityDefinitionId = serviceRequestDetail?.activity_definition?.id;
+
   const openSaveTemplate = async (definition: ObservationDefinition) => {
     if (!facilityId || !serviceRequestId || !definition.id) {
       toast.error(t("radiology_no_diagnostic_report_to_save"));
+      return;
+    }
+    if (!activityDefinitionId) {
+      toast.error(t("radiology_no_activity_definition_for_service_request"));
       return;
     }
 
@@ -294,9 +303,14 @@ export default function ObservationTemplateOverride({
       toast.warning(t("radiology_please_enter_template_title"));
       return;
     }
+    if (!activityDefinitionId) {
+      toast.error(t("radiology_no_activity_definition_for_service_request"));
+      return;
+    }
     createTemplateMutation.mutate({
       facility: facilityId,
       observation_definition: saveTemplateFor.id,
+      activity_definition: activityDefinitionId,
       title: saveTitle.trim(),
       description: saveDescription.trim() || undefined,
       fields: saveFields,
