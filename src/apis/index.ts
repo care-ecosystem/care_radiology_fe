@@ -39,19 +39,6 @@ export const apis = {
       );
     },
 
-    linkServiceRequest: async (payload: {
-      study_uid: string;
-      service_request_id: string;
-    }): Promise<unknown> => {
-      return await request<unknown>(
-        "/api/care_radiology/dicom/link-service-request/",
-        {
-          body: JSON.stringify(payload),
-          method: "POST",
-        },
-      );
-    },
-
     archive: async (
       id: string,
       payload: { archive_reason: string },

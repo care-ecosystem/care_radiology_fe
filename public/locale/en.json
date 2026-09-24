@@ -40,7 +40,6 @@
   "dicom_files_ready_count": "{{count}} ready for upload.",
   "dicom_upload_summary_failed": "{{failed}} files failed. {{success}} uploaded.",
   "dicom_files_uploaded_successfully": "Files uploaded successfully",
-  "dicom_failed_to_link_study": "Failed to link study to the service request.",
   "dicom_duplicate_file": "Duplicate : File already uploaded.",
   "radiology_studies": "Radiology Studies",
   "radiology_study_name": "Study Name",
