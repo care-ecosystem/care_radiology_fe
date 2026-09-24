@@ -97,6 +97,7 @@ export default function DicomUploader({
       formData.append("filename", file.name);
       formData.append("patient_id", patientId);
       formData.append("facility_id", facilityId);
+      formData.append("service_request_id", serviceRequestId);
 
       try {
         const response = await apis.dicom.upload(formData);
@@ -130,18 +131,8 @@ export default function DicomUploader({
     }
 
     if (uploadedStudyUid) {
-      try {
-        if (serviceRequestId) {
-          await apis.dicom.linkServiceRequest({
-            study_uid: uploadedStudyUid,
-            service_request_id: serviceRequestId,
-          });
-        }
-        onUploadSuccess?.();
-        toast.success(t("dicom_files_uploaded_successfully"));
-      } catch (_) {
-        toast.error(t("dicom_failed_to_link_study"));
-      }
+      onUploadSuccess?.();
+      toast.success(t("dicom_files_uploaded_successfully"));
     }
 
     if (counts.failed === 0 && counts.duplicate === 0) {
