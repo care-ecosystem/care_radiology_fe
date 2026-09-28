@@ -1,4 +1,4 @@
-import { FC, useMemo, useRef, useState } from "react";
+import { FC, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import RadiologyStudyTable from "./RadiologyStudyTable";
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
 import { Plus } from "lucide-react";
+import { toast } from "@/lib/utils";
 
 type SRProps = {
   serviceRequestId: string;
@@ -30,9 +31,11 @@ export const ServiceRequestView: FC<SRProps> = ({
   const [showUploader, setShowUploader] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: dicomStudies, isSuccess: studiesLoaded } = useQuery<
-    DicomStudy[]
-  >({
+  const {
+    data: dicomStudies,
+    isSuccess: studiesLoaded,
+    isError: studiesLoadFailed,
+  } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
     queryFn: () =>
       apis.dicom.fetchStudies({
@@ -41,6 +44,12 @@ export const ServiceRequestView: FC<SRProps> = ({
       }),
     enabled: !!serviceRequestId,
   });
+
+  useEffect(() => {
+    if (studiesLoadFailed) {
+      toast.error(t("radiology_failed_to_load_studies"));
+    }
+  }, [studiesLoadFailed, t]);
 
   const facilityId = useMemo(() => {
     const match = window.location.pathname.match(/\/facility\/([^/]+)/);
