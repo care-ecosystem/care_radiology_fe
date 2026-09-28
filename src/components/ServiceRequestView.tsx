@@ -69,13 +69,17 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   useHostSiblingsHidden(rootRef, blockReportCreation);
 
-  if (!isRadiologyRequest) {
+  const hasStudies = (dicomStudies?.length ?? 0) > 0;
+  const isNonRadiologyRequest =
+    !!serviceRequestDetail && !isRadiologyRequest;
+  if (isNonRadiologyRequest || (!serviceRequestDetail && !hasStudies)) {
     return null;
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
   const isServiceRequestActive = serviceRequestDetail?.status === "active";
-  const canUploadDicom = isServiceRequestActive && !hasDiagnosticReports;
+  const canUploadDicom =
+    studiesLoaded && isServiceRequestActive && !hasDiagnosticReports;
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
@@ -89,7 +93,7 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   return (
     <div ref={rootRef}>
-      {dicomStudies && dicomStudies.length > 0 && (
+      {hasStudies && (
         <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
           <CardContent className="p-4">
             <div className="grid gap-4 min-w-0">
@@ -120,8 +124,7 @@ export const ServiceRequestView: FC<SRProps> = ({
       )}
 
       {
-        canUploadDicom &&
-        (dicomStudies === undefined || dicomStudies.length == 0) && (
+        canUploadDicom && dicomStudies.length === 0 && (
           <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
             <CardContent className="p-8">
               <div className="flex flex-col gap-4 items-center">

@@ -41,6 +41,7 @@
   "dicom_upload_summary_failed": "{{failed}} files failed. {{success}} uploaded.",
   "dicom_files_uploaded_successfully": "Files uploaded successfully",
   "dicom_duplicate_file": "Duplicate : File already uploaded.",
+  "dicom_study_already_linked": "Study is already linked to another service request.",
   "radiology_studies": "Radiology Studies",
   "radiology_study_name": "Study Name",
   "radiology_study_date": "Study Date",
