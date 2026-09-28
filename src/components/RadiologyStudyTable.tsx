@@ -58,20 +58,14 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
     (selectedStudy?.study_modalities as string[] | undefined)?.join(", ") ||
     "—";
 
-  const {facilityId, serviceRequestId} = useMemo(() => {
-    const path = window.location.pathname;
-    const facilityMatch = path.match(/\/facility\/([^/]+)/);
-    const serviceRequestMatch = path.match(/\/service_requests?\/([^/]+)/);
-
-    return {
-      facilityId: facilityMatch?.[1] ?? ":facilityId",
-      serviceRequestId: serviceRequestMatch?.[1] ?? ":serviceRequestId",
-    };
+  const facilityId = useMemo(() => {
+    const facilityMatch = window.location.pathname.match(/\/facility\/([^/]+)/);
+    return facilityMatch?.[1] ?? ":facilityId";
   }, []);
 
-  const handleViewStudy = (studyUid: string) => {
+  const handleViewStudy = (study: DicomStudy) => {
     window.open(
-      `/facility/${facilityId}/service_requests/${serviceRequestId}/radiology/view/${studyUid}`,
+      `/facility/${facilityId}/service_requests/${study.service_request!.id}/radiology/view/${study.study_uid}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -159,11 +153,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                         {t("radiology_archived")}
                       </Badge>
                     )}
-                    {!study.is_archived && (
+                    {!study.is_archived && study.service_request?.id && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewStudy(study.study_uid)}
+                        onClick={() => handleViewStudy(study)}
                         className="text-xs h-auto py-1 px-2"
                       >
                         <Eye size={16} className="mr-1" />
