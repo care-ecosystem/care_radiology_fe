@@ -24,6 +24,7 @@ export default function DicomViewer({
 }) {
   const dicomViewerRef = useRef<HTMLIFrameElement>(null);
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const { t } = useTranslation(PLUGIN_SLUG);
 
   const { data: studies } = useQuery<DicomStudy[]>({
@@ -67,48 +68,74 @@ export default function DicomViewer({
       });
   }, [queryClient]);
 
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  useEffect(() => {
+    if (!isPseudoFullscreen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsPseudoFullscreen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isPseudoFullscreen]);
+
   const goFullscreen = (ref: RefObject<HTMLIFrameElement>) => {
-    if (ref.current) ref.current.requestFullscreen();
+    const el = ref.current as
+      | (HTMLIFrameElement & { webkitRequestFullscreen?: () => void })
+      | null;
+    if (!el) return;
+    (el.requestFullscreen ?? el.webkitRequestFullscreen)?.call(el);
   };
 
   if (!iframeUrl) return <div>{t("radiology_please_wait")}</div>;
 
   return (
-    <div id="dicom-viewer-page" className="flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="flex flex-col items-stretch gap-2 px-4 py-3 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-xl font-semibold text-gray-800 break-words">
-            {serviceRequestName
-              ? `${t("dicom_study_viewer")} (${serviceRequestName})`
-              : t("dicom_study_viewer")}
-          </span>
-          {studyDate && (
-            <span className="text-sm text-gray-500">
-              {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+    <div
+      id="dicom-viewer-page"
+      className={`flex flex-col bg-white rounded-lg overflow-hidden ${
+        isPseudoFullscreen ? "fixed inset-0 z-50 rounded-none" : ""
+      }`}
+    >
+      {!isPseudoFullscreen && (
+        <div className="flex flex-col items-stretch gap-2 px-4 py-3 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-xl font-semibold text-gray-800 break-words">
+              {serviceRequestName
+                ? `${t("dicom_study_viewer")} (${serviceRequestName})`
+                : t("dicom_study_viewer")}
             </span>
-          )}
+            {studyDate && (
+              <span className="text-sm text-gray-500">
+                {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2 sm:justify-end sm:gap-5">
+            <Button
+              variant={"primary"}
+              className="flex-1 sm:flex-none"
+              onClick={() => {
+                if (isIOS) {
+                  setIsPseudoFullscreen((prev) => !prev);
+                } else {
+                  goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
+                }
+              }}
+            >
+              {t("radiology_fullscreen")}
+            </Button>
+            <Button
+              variant={"outline"}
+              color={"red"}
+              className="flex-1 sm:flex-none"
+              onClick={() => window.close()}
+            >
+              {t("radiology_close")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2 sm:justify-end sm:gap-5">
-          <Button
-            variant={"primary"}
-            className="flex-1 sm:flex-none"
-            onClick={() => {
-              goFullscreen(dicomViewerRef as RefObject<HTMLIFrameElement>);
-            }}
-          >
-            {t("radiology_fullscreen")}
-          </Button>
-          <Button
-            variant={"outline"}
-            color={"red"}
-            className="flex-1 sm:flex-none"
-            onClick={() => window.close()}
-          >
-            {t("radiology_close")}
-          </Button>
-        </div>
-      </div>
-      <div className="flex-1 min-h-0 p-0 sm:p-4">
+      )}
+      <div className="flex-1 min-h-0 p-0 sm:p-4 relative">
         <iframe
           ref={dicomViewerRef}
           className="w-full h-full rounded-none border border-gray-200 sm:rounded-lg"
