@@ -1,6 +1,8 @@
 import { queryString, request } from "./request";
 import { PaginatedResponse } from "./types";
 import { DicomStudyArchiveResponse } from "@/types/dicom";
+import { FacilityWithPermissions } from "@/types/facility";
+import { CurrentUser } from "@/types/user";
 import {
   ObservationTemplate,
   ObservationTemplateField,
@@ -50,6 +52,23 @@ export const apis = {
           method: "POST",
         },
       );
+    },
+  },
+
+  facility: {
+    retrieve: async (facilityId: string): Promise<FacilityWithPermissions> => {
+      return await request<FacilityWithPermissions>(
+        `/api/v1/facility/${facilityId}/`,
+        { method: "GET" },
+      );
+    },
+  },
+
+  user: {
+    current: async (): Promise<CurrentUser> => {
+      return await request<CurrentUser>("/api/v1/users/getcurrentuser/", {
+        method: "GET",
+      });
     },
   },
 

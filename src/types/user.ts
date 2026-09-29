@@ -5,3 +5,7 @@ export interface User {
   username: string;
   [key: string]: unknown;
 }
+
+export interface CurrentUser extends User {
+  is_superuser: boolean;
+}
