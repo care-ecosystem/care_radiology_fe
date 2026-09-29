@@ -33,6 +33,8 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
   const [searchInput, setSearchInput] = useState("");
+  const { canReadRadiology, isLoading: isPermissionLoading } =
+    useRadiologyPermissions(encounter.facility?.id);
   const {
     canReadRadiology,
     isLoading: isPermissionLoading,
