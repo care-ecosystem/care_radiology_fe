@@ -8,6 +8,9 @@ import { getPluginMeta } from "@/utils/pluginConfig";
 import { apis } from "@/apis";
 import { DicomStudy } from "@/types/dicom";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+import { toast } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DicomViewer({
   facilityId,
@@ -26,6 +29,14 @@ export default function DicomViewer({
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const { t } = useTranslation(PLUGIN_SLUG);
+  const { canReadRadiology, isLoading: isPermissionLoading } =
+    useRadiologyPermissions(facilityId);
+
+  useEffect(() => {
+    if (!isPermissionLoading && !canReadRadiology) {
+      toast.error(t("radiology_no_permission"));
+    }
+  }, [isPermissionLoading, canReadRadiology, t]);
 
   const { data: studies } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
@@ -34,7 +45,7 @@ export default function DicomViewer({
         serviceRequestId: serviceRequestId!,
         includeArchived: false,
       }),
-    enabled: !!serviceRequestId,
+    enabled: !!serviceRequestId && canReadRadiology,
   });
 
   const { data: serviceRequestDetail } = useServiceRequestDetail(
@@ -50,6 +61,7 @@ export default function DicomViewer({
 
   const queryClient = useQueryClient();
   useEffect(() => {
+    if (!canReadRadiology) return;
     queryClient
       .ensureQueryData({ queryKey: ["user-refresh-token"] })
       .then((val) => {
@@ -66,7 +78,7 @@ export default function DicomViewer({
           );
         }
       });
-  }, [queryClient]);
+  }, [queryClient, canReadRadiology]);
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
@@ -86,6 +98,18 @@ export default function DicomViewer({
     if (!el) return;
     (el.requestFullscreen ?? el.webkitRequestFullscreen)?.call(el);
   };
+
+  if (!isPermissionLoading && !canReadRadiology) {
+    return (
+      <div id="dicom-viewer-page">
+        <EmptyState
+          className="flex-1 m-4"
+          title={t("radiology_no_access_title")}
+          description={t("radiology_no_access_description")}
+        />
+      </div>
+    );
+  }
 
   if (!iframeUrl) return <div>{t("radiology_please_wait")}</div>;
 

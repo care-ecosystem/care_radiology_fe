@@ -10,6 +10,7 @@ import { DicomStudy } from "@/types/dicom";
 import { PlugConfigMeta } from "@/types/plugin";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { useHostSiblingsHidden } from "@/hooks/useHostSiblingsHidden";
+import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import { allowsDiagnosticReportWithoutActiveStudy } from "@/utils/pluginConfig";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -31,6 +32,17 @@ export const ServiceRequestView: FC<SRProps> = ({
   const [showUploader, setShowUploader] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const facilityId = useMemo(() => {
+    const match = window.location.pathname.match(/\/facility\/([^/]+)/);
+    return match?.[1];
+  }, []);
+
+  const {
+    canReadRadiology,
+    canWriteRadiology,
+    isLoading: isPermissionLoading,
+  } = useRadiologyPermissions(facilityId);
+
   const {
     data: dicomStudies,
     isSuccess: studiesLoaded,
@@ -42,7 +54,7 @@ export const ServiceRequestView: FC<SRProps> = ({
         serviceRequestId,
         includeArchived: true,
       }),
-    enabled: !!serviceRequestId,
+    enabled: !!serviceRequestId && canReadRadiology,
   });
 
   useEffect(() => {
@@ -50,11 +62,6 @@ export const ServiceRequestView: FC<SRProps> = ({
       toast.error(t("radiology_failed_to_load_studies"));
     }
   }, [studiesLoadFailed, t]);
-
-  const facilityId = useMemo(() => {
-    const match = window.location.pathname.match(/\/facility\/([^/]+)/);
-    return match?.[1];
-  }, []);
 
   const { data: serviceRequestDetail } = useServiceRequestDetail(
     facilityId,
@@ -68,6 +75,15 @@ export const ServiceRequestView: FC<SRProps> = ({
   const hasActiveStudy = (dicomStudies ?? []).some(
     (study) => !study.is_archived,
   );
+  const isServiceRequestActive = serviceRequestDetail?.status === "active";
+
+  const isUploadStage = isServiceRequestActive && !hasDiagnosticReports;
+
+  useEffect(() => {
+    if (!isPermissionLoading && isRadiologyRequest && !canReadRadiology) {
+      toast.error(t("radiology_no_permission"));
+    }
+  }, [isPermissionLoading, isRadiologyRequest, canReadRadiology, t]);
 
   const blockReportCreation =
     isRadiologyRequest &&
@@ -81,14 +97,16 @@ export const ServiceRequestView: FC<SRProps> = ({
   const hasStudies = (dicomStudies?.length ?? 0) > 0;
   const isNonRadiologyRequest =
     !!serviceRequestDetail && !isRadiologyRequest;
-  if (isNonRadiologyRequest || (!serviceRequestDetail && !hasStudies)) {
+  if (
+    !canReadRadiology ||
+    isNonRadiologyRequest ||
+    (!serviceRequestDetail && !hasStudies)
+  ) {
     return null;
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
-  const isServiceRequestActive = serviceRequestDetail?.status === "active";
-  const canUploadDicom =
-    studiesLoaded && isServiceRequestActive && !hasDiagnosticReports;
+  const canUploadDicom = canWriteRadiology && studiesLoaded && isUploadStage;
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
