@@ -43,6 +43,7 @@
   "dicom_duplicate_file": "Duplicate : File already uploaded.",
   "dicom_study_already_linked": "Study is already linked to another service request.",
   "radiology_studies": "Radiology Studies",
+  "radiology_view_studies": "View Studies",
   "radiology_study_name": "Study Name",
   "radiology_study_date": "Study Date",
   "radiology_study_modality": "Study Modality",

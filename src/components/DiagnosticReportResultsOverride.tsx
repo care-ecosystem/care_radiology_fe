@@ -1,14 +1,17 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplateField } from "@/types/observationTemplate";
 import { APIError } from "@/apis/request";
+import { PaginatedResponse } from "@/apis/types";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
   PLUGIN_SLUG,
 } from "@/constants";
 import {
+  DiagnosticReport,
   DiagnosticReportObservation,
   ObservationValue,
 } from "@/types/diagnosticReports";
@@ -27,6 +30,13 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { encodeFieldValue } from "@/utils/templateFieldValue";
+import RadiologyStudyTable from "./RadiologyStudyTable";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 function getValueText(value: ObservationValue) {
   if (!value?.value) return "-";
@@ -79,6 +89,7 @@ export function DiagnosticReportResultsOverride({
   observations,
 }: DiagnosticReportResultsViewProps) {
   const { t } = useTranslation(PLUGIN_SLUG);
+  const queryClient = useQueryClient();
   const facilityId = useMemo(
     () => window.location.pathname.match(/\/facility\/([^/]+)/)?.[1],
     [],
@@ -90,18 +101,94 @@ export function DiagnosticReportResultsOverride({
       ),
     [],
   );
-  const serviceRequestId = useMemo(
+  const urlServiceRequestId = useMemo(
     () => window.location.pathname.match(/\/service_requests\/([^/]+)/)?.[1],
     [],
   );
+  const urlPatientId = useMemo(
+    () => window.location.pathname.match(/\/patient\/([^/]+)\//)?.[1],
+    [],
+  );
+  const pathDiagnosticReportId = useMemo(
+    () => window.location.pathname.match(/\/diagnostic_reports\/([^/]+)/)?.[1],
+    [],
+  );
+  const isPrintPage = useMemo(
+    () => window.location.pathname.endsWith("/print"),
+    [],
+  );
+  const pathEncounterId = useMemo(
+    () => window.location.pathname.match(/\/encounter\/([^/]+)\//)?.[1],
+    [],
+  );
+  // care_fe's EncounterProvider lets `?selectedEncounter=` override the path's
+  // :encounterId when viewing a different encounter's tabs.
+  const selectedEncounterParam =
+    new URLSearchParams(window.location.search).get("selectedEncounter") ??
+    undefined;
+  const encounterId = selectedEncounterParam ?? pathEncounterId;
+  const reportIdParam =
+    new URLSearchParams(window.location.search).get("reportId") ?? undefined;
+  const activityDefinitionParam =
+    new URLSearchParams(window.location.search).get("activityDefinition") ??
+    undefined;
+  const resolvedDiagnosticReportId = pathDiagnosticReportId ?? reportIdParam;
+
+  const { data: diagnosticReport } = useQuery<DiagnosticReport>({
+    queryKey: ["diagnosticReport", urlPatientId, resolvedDiagnosticReportId],
+    queryFn: () =>
+      apis.diagnosticReport.retrieve(
+        urlPatientId!,
+        resolvedDiagnosticReportId!,
+      ),
+    enabled:
+      !urlServiceRequestId && !!urlPatientId && !!resolvedDiagnosticReportId,
+  });
+
+  const { data: encounterReports } = useQuery<
+    PaginatedResponse<DiagnosticReport>
+  >({
+    queryKey: [
+      "radiologyEncounterDiagnosticReports",
+      urlPatientId,
+      encounterId,
+      activityDefinitionParam,
+    ],
+    queryFn: () =>
+      // No filter: only the first row matters, so limit 1. Filtered: scan
+      // care_fe's own page size (LIMIT = 14) for a title match.
+      apis.diagnosticReport.list(urlPatientId!, {
+        encounter: encounterId!,
+        limit: activityDefinitionParam ? 14 : 1,
+      }),
+    enabled:
+      !urlServiceRequestId &&
+      !resolvedDiagnosticReportId &&
+      !!urlPatientId &&
+      !!encounterId,
+  });
+
+  const defaultReport = useMemo(() => {
+    const reports = encounterReports?.results ?? [];
+    const filtered = activityDefinitionParam
+      ? reports.filter(
+          (report) =>
+            (report.service_request as { title?: string } | null)?.title ===
+            activityDefinitionParam,
+        )
+      : reports;
+    return filtered[0];
+  }, [encounterReports, activityDefinitionParam]);
+
+  const serviceRequestId =
+    urlServiceRequestId ??
+    diagnosticReport?.service_request?.id ??
+    defaultReport?.service_request?.id;
 
   const { data: serviceRequestDetail, isLoading: loadingServiceRequest } =
-    useServiceRequestDetail(
-      isServiceRequestPage ? facilityId : undefined,
-      isServiceRequestPage ? serviceRequestId : undefined,
-    );
+    useServiceRequestDetail(facilityId, serviceRequestId);
 
-  const queryClient = useQueryClient();
+  const { data: studies } = useRadiologyStudies(serviceRequestId);
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
@@ -172,8 +259,41 @@ export function DiagnosticReportResultsOverride({
     });
   };
 
+  const patientId =
+    serviceRequestDetail?.encounter?.patient?.id ?? urlPatientId;
+
   return (
     <div className="space-y-4">
+      {studies &&
+        studies.length > 0 &&
+        (isPrintPage ? (
+          <RadiologyStudyTable
+            studies={studies}
+            patientId={patientId}
+            hideViewReport
+            hideActions
+          />
+        ) : (
+          <Accordion
+            type="single"
+            collapsible
+            className="rounded-lg border border-gray-200 bg-gray-50"
+          >
+            <AccordionItem value="studies" className="border-b-0">
+              <AccordionTrigger className="px-3 py-2 text-sm font-medium text-gray-700 hover:no-underline">
+                {t("radiology_view_studies")}
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-1">
+                <RadiologyStudyTable
+                  studies={studies}
+                  patientId={patientId}
+                  hideViewReport
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        ))}
+
       {observations.map((observation) => {
         if (
           observation.observation_definition?.category !==
@@ -273,7 +393,6 @@ export function DiagnosticReportResultsOverride({
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-
           </div>
           <DialogFooter className="pt-4">
             <Button
