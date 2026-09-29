@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { EncounterTabProps } from "@/types/encounterTab";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
@@ -6,9 +6,26 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { toast } from "@/lib/utils";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import { DicomStudy } from "@/types/dicom";
 import { PLUGIN_SLUG } from "@/constants";
+import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+
+const RADIOLOGY_TAB_KEY = "radiology";
+const notifiedToasts = new Set<string>();
+
+const isRadiologyTabOpen = () =>
+  window.location.pathname.split("/").filter(Boolean).pop() ===
+  RADIOLOGY_TAB_KEY;
+
+const toastOncePerVisit = (key: string, message: string) => {
+  if (!isRadiologyTabOpen() || notifiedToasts.has(key)) return;
+  notifiedToasts.add(key);
+  toast.error(message);
+};
 
 export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   encounter,
@@ -16,10 +33,12 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
   const [searchInput, setSearchInput] = useState("");
+  const { canReadRadiology, isLoading: isPermissionLoading } =
+    useRadiologyPermissions(encounter.facility?.id);
   const {
     data: dicomStudies,
     isLoading,
-    error,
+    isError,
   } = useQuery<DicomStudy[]>({
     queryKey: ["dicomimagelist", encounter.id],
     queryFn: () =>
@@ -27,8 +46,27 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
         encounter: encounter.id,
         includeArchived: false,
       }),
-    enabled: true,
+    enabled: canReadRadiology,
   });
+
+  useEffect(
+    () => () => {
+      if (!isRadiologyTabOpen()) notifiedToasts.clear();
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!isPermissionLoading && !canReadRadiology) {
+      toastOncePerVisit("no_permission", t("radiology_no_permission"));
+    }
+  }, [isPermissionLoading, canReadRadiology, t]);
+
+  useEffect(() => {
+    if (isError) {
+      toastOncePerVisit("load_failed", t("radiology_failed_to_load_studies"));
+    }
+  }, [isError, t]);
 
   const filteredStudies = dicomStudies?.filter((s: DicomStudy) => {
     if (!searchInput) return true;
@@ -40,6 +78,18 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchInput(e.target.value);
   };
+
+  if (isPermissionLoading) return null;
+
+  if (!canReadRadiology) {
+    return (
+      <EmptyState
+        className="h-full min-h-96"
+        title={t("radiology_no_access_title")}
+        description={t("radiology_no_access_description")}
+      />
+    );
+  }
 
   return (
     <div className="py-4">
@@ -55,7 +105,13 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
         </div>
       </div>
 
-      {filteredStudies && filteredStudies.length > 0 ? (
+      {isLoading ? (
+        <div className="grid gap-2">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : filteredStudies && filteredStudies.length > 0 ? (
         <RadiologyStudyTable studies={filteredStudies} patientId={patient.id} />
       ) : (
         <Card className="col-span-full">
