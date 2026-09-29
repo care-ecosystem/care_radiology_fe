@@ -162,8 +162,6 @@ export function DiagnosticReportResultsTableOverride({
       activityDefinitionParam,
     ],
     queryFn: () =>
-      // No filter: only the first row matters, so limit 1. Filtered: scan
-      // care_fe's own page size (LIMIT = 14) for a title match.
       apis.diagnosticReport.list(urlPatientId!, {
         encounter: encounterId!,
         limit: activityDefinitionParam ? 14 : 1,
@@ -239,7 +237,9 @@ export function DiagnosticReportResultsTableOverride({
     return { radiologyObservations: radiology, restObservations: rest };
   }, [observations]);
 
-  if (!observations?.length) {
+  const hasStudies = !!studies?.length;
+
+  if (!observations?.length && !hasStudies) {
     return null;
   }
 
@@ -287,38 +287,37 @@ export function DiagnosticReportResultsTableOverride({
 
   return (
     <div className="space-y-4">
+      {hasStudies &&
+        (isPrintPage ? (
+          <RadiologyStudyTable
+            studies={studies}
+            patientId={patientId}
+            hideViewReport
+            hideActions
+          />
+        ) : (
+          <Accordion
+            type="single"
+            collapsible
+            className="rounded-lg border border-gray-200 bg-white"
+          >
+            <AccordionItem value="studies" className="border-b-0">
+              <AccordionTrigger className="px-3 py-2 text-sm font-medium text-gray-700 hover:no-underline">
+                {t("radiology_view_studies")}
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-1">
+                <RadiologyStudyTable
+                  studies={studies}
+                  patientId={patientId}
+                  hideViewReport
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        ))}
+
       {radiologyObservations.length > 0 && (
         <>
-          {studies &&
-            studies.length > 0 &&
-            (isPrintPage ? (
-              <RadiologyStudyTable
-                studies={studies}
-                patientId={patientId}
-                hideViewReport
-                hideActions
-              />
-            ) : (
-              <Accordion
-                type="single"
-                collapsible
-                className="rounded-lg border border-gray-200 bg-white"
-              >
-                <AccordionItem value="studies" className="border-b-0">
-                  <AccordionTrigger className="px-3 py-2 text-sm font-medium text-gray-700 hover:no-underline">
-                    {t("radiology_view_studies")}
-                  </AccordionTrigger>
-                  <AccordionContent className="px-3 pt-1">
-                    <RadiologyStudyTable
-                      studies={studies}
-                      patientId={patientId}
-                      hideViewReport
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ))}
-
           {radiologyObservations.map((observation) => {
             const hasComponents =
               observation.component && observation.component.length > 0;
