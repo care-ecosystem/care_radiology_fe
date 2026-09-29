@@ -26,6 +26,14 @@ interface DicomFile {
   study_uid?: string;
 }
 
+function getStudyLinkConflict(error: unknown): { study_uid?: string } | null {
+  if (!(error instanceof APIError) || error.status !== 409) return null;
+  const errors = (error.data as { errors?: unknown } | null)?.errors;
+  const first = Array.isArray(errors) ? errors[0] : null;
+  if (first?.type !== "study_link_conflict" || !first?.uploaded) return null;
+  return first;
+}
+
 export default function DicomUploader({
   patientId,
   facilityId,
@@ -84,7 +92,7 @@ export default function DicomUploader({
   const handleSave = async () => {
     if (files.length === 0 || isUploading) return;
     setIsUploading(true);
-    const counts = { success: 0, failed: 0, duplicate: 0 };
+    const counts = { success: 0, failed: 0, duplicate: 0, linkConflict: 0 };
     let uploadedStudyUid: string | undefined;
 
     for (let i = 0; i < files.length; i++) {
@@ -111,6 +119,16 @@ export default function DicomUploader({
           study_uid: response.study_uid,
         });
       } catch (error) {
+        const linkConflict = getStudyLinkConflict(error);
+        if (linkConflict) {
+          counts.success += 1;
+          counts.linkConflict += 1;
+          setFileStatus(i, {
+            status: "success",
+            study_uid: linkConflict.study_uid,
+          });
+          continue;
+        }
         const isDuplicate = error instanceof APIError && error.status === 409;
         counts[isDuplicate ? "duplicate" : "failed"] += 1;
         setFileStatus(i, { status: isDuplicate ? "duplicate" : "failed" });
@@ -119,6 +137,10 @@ export default function DicomUploader({
 
     if (counts.duplicate) {
       toast.error(t("dicom_duplicate_file"));
+    }
+
+    if (counts.linkConflict) {
+      toast.warning(t("dicom_study_already_linked"));
     }
 
     if (counts.failed) {

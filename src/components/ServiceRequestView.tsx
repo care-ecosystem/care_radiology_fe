@@ -1,4 +1,4 @@
-import { FC, useMemo, useRef, useState } from "react";
+import { FC, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import RadiologyStudyTable from "./RadiologyStudyTable";
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { PLUGIN_SLUG, SERVICE_REQUEST_OVERRIDE_CATEGORY } from "@/constants";
 import { Plus } from "lucide-react";
+import { toast } from "@/lib/utils";
 
 type SRProps = {
   serviceRequestId: string;
@@ -30,9 +31,11 @@ export const ServiceRequestView: FC<SRProps> = ({
   const [showUploader, setShowUploader] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: dicomStudies, isSuccess: studiesLoaded } = useQuery<
-    DicomStudy[]
-  >({
+  const {
+    data: dicomStudies,
+    isSuccess: studiesLoaded,
+    isError: studiesLoadFailed,
+  } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
     queryFn: () =>
       apis.dicom.fetchStudies({
@@ -41,6 +44,12 @@ export const ServiceRequestView: FC<SRProps> = ({
       }),
     enabled: !!serviceRequestId,
   });
+
+  useEffect(() => {
+    if (studiesLoadFailed) {
+      toast.error(t("radiology_failed_to_load_studies"));
+    }
+  }, [studiesLoadFailed, t]);
 
   const facilityId = useMemo(() => {
     const match = window.location.pathname.match(/\/facility\/([^/]+)/);
@@ -69,13 +78,17 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   useHostSiblingsHidden(rootRef, blockReportCreation);
 
-  if (!isRadiologyRequest) {
+  const hasStudies = (dicomStudies?.length ?? 0) > 0;
+  const isNonRadiologyRequest =
+    !!serviceRequestDetail && !isRadiologyRequest;
+  if (isNonRadiologyRequest || (!serviceRequestDetail && !hasStudies)) {
     return null;
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
   const isServiceRequestActive = serviceRequestDetail?.status === "active";
-  const canUploadDicom = isServiceRequestActive && !hasDiagnosticReports;
+  const canUploadDicom =
+    studiesLoaded && isServiceRequestActive && !hasDiagnosticReports;
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
@@ -89,7 +102,7 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   return (
     <div ref={rootRef}>
-      {dicomStudies && dicomStudies.length > 0 && (
+      {hasStudies && (
         <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
           <CardContent className="p-4">
             <div className="grid gap-4 min-w-0">
@@ -120,8 +133,7 @@ export const ServiceRequestView: FC<SRProps> = ({
       )}
 
       {
-        canUploadDicom &&
-        (dicomStudies === undefined || dicomStudies.length == 0) && (
+        canUploadDicom && dicomStudies.length === 0 && (
           <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
             <CardContent className="p-8">
               <div className="flex flex-col gap-4 items-center">
