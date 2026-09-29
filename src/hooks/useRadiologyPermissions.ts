@@ -14,15 +14,25 @@ const STALE_TIME = 5 * 60 * 1000;
  * Resolves the current user's radiology permissions in a facility, matching the
  * backend's check_permission_in_facility_organization (superusers always pass).
  * Both flags stay false until resolved, so gated UI never flashes in.
+ * A false flag is only a confirmed denial when isError is also false; isError
+ * means a lookup failed, so the permissions are unknown rather than missing.
  */
 export function useRadiologyPermissions(facilityId?: string) {
-  const { data: currentUser, isLoading: isUserLoading } = useQuery({
+  const {
+    data: currentUser,
+    isLoading: isUserLoading,
+    isError: isUserError,
+  } = useQuery({
     queryKey: [PLUGIN_SLUG, "currentUser"],
     queryFn: apis.user.current,
     staleTime: STALE_TIME,
   });
 
-  const { data: facility, isLoading: isFacilityLoading } = useQuery({
+  const {
+    data: facility,
+    isLoading: isFacilityLoading,
+    isError: isFacilityError,
+  } = useQuery({
     queryKey: [PLUGIN_SLUG, "facility", facilityId],
     queryFn: () => apis.facility.retrieve(facilityId!),
     enabled: !!facilityId,
@@ -33,9 +43,18 @@ export function useRadiologyPermissions(facilityId?: string) {
     !!currentUser?.is_superuser ||
     (facility?.permissions ?? []).includes(permission);
 
+  const canReadRadiology = hasPermission(RADIOLOGY_PERMISSIONS.read);
+  const canWriteRadiology = hasPermission(RADIOLOGY_PERMISSIONS.write);
+
+  const isUserLookupFailed = isUserError && !currentUser;
+  const isFacilityLookupFailed = !!facilityId && isFacilityError && !facility;
+
   return {
-    canReadRadiology: hasPermission(RADIOLOGY_PERMISSIONS.read),
-    canWriteRadiology: hasPermission(RADIOLOGY_PERMISSIONS.write),
+    canReadRadiology,
+    canWriteRadiology,
     isLoading: isUserLoading || (!!facilityId && isFacilityLoading),
+    isError:
+      !(canReadRadiology && canWriteRadiology) &&
+      (isUserLookupFailed || isFacilityLookupFailed),
   };
 }

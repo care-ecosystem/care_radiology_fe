@@ -41,6 +41,7 @@ export const ServiceRequestView: FC<SRProps> = ({
     canReadRadiology,
     canWriteRadiology,
     isLoading: isPermissionLoading,
+    isError: isPermissionError,
   } = useRadiologyPermissions(facilityId);
 
   const {
@@ -81,9 +82,21 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   useEffect(() => {
     if (!isPermissionLoading && isRadiologyRequest && !canReadRadiology) {
-      toast.error(t("radiology_no_permission"));
+      toast.error(
+        t(
+          isPermissionError
+            ? "radiology_permission_check_failed"
+            : "radiology_no_permission",
+        ),
+      );
     }
-  }, [isPermissionLoading, isRadiologyRequest, canReadRadiology, t]);
+  }, [
+    isPermissionLoading,
+    isPermissionError,
+    isRadiologyRequest,
+    canReadRadiology,
+    t,
+  ]);
 
   const blockReportCreation =
     isRadiologyRequest &&
@@ -98,7 +111,7 @@ export const ServiceRequestView: FC<SRProps> = ({
   const isNonRadiologyRequest =
     !!serviceRequestDetail && !isRadiologyRequest;
   if (
-    !canReadRadiology ||
+    !(canReadRadiology || canWriteRadiology) ||
     isNonRadiologyRequest ||
     (!serviceRequestDetail && !hasStudies)
   ) {
@@ -106,7 +119,8 @@ export const ServiceRequestView: FC<SRProps> = ({
   }
 
   const patientId = serviceRequestDetail?.encounter?.patient?.id;
-  const canUploadDicom = canWriteRadiology && studiesLoaded && isUploadStage;
+  const canUploadDicom =
+    canWriteRadiology && isUploadStage && (studiesLoaded || !canReadRadiology);
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
@@ -151,7 +165,7 @@ export const ServiceRequestView: FC<SRProps> = ({
       )}
 
       {
-        canUploadDicom && dicomStudies.length === 0 && (
+        canUploadDicom && !hasStudies && (
           <Card className="mb-4 shadow-none rounded-lg border-gray-200 bg-gray-50">
             <CardContent className="p-8">
               <div className="flex flex-col gap-4 items-center">
@@ -159,9 +173,11 @@ export const ServiceRequestView: FC<SRProps> = ({
                   <Label className="text-base font-semibold text-gray-950">
                     {t("dicom_upload_files_heading")}
                   </Label>
-                  <p className="mt-2 text-sm text-gray-500">
-                    {t("service_request_dicom_no_studies_found")}
-                  </p>
+                  {canReadRadiology && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      {t("service_request_dicom_no_studies_found")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex justify-center">
                   <Button

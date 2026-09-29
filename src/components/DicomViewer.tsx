@@ -29,14 +29,22 @@ export default function DicomViewer({
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const { t } = useTranslation(PLUGIN_SLUG);
-  const { canReadRadiology, isLoading: isPermissionLoading } =
-    useRadiologyPermissions(facilityId);
+  const {
+    canReadRadiology,
+    isLoading: isPermissionLoading,
+    isError: isPermissionError,
+  } = useRadiologyPermissions(facilityId);
 
   useEffect(() => {
-    if (!isPermissionLoading && !canReadRadiology) {
-      toast.error(t("radiology_no_permission"));
-    }
-  }, [isPermissionLoading, canReadRadiology, t]);
+    if (canReadRadiology || isPermissionLoading) return;
+    toast.error(
+      t(
+        isPermissionError
+          ? "radiology_permission_check_failed"
+          : "radiology_no_permission",
+      ),
+    );
+  }, [isPermissionLoading, isPermissionError, canReadRadiology, t]);
 
   const { data: studies } = useQuery<DicomStudy[]>({
     queryKey: ["radiologyservicerequest", serviceRequestId],
@@ -98,6 +106,18 @@ export default function DicomViewer({
     if (!el) return;
     (el.requestFullscreen ?? el.webkitRequestFullscreen)?.call(el);
   };
+
+  if (!canReadRadiology && isPermissionError) {
+    return (
+      <div id="dicom-viewer-page">
+        <EmptyState
+          className="flex-1 m-4"
+          title={t("radiology_permission_check_failed_title")}
+          description={t("radiology_permission_check_failed_description")}
+        />
+      </div>
+    );
+  }
 
   if (!isPermissionLoading && !canReadRadiology) {
     return (
