@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { ComponentType, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplateField } from "@/types/observationTemplate";
@@ -81,13 +81,20 @@ function fieldRowsFromObservation(
   ];
 }
 
-interface DiagnosticReportResultsViewProps {
+interface DiagnosticReportResultsTableProps {
   observations: DiagnosticReportObservation[];
 }
 
-export function DiagnosticReportResultsOverride({
+// `__base` is injected by care_fe's override registry — the stock table
+// component, used here to render non-radiology observations.
+interface DiagnosticReportResultsTableOverrideProps extends DiagnosticReportResultsTableProps {
+  __base?: ComponentType<DiagnosticReportResultsTableProps>;
+}
+
+export function DiagnosticReportResultsTableOverride({
   observations,
-}: DiagnosticReportResultsViewProps) {
+  __base: Base,
+}: DiagnosticReportResultsTableOverrideProps) {
   const { t } = useTranslation(PLUGIN_SLUG);
   const queryClient = useQueryClient();
   const facilityId = useMemo(
@@ -216,6 +223,22 @@ export function DiagnosticReportResultsOverride({
     },
   });
 
+  const { radiologyObservations, restObservations } = useMemo(() => {
+    const radiology: DiagnosticReportObservation[] = [];
+    const rest: DiagnosticReportObservation[] = [];
+    for (const observation of observations ?? []) {
+      if (
+        observation.observation_definition?.category ===
+        DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY
+      ) {
+        radiology.push(observation);
+      } else {
+        rest.push(observation);
+      }
+    }
+    return { radiologyObservations: radiology, restObservations: rest };
+  }, [observations]);
+
   if (!observations?.length) {
     return null;
   }
@@ -264,96 +287,97 @@ export function DiagnosticReportResultsOverride({
 
   return (
     <div className="space-y-4">
-      {studies &&
-        studies.length > 0 &&
-        (isPrintPage ? (
-          <RadiologyStudyTable
-            studies={studies}
-            patientId={patientId}
-            hideViewReport
-            hideActions
-          />
-        ) : (
-          <Accordion
-            type="single"
-            collapsible
-            className="rounded-lg border border-gray-200 bg-gray-50"
-          >
-            <AccordionItem value="studies" className="border-b-0">
-              <AccordionTrigger className="px-3 py-2 text-sm font-medium text-gray-700 hover:no-underline">
-                {t("radiology_view_studies")}
-              </AccordionTrigger>
-              <AccordionContent className="px-3 pt-1">
-                <RadiologyStudyTable
-                  studies={studies}
-                  patientId={patientId}
-                  hideViewReport
-                />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        ))}
+      {radiologyObservations.length > 0 && (
+        <>
+          {studies &&
+            studies.length > 0 &&
+            (isPrintPage ? (
+              <RadiologyStudyTable
+                studies={studies}
+                patientId={patientId}
+                hideViewReport
+                hideActions
+              />
+            ) : (
+              <Accordion
+                type="single"
+                collapsible
+                className="rounded-lg border border-gray-200 bg-white"
+              >
+                <AccordionItem value="studies" className="border-b-0">
+                  <AccordionTrigger className="px-3 py-2 text-sm font-medium text-gray-700 hover:no-underline">
+                    {t("radiology_view_studies")}
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pt-1">
+                    <RadiologyStudyTable
+                      studies={studies}
+                      patientId={patientId}
+                      hideViewReport
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            ))}
 
-      {observations.map((observation) => {
-        if (
-          observation.observation_definition?.category !==
-          DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY
-        ) {
-          return null;
-        }
+          {radiologyObservations.map((observation) => {
+            const hasComponents =
+              observation.component && observation.component.length > 0;
 
-        const hasComponents =
-          observation.component && observation.component.length > 0;
-
-        return (
-          <div
-            key={observation.id}
-            className="space-y-4 mb-8 rounded-lg border border-gray-200 bg-white p-4"
-          >
-            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-              <span className="w-full min-w-0 truncate text-sm font-medium text-gray-700 sm:w-auto">
-                {observation.observation_definition?.title ||
-                  observation.observation_definition?.code?.display}
-              </span>
-              {isServiceRequestPage &&
-                facilityId &&
-                observation.observation_definition?.id && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full shrink-0 sm:w-auto"
-                    disabled={loadingServiceRequest}
-                    onClick={() => openSaveTemplate(observation)}
-                  >
-                    <Plus className="size-4" />
-                    {t("radiology_save_as_observation_template")}
-                  </Button>
-                )}
-            </div>
-
-            {!hasComponents && (
-              <div>
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {getValueText(observation.value)}
-                </p>
-              </div>
-            )}
-
-            {hasComponents &&
-              observation.component!.map((component, index) => (
-                <div key={component.code?.code ?? index}>
-                  <p className="text-sm text-gray-500">
-                    {component.code?.display || "-"}
-                  </p>
-                  <p className="text-gray-700 whitespace-pre-wrap">
-                    {getValueText(component.value)}
-                  </p>
+            return (
+              <div
+                key={observation.id}
+                className="space-y-4 mb-8 rounded-lg border border-gray-200 bg-white p-4"
+              >
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <span className="w-full min-w-0 truncate text-sm font-medium text-gray-700 sm:w-auto">
+                    {observation.observation_definition?.title ||
+                      observation.observation_definition?.code?.display}
+                  </span>
+                  {isServiceRequestPage &&
+                    facilityId &&
+                    observation.observation_definition?.id && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full shrink-0 sm:w-auto"
+                        disabled={loadingServiceRequest}
+                        onClick={() => openSaveTemplate(observation)}
+                      >
+                        <Plus className="size-4" />
+                        {t("radiology_save_as_observation_template")}
+                      </Button>
+                    )}
                 </div>
-              ))}
-          </div>
-        );
-      })}
+
+                {!hasComponents && (
+                  <div>
+                    <p className="text-gray-700 whitespace-pre-wrap">
+                      {getValueText(observation.value)}
+                    </p>
+                  </div>
+                )}
+
+                {hasComponents &&
+                  observation.component!.map((component, index) => (
+                    <div key={component.code?.code ?? index}>
+                      <p className="text-sm text-gray-500">
+                        {component.code?.display || "-"}
+                      </p>
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {getValueText(component.value)}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {restObservations.length > 0 && Base && (
+        <Base observations={restObservations} />
+      )}
 
       <Dialog
         open={!!saveTemplateFor}
@@ -418,4 +442,4 @@ export function DiagnosticReportResultsOverride({
   );
 }
 
-export default DiagnosticReportResultsOverride;
+export default DiagnosticReportResultsTableOverride;

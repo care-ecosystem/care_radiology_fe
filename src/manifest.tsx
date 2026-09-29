@@ -1,7 +1,5 @@
 import { lazy, Suspense } from "react";
-import React from "react";
 import routes from "./routes";
-import { DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY } from "./constants";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Lazy load all pluggable components
@@ -11,8 +9,8 @@ const ServiceRequestActionComponent = lazy(
 const FacilityHomeActionsComponent = lazy(
   () => import("@/components/FacilityHomeActions"),
 );
-const DiagnosticReportResultsOverrideComponent = lazy(
-  () => import("@/components/DiagnosticReportResultsOverride"),
+const DiagnosticReportResultsTableOverrideComponent = lazy(
+  () => import("@/components/DiagnosticReportResultsTableOverride"),
 );
 const DiagnosticReportOverrideComponent = lazy(
   () => import("@/components/ObservationTemplateOverride"),
@@ -55,12 +53,12 @@ function FacilityHomeActionsWrapper(props: any) {
   );
 }
 
-// Wrapper for DiagnosticReportResultsOverride
-function DiagnosticReportResultsOverrideWrapper(props: any) {
+// Wrapper for DiagnosticReportResultsTableOverride
+function DiagnosticReportResultsTableOverrideWrapper(props: any) {
   return (
     <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
-        <DiagnosticReportResultsOverrideComponent {...props} />
+        <DiagnosticReportResultsTableOverrideComponent {...props} />
       </Suspense>
     </ErrorBoundary>
   );
@@ -95,15 +93,18 @@ const manifest = {
   components: {
     ServiceRequestAction: ServiceRequestActionWrapper,
     FacilityHomeActions: FacilityHomeActionsWrapper,
-    DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideWrapper,
     DiagnosticReportOverride: DiagnosticReportOverrideWrapper,
   },
+  overrides: [
+    {
+      component: "DiagnosticReportResultsTable",
+      replacement: DiagnosticReportResultsTableOverrideWrapper,
+    },
+  ],
   navItems: [],
   encounterTabs: {
     radiology: RadiologyEncounterTabWrapper,
   },
-  diagnosticReportResultsOverrideCategory:
-    DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
 };
 
 export default manifest;

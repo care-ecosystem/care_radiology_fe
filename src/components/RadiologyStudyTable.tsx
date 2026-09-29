@@ -119,30 +119,33 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   return (
     <>
       <div
-        className={`${className ?? ""} min-w-0 overflow-hidden rounded-md border bg-white`}
+        className={`${className ?? ""} min-w-0 overflow-hidden rounded-md border`}
       >
         <Table>
           <TableHeader className="bg-gray-100">
-            <TableRow className="divide-x divide-gray-300">
-              <TableHead className="whitespace-nowrap text-gray-700">
+            <TableRow className="divide-x divide-gray-200">
+              <TableHead className="whitespace-nowrap">
                 {t("radiology_study_name")}
               </TableHead>
-              <TableHead className="whitespace-nowrap text-gray-700">
+              <TableHead className="whitespace-nowrap">
                 {t("radiology_study_date")}
               </TableHead>
-              <TableHead className="whitespace-nowrap text-gray-700">
+              <TableHead className="whitespace-nowrap">
                 {t("radiology_study_modality")}
               </TableHead>
               {!hideActions && (
-                <TableHead className="text-right whitespace-nowrap text-gray-700">
+                <TableHead className="text-right whitespace-nowrap">
                   {t("radiology_actions")}
                 </TableHead>
               )}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white">
             {studies?.map((study: DicomStudy) => (
-              <TableRow key={study.external_id}>
+              <TableRow
+                key={study.external_id}
+                className="divide-x divide-gray-200"
+              >
                 <TableCell className="font-medium">
                   {study.study_description || "—"}
                 </TableCell>
