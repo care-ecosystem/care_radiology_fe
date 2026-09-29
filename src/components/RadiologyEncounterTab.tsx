@@ -33,8 +33,11 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
   const [searchInput, setSearchInput] = useState("");
-  const { canReadRadiology, isLoading: isPermissionLoading } =
-    useRadiologyPermissions(encounter.facility?.id);
+  const {
+    canReadRadiology,
+    isLoading: isPermissionLoading,
+    isError: isPermissionError,
+  } = useRadiologyPermissions(encounter.facility?.id);
   const {
     data: dicomStudies,
     isLoading,
@@ -57,10 +60,16 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   );
 
   useEffect(() => {
-    if (!isPermissionLoading && !canReadRadiology) {
+    if (canReadRadiology || isPermissionLoading) return;
+    if (isPermissionError) {
+      toastOncePerVisit(
+        "permission_check_failed",
+        t("radiology_permission_check_failed"),
+      );
+    } else {
       toastOncePerVisit("no_permission", t("radiology_no_permission"));
     }
-  }, [isPermissionLoading, canReadRadiology, t]);
+  }, [isPermissionLoading, isPermissionError, canReadRadiology, t]);
 
   useEffect(() => {
     if (isError) {
@@ -80,6 +89,16 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   };
 
   if (isPermissionLoading) return null;
+
+  if (!canReadRadiology && isPermissionError) {
+    return (
+      <EmptyState
+        className="h-full min-h-96"
+        title={t("radiology_permission_check_failed_title")}
+        description={t("radiology_permission_check_failed_description")}
+      />
+    );
+  }
 
   if (!canReadRadiology) {
     return (
