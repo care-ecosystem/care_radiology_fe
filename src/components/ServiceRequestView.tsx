@@ -1,11 +1,12 @@
 import { FC, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import DicomUploader from "./DicomUploader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
 import { PlugConfigMeta } from "@/types/plugin";
+import { apis } from "@/apis";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
 import { useHostSiblingsHidden } from "@/hooks/useHostSiblingsHidden";
@@ -62,6 +63,13 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   const isRadiologyRequest =
     serviceRequestDetail?.category === SERVICE_REQUEST_OVERRIDE_CATEGORY;
+
+  const { data: radiologyServiceRequest } = useQuery({
+    queryKey: ["radiologyServiceRequest", serviceRequestId],
+    queryFn: () => apis.radiologyServiceRequest.retrieve(serviceRequestId),
+    enabled: isRadiologyRequest,
+  });
+
   const hasDiagnosticReports =
     (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
   const hasActiveStudy = (dicomStudies ?? []).some(
@@ -115,7 +123,7 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
-      queryKey: ["radiologyservicerequest", serviceRequestId],
+      queryKey: ["dicomStudies", serviceRequestId],
     });
   };
 
@@ -208,6 +216,7 @@ export const ServiceRequestView: FC<SRProps> = ({
               patientId={patientId}
               facilityId={facilityId}
               serviceRequestId={serviceRequestId}
+              accessionNumber={radiologyServiceRequest?.accession_number}
               onClose={handleUploaderClose}
               onUploadSuccess={invalidateServiceRequestQueries}
             />
