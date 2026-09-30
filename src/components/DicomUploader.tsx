@@ -4,6 +4,7 @@ import {
   XCircle,
   Clock,
   CopyX,
+  Ban,
   FolderPlus,
   FilePlus,
 } from "lucide-react";
@@ -16,7 +17,24 @@ import { APIError } from "@/apis/request";
 import { toast } from "@/lib/utils";
 import { PLUGIN_SLUG } from "@/constants";
 
-type FileStatus = "pending" | "uploading" | "success" | "failed" | "duplicate";
+type FileStatus =
+  | "pending"
+  | "uploading"
+  | "success"
+  | "failed"
+  | "duplicate"
+  | "rejected";
+
+type AccessionErrorType =
+  | "accession_number_missing"
+  | "accession_number_unreadable"
+  | "accession_number_mismatch";
+
+const ACCESSION_ERROR_TYPES: AccessionErrorType[] = [
+  "accession_number_missing",
+  "accession_number_unreadable",
+  "accession_number_mismatch",
+];
 
 interface DicomFile {
   id: string;
@@ -32,6 +50,13 @@ function getStudyLinkConflict(error: unknown): { study_uid?: string } | null {
   const first = Array.isArray(errors) ? errors[0] : null;
   if (first?.type !== "study_link_conflict" || !first?.uploaded) return null;
   return first;
+}
+
+function getAccessionError(error: unknown): AccessionErrorType | null {
+  if (!(error instanceof APIError) || error.status !== 400) return null;
+  const errors = (error.data as { errors?: unknown } | null)?.errors;
+  const type = Array.isArray(errors) ? errors[0]?.type : null;
+  return ACCESSION_ERROR_TYPES.includes(type) ? type : null;
 }
 
 export default function DicomUploader({
@@ -92,7 +117,15 @@ export default function DicomUploader({
   const handleSave = async () => {
     if (files.length === 0 || isUploading) return;
     setIsUploading(true);
-    const counts = { success: 0, failed: 0, duplicate: 0, linkConflict: 0 };
+    const counts = {
+      success: 0,
+      failed: 0,
+      duplicate: 0,
+      linkConflict: 0,
+      accession_number_missing: 0,
+      accession_number_unreadable: 0,
+      accession_number_mismatch: 0,
+    };
     let uploadedStudyUid: string | undefined;
 
     for (let i = 0; i < files.length; i++) {
@@ -129,6 +162,12 @@ export default function DicomUploader({
           });
           continue;
         }
+        const accessionError = getAccessionError(error);
+        if (accessionError) {
+          counts[accessionError] += 1;
+          setFileStatus(i, { status: "rejected" });
+          continue;
+        }
         const isDuplicate = error instanceof APIError && error.status === 409;
         counts[isDuplicate ? "duplicate" : "failed"] += 1;
         setFileStatus(i, { status: isDuplicate ? "duplicate" : "failed" });
@@ -141,6 +180,30 @@ export default function DicomUploader({
 
     if (counts.linkConflict) {
       toast.warning(t("dicom_study_already_linked"));
+    }
+
+    if (counts.accession_number_missing) {
+      toast.error(
+        t("dicom_accession_number_missing", {
+          count: counts.accession_number_missing,
+        }),
+      );
+    }
+
+    if (counts.accession_number_unreadable) {
+      toast.error(
+        t("dicom_accession_number_unreadable", {
+          count: counts.accession_number_unreadable,
+        }),
+      );
+    }
+
+    if (counts.accession_number_mismatch) {
+      toast.error(
+        t("dicom_accession_number_mismatch", {
+          count: counts.accession_number_mismatch,
+        }),
+      );
     }
 
     if (counts.failed) {
@@ -157,7 +220,13 @@ export default function DicomUploader({
       toast.success(t("dicom_files_uploaded_successfully"));
     }
 
-    if (counts.failed === 0 && counts.duplicate === 0) {
+    if (
+      counts.failed === 0 &&
+      counts.duplicate === 0 &&
+      counts.accession_number_missing === 0 &&
+      counts.accession_number_unreadable === 0 &&
+      counts.accession_number_mismatch === 0
+    ) {
       setUploadDone(true);
     }
 
@@ -172,6 +241,8 @@ export default function DicomUploader({
         return <XCircle className="h-5 w-5 text-red-500" />;
       case "duplicate":
         return <CopyX className="h-5 w-5 text-amber-500" />;
+      case "rejected":
+        return <Ban className="h-5 w-5 text-red-500" />;
       case "uploading":
         return <Clock className="h-5 w-5 text-blue-500 animate-pulse" />;
       default:
@@ -182,6 +253,7 @@ export default function DicomUploader({
   const uploadedCount = files.filter((f) => f.status === "success").length;
   const failedCount = files.filter((f) => f.status === "failed").length;
   const duplicateCount = files.filter((f) => f.status === "duplicate").length;
+  const rejectedCount = files.filter((f) => f.status === "rejected").length;
   const pendingCount = files.filter((f) => f.status === "pending").length;
   const isUploadDone = uploadDone && !isUploading;
 
@@ -269,6 +341,11 @@ export default function DicomUploader({
                     })}{" "}
                   </span>
                 )}
+                {rejectedCount > 0 && (
+                  <span className="text-red-500">
+                    {t("dicom_files_rejected_count", { count: rejectedCount })}{" "}
+                  </span>
+                )}
                 {pendingCount > 0 && !isUploading && (
                   <span className="text-gray-500">
                     {t("dicom_files_ready_count", { count: pendingCount })}
@@ -277,7 +354,11 @@ export default function DicomUploader({
                 {isUploading && (
                   <span className="text-blue-600">
                     {t("dicom_uploading_progress", {
-                      current: uploadedCount + failedCount + duplicateCount,
+                      current:
+                        uploadedCount +
+                        failedCount +
+                        duplicateCount +
+                        rejectedCount,
                       total: files.length,
                     })}
                   </span>
