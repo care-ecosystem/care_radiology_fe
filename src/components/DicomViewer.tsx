@@ -1,16 +1,15 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
 import { getPluginMeta } from "@/utils/pluginConfig";
-import { apis } from "@/apis";
-import { DicomStudy } from "@/types/dicom";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import { toast } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
 
 export default function DicomViewer({
   facilityId,
@@ -46,15 +45,7 @@ export default function DicomViewer({
     );
   }, [isPermissionLoading, isPermissionError, canReadRadiology, t]);
 
-  const { data: studies } = useQuery<DicomStudy[]>({
-    queryKey: ["radiologyservicerequest", serviceRequestId],
-    queryFn: () =>
-      apis.dicom.fetchStudies({
-        serviceRequestId: serviceRequestId!,
-        includeArchived: false,
-      }),
-    enabled: !!serviceRequestId && canReadRadiology,
-  });
+  const { data: studies } = useRadiologyStudies(serviceRequestId, false);
 
   const { data: serviceRequestDetail } = useServiceRequestDetail(
     facilityId,

@@ -1,14 +1,13 @@
 import { FC, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apis } from "@/apis";
+import { useQueryClient } from "@tanstack/react-query";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import DicomUploader from "./DicomUploader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
-import { DicomStudy } from "@/types/dicom";
 import { PlugConfigMeta } from "@/types/plugin";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
 import { useHostSiblingsHidden } from "@/hooks/useHostSiblingsHidden";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import { allowsDiagnosticReportWithoutActiveStudy } from "@/utils/pluginConfig";
@@ -48,15 +47,7 @@ export const ServiceRequestView: FC<SRProps> = ({
     data: dicomStudies,
     isSuccess: studiesLoaded,
     isError: studiesLoadFailed,
-  } = useQuery<DicomStudy[]>({
-    queryKey: ["radiologyservicerequest", serviceRequestId],
-    queryFn: () =>
-      apis.dicom.fetchStudies({
-        serviceRequestId,
-        includeArchived: true,
-      }),
-    enabled: !!serviceRequestId && canReadRadiology,
-  });
+  } = useRadiologyStudies(serviceRequestId);
 
   useEffect(() => {
     if (studiesLoadFailed) {

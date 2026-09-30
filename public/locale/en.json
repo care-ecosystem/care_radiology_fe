@@ -47,6 +47,7 @@
   "dicom_accession_number_unreadable": "{{count}} file(s) could not be uploaded because their accession number could not be read.",
   "dicom_accession_number_mismatch": "{{count}} file(s) could not be uploaded because their accession number does not match this service request.",
   "radiology_studies": "Radiology Studies",
+  "radiology_view_studies": "View Studies",
   "radiology_study_name": "Study Name",
   "radiology_study_date": "Study Date",
   "radiology_study_modality": "Study Modality",

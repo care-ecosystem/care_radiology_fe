@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apis } from "@/apis";
 import { ObservationTemplate } from "@/types/observationTemplate";
 import { PaginatedResponse } from "@/apis/types";
-import { APIError, request } from "@/apis/request";
+import { APIError } from "@/apis/request";
 import { debounced } from "@/utils/query";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
@@ -263,8 +263,9 @@ export default function ObservationTemplateOverride({
       }
 
       // Fetch full diagnostic report with observations using patient endpoint
-      const fullReport = await request<DiagnosticReport>(
-        `/api/v1/patient/${patientId}/diagnostic_report/${latestReport.id}/`,
+      const fullReport: DiagnosticReport = await apis.diagnosticReport.retrieve(
+        patientId,
+        latestReport.id,
       );
 
 

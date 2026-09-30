@@ -32,13 +32,14 @@ import { Label } from "@/components/ui/label";
 import { apis } from "@/apis";
 import { toast } from "@/lib/utils";
 
-
 type RadiologyStudyTableProps = {
-  className?: string,
-  studies?: DicomStudy[],
-  canArchive?: boolean,
-  onArchived?: () => void,
-  patientId?: string,
+  className?: string;
+  studies?: DicomStudy[];
+  canArchive?: boolean;
+  onArchived?: () => void;
+  patientId?: string;
+  hideViewReport?: boolean;
+  hideActions?: boolean;
 };
 
 export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
@@ -47,8 +48,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   canArchive = false,
   onArchived,
   patientId,
+  hideViewReport = false,
+  hideActions = false,
 }) => {
   const { t } = useTranslation(PLUGIN_SLUG);
+  const showViewReport = !hideActions && !hideViewReport;
 
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
   const [studyToArchive, setStudyToArchive] = useState<DicomStudy | null>(null);
@@ -67,17 +71,17 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
     window.open(
       `/facility/${facilityId}/service_requests/${study.service_request!.id}/radiology/view/${study.study_uid}`,
       "_blank",
-      "noopener,noreferrer"
+      "noopener,noreferrer",
     );
-  }
+  };
 
   const handleViewReport = (diagnosticReportId: string) => {
     window.open(
       `/facility/${facilityId}/patient/${patientId}/diagnostic_reports/${diagnosticReportId}`,
       "_blank",
-      "noopener,noreferrer"
+      "noopener,noreferrer",
     );
-  }
+  };
 
   const closeArchiveDialog = () => {
     setStudyToArchive(null);
@@ -114,10 +118,12 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
 
   return (
     <>
-      <div className={`${className ?? ''} min-w-0 overflow-hidden rounded-md border`}>
+      <div
+        className={`${className ?? ""} min-w-0 overflow-hidden rounded-md border`}
+      >
         <Table>
-          <TableHeader>
-            <TableRow className="bg-gray-100">
+          <TableHeader className="bg-gray-100">
+            <TableRow className="divide-x divide-gray-200">
               <TableHead className="whitespace-nowrap">
                 {t("radiology_study_name")}
               </TableHead>
@@ -127,14 +133,19 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
               <TableHead className="whitespace-nowrap">
                 {t("radiology_study_modality")}
               </TableHead>
-              <TableHead className="text-right whitespace-nowrap">
-                {t("radiology_actions")}
-              </TableHead>
+              {!hideActions && (
+                <TableHead className="text-right whitespace-nowrap">
+                  {t("radiology_actions")}
+                </TableHead>
+              )}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white">
             {studies?.map((study: DicomStudy) => (
-              <TableRow key={study.external_id}>
+              <TableRow
+                key={study.external_id}
+                className="divide-x divide-gray-200"
+              >
                 <TableCell className="font-medium">
                   {study.study_description || "—"}
                 </TableCell>
@@ -146,69 +157,73 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                 <TableCell className="whitespace-nowrap">
                   {(study.study_modalities as string[])?.join(", ") || "—"}
                 </TableCell>
-                <TableCell>
-                  <div className="flex gap-2 items-center justify-end whitespace-nowrap">
-                    {study.is_archived && (
-                      <Badge variant="destructive">
-                        {t("radiology_archived")}
-                      </Badge>
-                    )}
-                    {!study.is_archived && study.service_request?.id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewStudy(study)}
-                        className="text-xs h-auto py-1 px-2"
-                      >
-                        <Eye size={16} className="mr-1" />
-                        {t("dicom_view_study")}
-                      </Button>
-                    )}
-                    {patientId && study.service_request?.diagnostic_report_id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleViewReport(
-                            study.service_request!.diagnostic_report_id!,
-                          )
-                        }
-                        className="text-xs h-auto py-1 px-2"
-                      >
-                        <FileText size={16} className="mr-1" />
-                        {t("dicom_view_report")}
-                      </Button>
-                    )}
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
+                {!hideActions && (
+                  <TableCell>
+                    <div className="flex gap-2 items-center justify-end whitespace-nowrap">
+                      {study.is_archived && (
+                        <Badge variant="destructive">
+                          {t("radiology_archived")}
+                        </Badge>
+                      )}
+                      {!study.is_archived && study.service_request?.id && (
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleViewStudy(study)}
                           className="text-xs h-auto py-1 px-2"
-                          aria-label={t("radiology_more_options")}
                         >
-                          <MoreHorizontal size={16} />
+                          <Eye size={16} className="mr-1" />
+                          {t("dicom_view_study")}
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onSelect={() => setSelectedStudy(study)}
-                        >
-                          <Info size={16} />
-                          {t("radiology_info")}
-                        </DropdownMenuItem>
-                        {canArchive && !study.is_archived && (
-                          <DropdownMenuItem
-                            onSelect={() => setStudyToArchive(study)}
+                      )}
+                      {showViewReport &&
+                        patientId &&
+                        study.service_request?.diagnostic_report_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleViewReport(
+                                study.service_request!.diagnostic_report_id!,
+                              )
+                            }
+                            className="text-xs h-auto py-1 px-2"
                           >
-                            <Archive size={16} />
-                            {t("radiology_archive")}
-                          </DropdownMenuItem>
+                            <FileText size={16} className="mr-1" />
+                            {t("dicom_view_report")}
+                          </Button>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-auto py-1 px-2"
+                            aria-label={t("radiology_more_options")}
+                          >
+                            <MoreHorizontal size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={() => setSelectedStudy(study)}
+                          >
+                            <Info size={16} />
+                            {t("radiology_info")}
+                          </DropdownMenuItem>
+                          {canArchive && !study.is_archived && (
+                            <DropdownMenuItem
+                              onSelect={() => setStudyToArchive(study)}
+                            >
+                              <Archive size={16} />
+                              {t("radiology_archive")}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

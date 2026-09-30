@@ -11,6 +11,7 @@ import {
   ActivityDefinitionDetail,
   ActivityDefinitionListItem,
 } from "@/types/activityDefinition";
+import { DiagnosticReport } from "@/types/diagnosticReports";
 
 export const apis = {
   dicom: {
@@ -77,6 +78,27 @@ export const apis = {
       return await request<any>(
         `/api/v1/facility/${facilityId}/service_request/${serviceRequestId}/`,
         { method: "GET" },
+      );
+    },
+  },
+
+  diagnosticReport: {
+    retrieve: async (patientId: string, diagnosticReportId: string) => {
+      return await request<any>(
+        `/api/v1/patient/${patientId}/diagnostic_report/${diagnosticReportId}/`,
+        { method: "GET" },
+      );
+    },
+
+    list: async (
+      patientId: string,
+      query: { encounter: string; limit?: number },
+    ): Promise<PaginatedResponse<DiagnosticReport>> => {
+      return await request<PaginatedResponse<DiagnosticReport>>(
+        `/api/v1/patient/${patientId}/diagnostic_report/${queryString({
+          encounter: query.encounter,
+          limit: query.limit ?? 14,
+        })}`,
       );
     },
   },
