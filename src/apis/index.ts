@@ -12,6 +12,7 @@ import {
   ActivityDefinitionListItem,
 } from "@/types/activityDefinition";
 import { DiagnosticReport } from "@/types/diagnosticReports";
+import { RadiologyServiceRequest } from "@/types/radiologyServiceRequest";
 
 export const apis = {
   dicom: {
@@ -77,6 +78,17 @@ export const apis = {
     retrieve: async (facilityId: string, serviceRequestId: string) => {
       return await request<any>(
         `/api/v1/facility/${facilityId}/service_request/${serviceRequestId}/`,
+        { method: "GET" },
+      );
+    },
+  },
+
+  radiologyServiceRequest: {
+    retrieve: async (
+      serviceRequestId: string,
+    ): Promise<RadiologyServiceRequest> => {
+      return await request<RadiologyServiceRequest>(
+        `/api/care_radiology/radiology_service_request/${serviceRequestId}/`,
         { method: "GET" },
       );
     },

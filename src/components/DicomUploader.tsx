@@ -7,6 +7,7 @@ import {
   Ban,
   FolderPlus,
   FilePlus,
+  Info,
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -63,12 +64,14 @@ export default function DicomUploader({
   patientId,
   facilityId,
   serviceRequestId,
+  accessionNumber,
   onClose,
   onUploadSuccess,
 }: {
   patientId: string;
   facilityId: string;
   serviceRequestId: string;
+  accessionNumber?: string | null;
   onClose: () => void;
   onUploadSuccess?: () => void;
 }) {
@@ -309,6 +312,18 @@ export default function DicomUploader({
             />
           </div>
         </CardHeader>
+
+        {accessionNumber && (
+          <div className="px-4 pb-3 sm:px-6 sm:pb-4">
+            <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-3">
+              <Info className="size-4 shrink-0 text-blue-600" />
+              <p className="text-sm text-blue-800">
+                {t("dicom_accession_number_note")}{" "}
+                <span className="font-semibold">{accessionNumber}</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {files.length === 0 ? (

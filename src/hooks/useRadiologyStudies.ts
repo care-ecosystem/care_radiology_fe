@@ -7,7 +7,7 @@ export function useRadiologyStudies(
   includeArchived = true,
 ) {
   return useQuery<DicomStudy[]>({
-    queryKey: ["radiologyservicerequest", serviceRequestId, includeArchived],
+    queryKey: ["dicomStudies", serviceRequestId, includeArchived],
     queryFn: () =>
       apis.dicom.fetchStudies({
         serviceRequestId: serviceRequestId!,
