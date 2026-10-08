@@ -31,6 +31,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { apis } from "@/apis";
 import { toast } from "@/lib/utils";
+import { formatName } from "@/utils/auditUtils";
+
+const formatUserName = (user?: DicomStudy["created_by"]) => {
+  const name = formatName(user);
+  return name === "-" ? "—" : name;
+};
+
+const formatSeriesValue = (value?: string | string[] | null) =>
+  (Array.isArray(value) ? value.join(", ") : value) || "—";
 
 type RadiologyStudyTableProps = {
   className?: string;
@@ -238,39 +247,46 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
           {selectedStudy && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex flex-wrap items-center gap-2">
-                  <span>
-                    {selectedStudy.study_description} {selectedModalities}
-                  </span>
-                  {selectedStudy.is_archived && (
-                    <Badge variant="destructive">
-                      {t("radiology_archived")}
-                    </Badge>
-                  )}
+                <DialogTitle>
+                  {selectedStudy.study_description || "—"}
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex flex-wrap gap-x-8 gap-y-3 mb-4">
-                <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-4">
+                <div className="flex flex-col items-start gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
                     {t("radiology_study_date")}
                   </span>
-                  <span className="px-3 py-1 bg-gray-100 rounded-md text-sm text-gray-700">
+                  <span className="text-sm text-gray-700">
                     {(selectedStudy.study_date
                       ? format(selectedStudy.study_date, "dd MMMM, yyyy")
                       : null) || "—"}
                   </span>
                 </div>
-                {selectedStudy.study_series.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
-                      {t("radiology_study_modality")}
-                    </span>
-                    <span className="self-start px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md font-medium uppercase">
-                      {selectedModalities}
-                    </span>
-                  </div>
-                )}
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                    {t("radiology_study_modality")}
+                  </span>
+                  <span className="text-sm text-gray-700">
+                    {selectedModalities}
+                  </span>
+                </div>
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                    {t("radiology_created_by")}
+                  </span>
+                  <span className="text-sm text-gray-700">
+                    {formatUserName(selectedStudy.created_by)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                    {t("radiology_updated_by")}
+                  </span>
+                  <span className="text-sm text-gray-700">
+                    {formatUserName(selectedStudy.updated_by)}
+                  </span>
+                </div>
               </div>
 
               {selectedStudy.is_archived && (
@@ -279,23 +295,36 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                     <Archive size={12} />
                     {t("radiology_archived")}
                   </div>
-                  <dl className="flex items-start justify-between gap-4 p-3 text-sm">
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <dl className="flex flex-col gap-3 p-3 text-sm">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <dt className="text-xs font-semibold text-gray-700">
+                          {t("radiology_archived_on")}
+                        </dt>
+                        <dd className="break-words text-gray-800">
+                          {(selectedStudy.archived_datetime
+                            ? format(
+                                selectedStudy.archived_datetime,
+                                "dd MMMM, yyyy",
+                              )
+                            : null) || "—"}
+                        </dd>
+                      </div>
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <dt className="text-xs font-semibold text-gray-700">
+                          {t("radiology_archived_by")}
+                        </dt>
+                        <dd className="break-words text-gray-800">
+                          {formatUserName(selectedStudy.archived_by)}
+                        </dd>
+                      </div>
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-0.5">
                       <dt className="text-xs font-semibold text-gray-700">
                         {t("radiology_archive_reason")}
                       </dt>
                       <dd className="break-words text-gray-800">
                         {selectedStudy.archive_reason || "—"}
-                      </dd>
-                    </div>
-                    <div className="flex shrink-0 flex-col gap-0.5 text-right">
-                      <dt className="text-xs font-semibold text-gray-700">
-                        {t("radiology_archived_on")}
-                      </dt>
-                      <dd className="whitespace-nowrap text-gray-800">
-                        {(selectedStudy.archived_datetime
-                          ? format(selectedStudy.archived_datetime, "dd-MM-yy")
-                          : null) || "—"}
                       </dd>
                     </div>
                   </dl>
@@ -314,8 +343,12 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                         key={series.series_uid}
                         className="flex justify-between gap-4 text-sm text-gray-800 py-1"
                       >
-                        <span>{series.series_description || "—"}</span>
-                        <span>{series.series_instance_count || "—"}</span>
+                        <span>
+                          {formatSeriesValue(series.series_description)}
+                        </span>
+                        <span>
+                          {formatSeriesValue(series.series_instance_count)}
+                        </span>
                       </div>
                     ))
                   ) : (
