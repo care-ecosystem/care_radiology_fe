@@ -1,3 +1,12 @@
+export interface DicomStudyUser {
+  id: string;
+  username: string;
+  prefix?: string | null;
+  first_name: string;
+  last_name: string;
+  suffix?: string | null;
+}
+
 export interface DicomStudy {
   external_id: string;
   study_uid: string;
@@ -8,6 +17,9 @@ export interface DicomStudy {
   is_archived?: boolean;
   archive_reason?: string | null;
   archived_datetime?: string | null;
+  created_by?: DicomStudyUser | null;
+  updated_by?: DicomStudyUser | null;
+  archived_by?: DicomStudyUser | null;
   service_request?: {
     id: string;
     diagnostic_report_id: string | null;
