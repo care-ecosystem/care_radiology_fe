@@ -263,18 +263,14 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                       : null) || "—"}
                   </span>
                 </div>
-                {selectedStudy.study_series.length > 0 ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
-                      {t("radiology_study_modality")}
-                    </span>
-                    <span className="text-sm text-gray-700">
-                      {selectedModalities}
-                    </span>
-                  </div>
-                ) : (
-                  <div />
-                )}
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                    {t("radiology_study_modality")}
+                  </span>
+                  <span className="text-sm text-gray-700">
+                    {selectedModalities}
+                  </span>
+                </div>
                 <div className="flex flex-col items-start gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
                     {t("radiology_created_by")}
@@ -300,12 +296,12 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                     {t("radiology_archived")}
                   </div>
                   <dl className="flex flex-col gap-3 p-3 text-sm">
-                    <div className="grid grid-cols-2 gap-x-8">
-                      <div className="flex flex-col gap-0.5">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8">
+                      <div className="flex min-w-0 flex-col gap-0.5">
                         <dt className="text-xs font-semibold text-gray-700">
                           {t("radiology_archived_on")}
                         </dt>
-                        <dd className="whitespace-nowrap text-gray-800">
+                        <dd className="break-words text-gray-800">
                           {(selectedStudy.archived_datetime
                             ? format(
                                 selectedStudy.archived_datetime,
