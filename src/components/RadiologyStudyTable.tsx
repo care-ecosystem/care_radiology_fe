@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { apis } from "@/apis";
 import { toast } from "@/lib/utils";
 import { formatName } from "@/utils/auditUtils";
+import { navigate } from "raviger";
 
 const formatUserName = (user?: DicomStudy["created_by"]) => {
   const name = formatName(user);
@@ -85,11 +86,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   };
 
   const handleViewReport = (diagnosticReportId: string) => {
-    window.open(
-      `/facility/${facilityId}/patient/${patientId}/diagnostic_reports/${diagnosticReportId}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+    navigate(`/facility/${facilityId}/patient/${patientId}/diagnostic_reports/${diagnosticReportId}`);
   };
 
   const closeArchiveDialog = () => {
