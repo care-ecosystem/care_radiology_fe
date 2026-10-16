@@ -1,25 +1,30 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
-import { getPluginMeta } from "@/utils/pluginConfig";
-import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { useRadiologyViewerBaseUrl } from "@/hooks/useRadiologyViewerBaseUrl";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import { toast } from "@/lib/utils";
+import { apis } from "@/apis";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
+import { useEncounterImagingStudies } from "@/hooks/useRadiologyStudies";
+import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { formatName } from "@/utils/auditUtils";
+import { formatPatientAge } from "@/utils/formatPatientAge";
 
 export default function DicomViewer({
   facilityId,
-  serviceRequestId,
+  patientId,
+  encounterId,
   studyUid,
   seriesUid,
   instanceUid,
 }: {
   facilityId?: string;
-  serviceRequestId?: string;
+  patientId?: string;
+  encounterId?: string;
   studyUid: string;
   seriesUid?: string;
   instanceUid?: string;
@@ -45,28 +50,80 @@ export default function DicomViewer({
     );
   }, [isPermissionLoading, isPermissionError, canReadRadiology, t]);
 
-  const { data: studies } = useRadiologyStudies(serviceRequestId, false);
+  const { data: imagingStudies } = useEncounterImagingStudies(
+    patientId,
+    encounterId,
+    { enabled: canReadRadiology },
+  );
 
+  const { studyDate, serviceRequestName, serviceRequestId, createdBy } =
+    useMemo(() => {
+      for (const imagingStudy of imagingStudies?.results ?? []) {
+        const study = imagingStudy.studies.find(
+          (s) => s.study_uid === studyUid,
+        );
+        if (study) {
+          return {
+            studyDate: study.study_date,
+            serviceRequestName: imagingStudy.service_request?.title,
+            serviceRequestId: imagingStudy.service_request?.id,
+            createdBy: study.created_by,
+          };
+        }
+      }
+      return {};
+    }, [imagingStudies, studyUid]);
+
+  // Fetched directly so studies uploaded without a service request still show
+  // the patient.
+  const { data: patient } = useQuery({
+    queryKey: ["patient", patientId],
+    queryFn: () => apis.patient.retrieve(patientId!),
+    enabled: canReadRadiology && !!patientId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // The list API omits the requester; only the service request detail has it.
   const { data: serviceRequestDetail } = useServiceRequestDetail(
-    facilityId,
+    canReadRadiology ? facilityId : undefined,
     serviceRequestId,
   );
+  const requester = serviceRequestDetail?.requester;
 
-  const studyDate = useMemo(
-    () => studies?.find((s) => s.study_uid === studyUid)?.study_date,
-    [studies, studyUid],
-  );
-  const serviceRequestName = serviceRequestDetail?.title as string | undefined;
+  const infoRows = [
+    [
+      {
+        label: t("radiology_patient_name"),
+        value: patient?.name || "-",
+      },
+      {
+        label: t("radiology_sex"),
+        value: patient?.gender ? t(`radiology_gender_${patient.gender}`) : "-",
+      },
+      { label: t("radiology_age"), value: formatPatientAge(patient, t) },
+    ],
+    [
+      {
+        label: t("radiology_referred_physician"),
+        value: formatName(requester),
+      },
+      {
+        label: t("radiology_study_created_by"),
+        value: formatName(createdBy),
+      },
+    ],
+  ];
+
+  const ohifBaseUrl = useRadiologyViewerBaseUrl();
 
   const queryClient = useQueryClient();
   useEffect(() => {
-    if (!canReadRadiology) return;
+    if (!canReadRadiology || ohifBaseUrl === undefined) return;
     queryClient
       .ensureQueryData({ queryKey: ["user-refresh-token"] })
       .then((val) => {
         const token = (val as { access: string; refresh: string }).access;
 
-        const ohifBaseUrl = `${ getPluginMeta()?.radiologyViewerBaseUrl || "" }`;
         if (studyUid && seriesUid && instanceUid) {
           setIframeUrl(
             `${ohifBaseUrl}/viewer?StudyInstanceUIDs=${studyUid}&initialSeriesInstanceUID=${seriesUid}&initialSopInstanceUID=${instanceUid}&token=${token}`
@@ -77,7 +134,7 @@ export default function DicomViewer({
           );
         }
       });
-  }, [queryClient, canReadRadiology]);
+  }, [queryClient, canReadRadiology, ohifBaseUrl]);
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
@@ -141,9 +198,25 @@ export default function DicomViewer({
             </span>
             {studyDate && (
               <span className="text-sm text-gray-500">
-                {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+                {t("radiology_study_date")}:{" "}
+                <span className="font-medium text-gray-700">
+                  {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+                </span>
               </span>
             )}
+            {infoRows.map((row) => (
+              <div
+                key={row[0].label}
+                className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-gray-500"
+              >
+                {row.map(({ label, value }) => (
+                  <span key={label} className="break-words">
+                    {label}:{" "}
+                    <span className="font-medium text-gray-700">{value}</span>
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
           <div className="flex gap-2 sm:justify-end sm:gap-5">
             <Button
