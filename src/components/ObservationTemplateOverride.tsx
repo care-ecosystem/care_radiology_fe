@@ -91,6 +91,7 @@ export default function ObservationTemplateOverride({
   const [useTemplateFor, setUseTemplateFor] =
     useState<ObservationDefinition | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
     useState<ObservationTemplate | null>(null);
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
@@ -122,6 +123,14 @@ export default function ObservationTemplateOverride({
     setUseTemplateFor(null);
   };
 
+  // Shares the cache entry with useRadiologyPermissions.
+  const { data: currentUser } = useQuery({
+    queryKey: [PLUGIN_SLUG, "currentUser"],
+    queryFn: apis.user.current,
+    staleTime: 5 * 60 * 1000,
+  });
+  const createdBy = showOnlyMine ? currentUser?.id : undefined;
+
   const definitionId = useTemplateFor?.id;
   const templatesQueryKey = (defId: string | undefined) =>
     ["observationTemplates", facilityId, defId] as const;
@@ -131,18 +140,20 @@ export default function ObservationTemplateOverride({
     isLoading: loadingTemplates,
     error: templatesError,
   } = useQuery<PaginatedResponse<ObservationTemplate>>({
-    queryKey: [...templatesQueryKey(definitionId), searchQuery],
+    queryKey: [...templatesQueryKey(definitionId), searchQuery, createdBy],
     queryFn: debounced(
       () =>
         apis.observationTemplate.fetchAll({
           facility: facilityId!,
           observation_definition: definitionId!,
+          created_by: createdBy,
           title: searchQuery.trim() || undefined,
           limit: 50,
         }),
       300,
     ),
-    enabled: !!facilityId && !!definitionId,
+    enabled:
+      !!facilityId && !!definitionId && (!showOnlyMine || !!currentUser?.id),
   });
   const templates = templatesData?.results ?? [];
 
@@ -160,7 +171,7 @@ export default function ObservationTemplateOverride({
   const autoSelectedKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!templatesData) return;
-    const key = `${definitionId ?? ""}::${searchQuery}`;
+    const key = `${definitionId ?? ""}::${searchQuery}::${createdBy ?? ""}`;
     const isNewKey = autoSelectedKeyRef.current !== key;
     const selectionDropped =
       !!selectedTemplate &&
@@ -169,7 +180,7 @@ export default function ObservationTemplateOverride({
     autoSelectedKeyRef.current = key;
     selectTemplate(templatesData.results[0] ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [definitionId, searchQuery, templatesData]);
+  }, [definitionId, searchQuery, createdBy, templatesData]);
 
   const updateTemplateMutation = useMutation({
     mutationFn: (vars: {
@@ -325,6 +336,7 @@ export default function ObservationTemplateOverride({
     autoSelectedKeyRef.current = null;
     setUseTemplateFor(definition);
     setSearchQuery("");
+    setShowOnlyMine(false);
     selectTemplate(null);
   };
 
@@ -488,6 +500,32 @@ export default function ObservationTemplateOverride({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+              </div>
+              <div
+                role="radiogroup"
+                aria-label={t("radiology_template_owner_filter")}
+                className="mx-1.5 mb-1.5 grid shrink-0 grid-cols-2 gap-1 rounded-md bg-gray-100 p-1"
+              >
+                {[
+                  { mine: false, label: t("radiology_all_templates") },
+                  { mine: true, label: t("radiology_my_templates") },
+                ].map((option) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    key={String(option.mine)}
+                    aria-checked={showOnlyMine === option.mine}
+                    disabled={option.mine && !currentUser?.id}
+                    className={`rounded px-2 py-1 text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      showOnlyMine === option.mine
+                        ? "bg-white text-gray-950 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                    onClick={() => setShowOnlyMine(option.mine)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
               <ScrollArea
                 className={isSideBySide ? "flex-1 min-h-0 px-1.5" : "px-1.5"}
