@@ -79,7 +79,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
 
   const handleViewStudy = (study: DicomStudy) => {
     window.open(
-      `/facility/${facilityId}/service_requests/${study.service_request!.id}/radiology/view/${study.study_uid}`,
+      `/facility/${facilityId}/patient/${patientId}/encounter/${study.encounter_id}/radiology/view/${study.study_uid}`,
       "_blank",
       "noopener,noreferrer",
     );
@@ -134,6 +134,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                 {t("radiology_study_name")}
               </TableHead>
               <TableHead className="whitespace-nowrap">
+                {t("radiology_accession_number")}
+              </TableHead>
+              <TableHead className="whitespace-nowrap">
                 {t("radiology_study_date")}
               </TableHead>
               <TableHead className="whitespace-nowrap">
@@ -156,6 +159,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                   {study.study_description || "—"}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
+                  {study.accession_number || "—"}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   {(study.study_date
                     ? format(study.study_date, "dd MMMM, yyyy")
                     : null) || "—"}
@@ -171,17 +177,19 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                           {t("radiology_archived")}
                         </Badge>
                       )}
-                      {!study.is_archived && study.service_request?.id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewStudy(study)}
-                          className="text-xs h-auto py-1 px-2"
-                        >
-                          <Eye size={16} className="mr-1" />
-                          {t("dicom_view_study")}
-                        </Button>
-                      )}
+                      {!study.is_archived &&
+                        patientId &&
+                        study.encounter_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewStudy(study)}
+                            className="text-xs h-auto py-1 px-2"
+                          >
+                            <Eye size={16} className="mr-1" />
+                            {t("dicom_view_study")}
+                          </Button>
+                        )}
                       {showViewReport &&
                         patientId &&
                         study.service_request?.diagnostic_report_id && (

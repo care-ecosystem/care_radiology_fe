@@ -22,6 +22,8 @@ export interface DicomStudy {
   created_by?: DicomStudyUser | null;
   updated_by?: DicomStudyUser | null;
   archived_by?: DicomStudyUser | null;
+  encounter_id?: string;
+  accession_number?: string | null;
   service_request?: {
     id: string;
     diagnostic_report_id: string | null;

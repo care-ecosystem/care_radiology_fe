@@ -4,22 +4,23 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
-import { getPluginMeta } from "@/utils/pluginConfig";
-import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { useRadiologyViewerBaseUrl } from "@/hooks/useRadiologyViewerBaseUrl";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import { toast } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
+import { useEncounterImagingStudies } from "@/hooks/useRadiologyStudies";
 
 export default function DicomViewer({
   facilityId,
-  serviceRequestId,
+  patientId,
+  encounterId,
   studyUid,
   seriesUid,
   instanceUid,
 }: {
   facilityId?: string;
-  serviceRequestId?: string;
+  patientId?: string;
+  encounterId?: string;
   studyUid: string;
   seriesUid?: string;
   instanceUid?: string;
@@ -45,32 +46,35 @@ export default function DicomViewer({
     );
   }, [isPermissionLoading, isPermissionError, canReadRadiology, t]);
 
-  const { data: serviceRequestDetail } = useServiceRequestDetail(
-    facilityId,
-    serviceRequestId,
+  const { data: imagingStudies } = useEncounterImagingStudies(
+    patientId,
+    encounterId,
+    { enabled: canReadRadiology },
   );
 
-  const { data: studies } = useRadiologyStudies(
-    serviceRequestDetail?.encounter?.patient?.id,
-    serviceRequestId,
-    false,
-  );
+  const { studyDate, serviceRequestName } = useMemo(() => {
+    for (const imagingStudy of imagingStudies?.results ?? []) {
+      const study = imagingStudy.studies.find((s) => s.study_uid === studyUid);
+      if (study) {
+        return {
+          studyDate: study.study_date,
+          serviceRequestName: imagingStudy.service_request?.title,
+        };
+      }
+    }
+    return {};
+  }, [imagingStudies, studyUid]);
 
-  const studyDate = useMemo(
-    () => studies?.find((s) => s.study_uid === studyUid)?.study_date,
-    [studies, studyUid],
-  );
-  const serviceRequestName = serviceRequestDetail?.title as string | undefined;
+  const ohifBaseUrl = useRadiologyViewerBaseUrl();
 
   const queryClient = useQueryClient();
   useEffect(() => {
-    if (!canReadRadiology) return;
+    if (!canReadRadiology || ohifBaseUrl === undefined) return;
     queryClient
       .ensureQueryData({ queryKey: ["user-refresh-token"] })
       .then((val) => {
         const token = (val as { access: string; refresh: string }).access;
 
-        const ohifBaseUrl = `${ getPluginMeta()?.radiologyViewerBaseUrl || "" }`;
         if (studyUid && seriesUid && instanceUid) {
           setIframeUrl(
             `${ohifBaseUrl}/viewer?StudyInstanceUIDs=${studyUid}&initialSeriesInstanceUID=${seriesUid}&initialSopInstanceUID=${instanceUid}&token=${token}`
@@ -81,7 +85,7 @@ export default function DicomViewer({
           );
         }
       });
-  }, [queryClient, canReadRadiology]);
+  }, [queryClient, canReadRadiology, ohifBaseUrl]);
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 

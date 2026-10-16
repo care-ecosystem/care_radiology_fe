@@ -7,6 +7,7 @@
   "dicom_upload_data": "Add DICOM Images",
   "dicom_search_records": "Search Radiology Records",
   "dicom_upload_prompt": "Click 'Folder' or 'Files' to upload your DICOM files",
+  "radiology_accession_number": "Accession Number",
   "dicom_accession_number_note": "The DICOM files you upload should be tagged with accession number",
   "dicom_no_studies_found": "No studies found",
   "service_request_dicom_no_studies_found": "No DICOM files have been uploaded for this service request yet. Click on the 'Upload' button below to upload files",

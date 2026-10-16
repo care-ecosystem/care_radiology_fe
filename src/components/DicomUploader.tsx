@@ -70,7 +70,7 @@ export default function DicomUploader({
 }: {
   patientId: string;
   encounterId: string;
-  serviceRequestId: string;
+  serviceRequestId?: string;
   accessionNumber?: string | null;
   onClose: () => void;
   onUploadSuccess?: () => void;
@@ -139,7 +139,9 @@ export default function DicomUploader({
       const formData = new FormData();
       formData.append("file", file.file);
       formData.append("encounter_id", encounterId);
-      formData.append("service_request_id", serviceRequestId);
+      if (serviceRequestId) {
+        formData.append("service_request_id", serviceRequestId);
+      }
 
       try {
         const response = await apis.imagingStudy.upload(patientId, formData);
@@ -218,7 +220,7 @@ export default function DicomUploader({
 
     // Once the batch is done, mark the imaging study as in progress if any
     // file reached PACS.
-    if (counts.success > 0) {
+    if (serviceRequestId && counts.success > 0) {
       try {
         await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
           status: "IN_PROGRESS",
