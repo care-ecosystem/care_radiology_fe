@@ -1,14 +1,18 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PLUGIN_SLUG } from "@/constants";
 import { useRadiologyViewerBaseUrl } from "@/hooks/useRadiologyViewerBaseUrl";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import { toast } from "@/lib/utils";
+import { apis } from "@/apis";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useEncounterImagingStudies } from "@/hooks/useRadiologyStudies";
+import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
+import { formatName } from "@/utils/auditUtils";
+import { formatPatientAge } from "@/utils/formatPatientAge";
 
 export default function DicomViewer({
   facilityId,
@@ -52,18 +56,68 @@ export default function DicomViewer({
     { enabled: canReadRadiology },
   );
 
-  const { studyDate, serviceRequestName } = useMemo(() => {
-    for (const imagingStudy of imagingStudies?.results ?? []) {
-      const study = imagingStudy.studies.find((s) => s.study_uid === studyUid);
-      if (study) {
-        return {
-          studyDate: study.study_date,
-          serviceRequestName: imagingStudy.service_request?.title,
-        };
+  const { studyDate, serviceRequestName, serviceRequestId, createdBy } =
+    useMemo(() => {
+      for (const imagingStudy of imagingStudies?.results ?? []) {
+        const study = imagingStudy.studies.find(
+          (s) => s.study_uid === studyUid,
+        );
+        if (study) {
+          return {
+            studyDate: study.study_date,
+            serviceRequestName: imagingStudy.service_request?.title,
+            serviceRequestId: imagingStudy.service_request?.id,
+            createdBy: study.created_by,
+          };
+        }
       }
-    }
-    return {};
-  }, [imagingStudies, studyUid]);
+      return {};
+    }, [imagingStudies, studyUid]);
+
+  // Fetched directly so studies uploaded without a service request still show
+  // the patient.
+  const { data: patient } = useQuery({
+    queryKey: ["patient", patientId],
+    queryFn: () => apis.patient.retrieve(patientId!),
+    enabled: canReadRadiology && !!patientId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // The list API omits the requester; only the service request detail has it.
+  const { data: serviceRequestDetail } = useServiceRequestDetail(
+    canReadRadiology ? facilityId : undefined,
+    serviceRequestId,
+  );
+  const requester = serviceRequestDetail?.requester;
+
+  type InfoItem = { label: string; value: string };
+  const isInfoItem = (item: InfoItem | false | undefined): item is InfoItem =>
+    !!item;
+
+  const patientAge = patient ? formatPatientAge(patient) : "-";
+  const infoRows = [
+    [
+      patient?.name && {
+        label: t("radiology_patient_name"),
+        value: patient.name,
+      },
+      patient?.gender && {
+        label: t("radiology_sex"),
+        value: patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1),
+      },
+      patientAge !== "-" && { label: t("radiology_age"), value: patientAge },
+    ].filter(isInfoItem),
+    [
+      requester && {
+        label: t("radiology_referred_physician"),
+        value: formatName(requester),
+      },
+      createdBy && {
+        label: t("radiology_study_created_by"),
+        value: formatName(createdBy),
+      },
+    ].filter(isInfoItem),
+  ].filter((row) => row.length > 0);
 
   const ohifBaseUrl = useRadiologyViewerBaseUrl();
 
@@ -149,9 +203,25 @@ export default function DicomViewer({
             </span>
             {studyDate && (
               <span className="text-sm text-gray-500">
-                {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+                {t("radiology_study_date")}:{" "}
+                <span className="font-medium text-gray-700">
+                  {format(studyDate, "dd/MM/yyyy, hh:mm a")}
+                </span>
               </span>
             )}
+            {infoRows.map((row) => (
+              <div
+                key={row[0].label}
+                className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-gray-500"
+              >
+                {row.map(({ label, value }) => (
+                  <span key={label} className="break-words">
+                    {label}:{" "}
+                    <span className="font-medium text-gray-700">{value}</span>
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
           <div className="flex gap-2 sm:justify-end sm:gap-5">
             <Button

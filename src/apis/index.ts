@@ -13,6 +13,7 @@ import {
 } from "@/types/activityDefinition";
 import { DiagnosticReport } from "@/types/diagnosticReports";
 import { ImagingStudy, ImagingStudyStatus } from "@/types/imagingStudy";
+import { Patient } from "@/types/patient";
 
 export const apis = {
   imagingStudy: {
@@ -93,6 +94,14 @@ export const apis = {
         `/api/v1/facility/${facilityId}/`,
         { method: "GET" },
       );
+    },
+  },
+
+  patient: {
+    retrieve: async (patientId: string): Promise<Patient> => {
+      return await request<Patient>(`/api/v1/patient/${patientId}/`, {
+        method: "GET",
+      });
     },
   },
 
