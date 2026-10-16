@@ -122,6 +122,7 @@ export default function DicomUploader({
     setIsUploading(true);
     const counts = {
       success: 0,
+      linked: 0,
       failed: 0,
       duplicate: 0,
       linkConflict: 0,
@@ -147,6 +148,7 @@ export default function DicomUploader({
         const response = await apis.imagingStudy.upload(patientId, formData);
         const isSuccess = response.message.includes("success");
         counts[isSuccess ? "success" : "failed"] += 1;
+        if (isSuccess) counts.linked += 1;
         if (isSuccess && response.study_uid) {
           uploadedStudyUid = response.study_uid;
         }
@@ -219,8 +221,9 @@ export default function DicomUploader({
     }
 
     // Once the batch is done, mark the imaging study as in progress if any
-    // file reached PACS.
-    if (serviceRequestId && counts.success > 0) {
+    // file was linked to this service request. Link conflicts belong to
+    // another request, so they don't count.
+    if (serviceRequestId && counts.linked > 0) {
       try {
         await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
           status: "IN_PROGRESS",

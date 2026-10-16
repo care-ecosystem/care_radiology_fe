@@ -90,34 +90,29 @@ export default function DicomViewer({
   );
   const requester = serviceRequestDetail?.requester;
 
-  type InfoItem = { label: string; value: string };
-  const isInfoItem = (item: InfoItem | false | undefined): item is InfoItem =>
-    !!item;
-
-  const patientAge = patient ? formatPatientAge(patient) : "-";
   const infoRows = [
     [
-      patient?.name && {
+      {
         label: t("radiology_patient_name"),
-        value: patient.name,
+        value: patient?.name || "-",
       },
-      patient?.gender && {
+      {
         label: t("radiology_sex"),
-        value: patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1),
+        value: patient?.gender ? t(`radiology_gender_${patient.gender}`) : "-",
       },
-      patientAge !== "-" && { label: t("radiology_age"), value: patientAge },
-    ].filter(isInfoItem),
+      { label: t("radiology_age"), value: formatPatientAge(patient, t) },
+    ],
     [
-      requester && {
+      {
         label: t("radiology_referred_physician"),
         value: formatName(requester),
       },
-      createdBy && {
+      {
         label: t("radiology_study_created_by"),
         value: formatName(createdBy),
       },
-    ].filter(isInfoItem),
-  ].filter((row) => row.length > 0);
+    ],
+  ];
 
   const ohifBaseUrl = useRadiologyViewerBaseUrl();
 
