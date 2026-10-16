@@ -95,7 +95,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   };
 
   const handleArchive = async () => {
-    if (!studyToArchive) return;
+    if (!studyToArchive || !patientId) return;
 
     const reason = archiveReason.trim();
     if (!reason) {
@@ -105,7 +105,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
 
     setIsArchiving(true);
     try {
-      await apis.dicom.archive(studyToArchive.external_id, {
+      await apis.imagingStudy.archive(patientId, studyToArchive.id, {
         archive_reason: reason,
       });
       toast.success(t("radiology_study_archived_successfully"));
@@ -149,7 +149,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
           <TableBody className="bg-white">
             {studies?.map((study: DicomStudy) => (
               <TableRow
-                key={study.external_id}
+                key={study.id}
                 className="divide-x divide-gray-200"
               >
                 <TableCell className="font-medium">
@@ -217,7 +217,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                             <Info size={16} />
                             {t("radiology_info")}
                           </DropdownMenuItem>
-                          {canArchive && !study.is_archived && (
+                          {canArchive && patientId && !study.is_archived && (
                             <DropdownMenuItem
                               onSelect={() => setStudyToArchive(study)}
                             >

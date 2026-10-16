@@ -62,14 +62,14 @@ function getAccessionError(error: unknown): AccessionErrorType | null {
 
 export default function DicomUploader({
   patientId,
-  facilityId,
+  encounterId,
   serviceRequestId,
   accessionNumber,
   onClose,
   onUploadSuccess,
 }: {
   patientId: string;
-  facilityId: string;
+  encounterId: string;
   serviceRequestId: string;
   accessionNumber?: string | null;
   onClose: () => void;
@@ -138,13 +138,11 @@ export default function DicomUploader({
 
       const formData = new FormData();
       formData.append("file", file.file);
-      formData.append("filename", file.name);
-      formData.append("patient_id", patientId);
-      formData.append("facility_id", facilityId);
+      formData.append("encounter_id", encounterId);
       formData.append("service_request_id", serviceRequestId);
 
       try {
-        const response = await apis.dicom.upload(formData);
+        const response = await apis.imagingStudy.upload(patientId, formData);
         const isSuccess = response.message.includes("success");
         counts[isSuccess ? "success" : "failed"] += 1;
         if (isSuccess && response.study_uid) {
@@ -216,6 +214,18 @@ export default function DicomUploader({
           success: counts.success,
         }),
       );
+    }
+
+    // Once the batch is done, mark the imaging study as in progress if any
+    // file reached PACS.
+    if (counts.success > 0) {
+      try {
+        await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
+          status: "IN_PROGRESS",
+        });
+      } catch {
+        toast.error(t("dicom_status_update_failed"));
+      }
     }
 
     if (uploadedStudyUid) {

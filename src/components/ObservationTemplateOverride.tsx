@@ -179,7 +179,6 @@ export default function ObservationTemplateOverride({
       description: string;
     }) =>
       apis.observationTemplate.update(vars.id, {
-        facility: facilityId!,
         title: vars.title,
         description: vars.description,
       }),

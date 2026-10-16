@@ -45,11 +45,15 @@ export default function DicomViewer({
     );
   }, [isPermissionLoading, isPermissionError, canReadRadiology, t]);
 
-  const { data: studies } = useRadiologyStudies(serviceRequestId, false);
-
   const { data: serviceRequestDetail } = useServiceRequestDetail(
     facilityId,
     serviceRequestId,
+  );
+
+  const { data: studies } = useRadiologyStudies(
+    serviceRequestDetail?.encounter?.patient?.id,
+    serviceRequestId,
+    false,
   );
 
   const studyDate = useMemo(

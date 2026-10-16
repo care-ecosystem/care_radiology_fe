@@ -214,7 +214,6 @@ export default function ObservationTemplateSettings({
   const updateMutation = useMutation({
     mutationFn: (vars: { id: string; title: string; description: string }) =>
       apis.observationTemplate.update(vars.id, {
-        facility: facilityId,
         title: vars.title,
         description: vars.description,
       }),

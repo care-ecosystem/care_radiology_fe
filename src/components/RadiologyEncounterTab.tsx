@@ -13,8 +13,10 @@ import RadiologyStudyTable from "./RadiologyStudyTable";
 import { DicomStudy } from "@/types/dicom";
 import { PLUGIN_SLUG } from "@/constants";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+import { toDicomStudies } from "@/hooks/useRadiologyStudies";
 
 const RADIOLOGY_TAB_KEY = "radiology";
+const ENCOUNTER_IMAGING_STUDY_LIMIT = 100;
 const notifiedToasts = new Set<string>();
 
 const isRadiologyTabOpen = () =>
@@ -43,12 +45,14 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     isLoading,
     isError,
   } = useQuery<DicomStudy[]>({
-    queryKey: ["dicomimagelist", encounter.id],
-    queryFn: () =>
-      apis.dicom.fetchStudies({
+    queryKey: ["imagingStudies", patient.id, encounter.id],
+    queryFn: async () => {
+      const { results } = await apis.imagingStudy.list(patient.id, {
         encounter: encounter.id,
-        includeArchived: false,
-      }),
+        limit: ENCOUNTER_IMAGING_STUDY_LIMIT,
+      });
+      return results.flatMap(toDicomStudies);
+    },
     enabled: canReadRadiology,
   });
 
