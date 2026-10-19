@@ -13,6 +13,7 @@ import {
 } from "@/hooks/useRadiologyStudies";
 import { useHostSiblingsHidden } from "@/hooks/useHostSiblingsHidden";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+import { useImagingStudyCompletionSync } from "@/hooks/useImagingStudyCompletionSync";
 import { allowsDiagnosticReportWithoutActiveStudy } from "@/utils/pluginConfig";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -65,6 +66,12 @@ export const ServiceRequestView: FC<SRProps> = ({
     isRadiologyRequest ? patientId : undefined,
     serviceRequestId,
   );
+
+  useImagingStudyCompletionSync({
+    serviceRequest: serviceRequestDetail,
+    imagingStudy,
+    canWriteRadiology,
+  });
 
   useEffect(() => {
     if (studiesLoadFailed) {
@@ -210,7 +217,7 @@ export const ServiceRequestView: FC<SRProps> = ({
           onOpenChange={(open) => !open && handleUploaderClose()}
         >
           <DialogContent
-            className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] overflow-auto gap-0 p-0"
+            className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden gap-0 p-0"
             hideCloseButton
           >
             <DicomUploader

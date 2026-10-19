@@ -47,6 +47,7 @@
   "dicom_upload_summary_failed": "{{failed}} files failed. {{success}} uploaded.",
   "dicom_files_uploaded_successfully": "Files uploaded successfully",
   "dicom_status_update_failed": "Files uploaded, but the imaging study status could not be updated.",
+  "imaging_study_complete_failed": "Service request completed, but the imaging study could not be marked as completed.",
   "dicom_duplicate_file": "Duplicate : File already uploaded.",
   "dicom_study_already_linked": "Study is already linked to another service request.",
   "dicom_accession_number_missing": "{{count}} file(s) could not be uploaded because they do not contain an accession number.",

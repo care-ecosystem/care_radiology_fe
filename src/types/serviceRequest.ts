@@ -25,6 +25,7 @@ export interface ServiceRequest {
   code?: Coding;
   body_site?: Coding;
   category?: string;
+  status?: string;
   activity_definition?: ActivityDefinitionReference | null;
   diagnostic_reports?: DiagnosticReportReference[];
 

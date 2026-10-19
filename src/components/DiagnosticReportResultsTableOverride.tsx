@@ -6,6 +6,8 @@ import { APIError } from "@/apis/request";
 import { PaginatedResponse } from "@/apis/types";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
+import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+import { useImagingStudyCompletionSync } from "@/hooks/useImagingStudyCompletionSync";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
   PLUGIN_SLUG,
@@ -193,10 +195,17 @@ export function DiagnosticReportResultsTableOverride({
   const { data: serviceRequestDetail, isLoading: loadingServiceRequest } =
     useServiceRequestDetail(facilityId, serviceRequestId);
 
-  const { data: studies } = useRadiologyStudies(
+  const { data: studies, imagingStudy } = useRadiologyStudies(
     urlPatientId ?? serviceRequestDetail?.encounter?.patient?.id,
     serviceRequestId,
   );
+
+  const { canWriteRadiology } = useRadiologyPermissions(facilityId);
+  useImagingStudyCompletionSync({
+    serviceRequest: serviceRequestDetail,
+    imagingStudy,
+    canWriteRadiology,
+  });
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);

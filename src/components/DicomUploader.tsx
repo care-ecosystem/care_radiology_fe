@@ -122,7 +122,6 @@ export default function DicomUploader({
     setIsUploading(true);
     const counts = {
       success: 0,
-      linked: 0,
       failed: 0,
       duplicate: 0,
       linkConflict: 0,
@@ -131,6 +130,7 @@ export default function DicomUploader({
       accession_number_mismatch: 0,
     };
     let uploadedStudyUid: string | undefined;
+    let statusMarked = false;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -148,9 +148,19 @@ export default function DicomUploader({
         const response = await apis.imagingStudy.upload(patientId, formData);
         const isSuccess = response.message.includes("success");
         counts[isSuccess ? "success" : "failed"] += 1;
-        if (isSuccess) counts.linked += 1;
         if (isSuccess && response.study_uid) {
           uploadedStudyUid = response.study_uid;
+        }
+
+        if (isSuccess && serviceRequestId && !statusMarked) {
+          statusMarked = true;
+          try {
+            await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
+              status: "IN_PROGRESS",
+            });
+          } catch {
+            toast.error(t("dicom_status_update_failed"));
+          }
         }
         setFileStatus(i, {
           status: isSuccess ? "success" : "failed",
@@ -220,19 +230,6 @@ export default function DicomUploader({
       );
     }
 
-    // Once the batch is done, mark the imaging study as in progress if any
-    // file was linked to this service request. Link conflicts belong to
-    // another request, so they don't count.
-    if (serviceRequestId && counts.linked > 0) {
-      try {
-        await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
-          status: "IN_PROGRESS",
-        });
-      } catch {
-        toast.error(t("dicom_status_update_failed"));
-      }
-    }
-
     if (uploadedStudyUid) {
       onUploadSuccess?.();
       toast.success(t("dicom_files_uploaded_successfully"));
@@ -276,9 +273,9 @@ export default function DicomUploader({
   const isUploadDone = uploadDone && !isUploading;
 
   return (
-    <div>
-      <Card className="h-full shadow-sm border border-gray-200 bg-white">
-        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 p-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pb-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <Card className="flex min-h-0 flex-1 flex-col shadow-sm border border-gray-200 bg-white">
+        <CardHeader className="flex shrink-0 flex-col items-stretch gap-3 space-y-0 p-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pb-4">
           <CardTitle className="text-xl font-semibold text-gray-800">
             {t("dicom_uploader")}
           </CardTitle>
@@ -329,7 +326,7 @@ export default function DicomUploader({
         </CardHeader>
 
         {accessionNumber && (
-          <div className="px-4 pb-3 sm:px-6 sm:pb-4">
+          <div className="shrink-0 px-4 pb-3 sm:px-6 sm:pb-4">
             <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-3">
               <Info className="size-4 shrink-0 text-blue-600" />
               <p className="text-sm text-blue-800">
@@ -340,7 +337,7 @@ export default function DicomUploader({
           </div>
         )}
 
-        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+        <CardContent className="flex min-h-0 flex-1 flex-col p-4 pt-0 sm:p-6 sm:pt-0">
           {files.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
               <FolderPlus className="h-16 w-16 text-gray-300 mb-4" />
@@ -353,7 +350,7 @@ export default function DicomUploader({
             </div>
           ) : (
             <>
-              <div className="mb-4 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-700 font-bold">
+              <div className="mb-4 shrink-0 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-700 font-bold">
                 {uploadedCount > 0 && (
                   <span className="text-green-600">
                     {t("dicom_files_uploaded_count", { count: uploadedCount })}{" "}
@@ -395,7 +392,7 @@ export default function DicomUploader({
                 )}
               </div>
 
-              <ScrollArea className="max-h-[70vh] overflow-y-auto rounded-md border border-gray-100 bg-gray-50/40 p-3">
+              <ScrollArea className="min-h-0 flex-1 overflow-y-auto rounded-md border border-gray-100 bg-gray-50/40 p-3">
                 <div className="space-y-2">
                   {files.map((file, index) => (
                     <div
@@ -417,7 +414,7 @@ export default function DicomUploader({
               </ScrollArea>
             </>
           )}
-          <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <div className="mt-6 flex shrink-0 flex-wrap justify-end gap-3">
             <Button
               onClick={onClose}
               size="sm"

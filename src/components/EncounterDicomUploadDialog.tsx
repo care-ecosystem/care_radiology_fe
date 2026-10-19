@@ -20,7 +20,7 @@ export const EncounterDicomUploadDialog: FC<Props> = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
-        className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] overflow-auto gap-0 p-0"
+        className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden gap-0 p-0"
         hideCloseButton
       >
         <DicomUploader
