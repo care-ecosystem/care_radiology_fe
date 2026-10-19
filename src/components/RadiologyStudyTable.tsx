@@ -167,7 +167,14 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                     : null) || "—"}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {(study.study_modalities as string[])?.join(", ") || "—"}
+                  <div>
+                    {(study.study_modalities as string[])?.join(", ") || "—"}
+                  </div>
+                  {study.service_request?.title && (
+                    <div className="text-xs text-gray-500">
+                      {study.service_request.title}
+                    </div>
+                  )}
                 </TableCell>
                 {!hideActions && (
                   <TableCell>
@@ -177,19 +184,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                           {t("radiology_archived")}
                         </Badge>
                       )}
-                      {!study.is_archived &&
-                        patientId &&
-                        study.encounter_id && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewStudy(study)}
-                            className="text-xs h-auto py-1 px-2"
-                          >
-                            <Eye size={16} className="mr-1" />
-                            {t("dicom_view_study")}
-                          </Button>
-                        )}
                       {showViewReport &&
                         patientId &&
                         study.service_request?.diagnostic_report_id && (
@@ -205,6 +199,19 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                           >
                             <FileText size={16} className="mr-1" />
                             {t("dicom_view_report")}
+                          </Button>
+                        )}
+                      {!study.is_archived &&
+                        patientId &&
+                        study.encounter_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewStudy(study)}
+                            className="text-xs h-auto py-1 px-2"
+                          >
+                            <Eye size={16} className="mr-1" />
+                            {t("dicom_view_study")}
                           </Button>
                         )}
                       <DropdownMenu modal={false}>

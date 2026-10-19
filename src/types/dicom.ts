@@ -26,6 +26,7 @@ export interface DicomStudy {
   accession_number?: string | null;
   service_request?: {
     id: string;
+    title?: string | null;
     diagnostic_report_id: string | null;
   } | null;
 }

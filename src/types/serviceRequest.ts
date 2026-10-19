@@ -19,6 +19,7 @@ export interface ActivityDefinitionReference {
 
 export interface ServiceRequest {
   id: string;
+  title?: string;
   encounter: Encounter;
   requester: User;
   code?: Coding;

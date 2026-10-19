@@ -474,7 +474,11 @@ export default function ObservationTemplateOverride({
       >
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{t("radiology_use_template")}</DialogTitle>
+            <DialogTitle className="break-words">
+              {t("radiology_use_template")}
+              {serviceRequestDetail?.title &&
+                ` (${serviceRequestDetail.title})`}
+            </DialogTitle>
             <DialogDescription className="break-words">
               {useTemplateFor?.title || useTemplateFor?.code?.display}
             </DialogDescription>
@@ -725,8 +729,10 @@ export default function ObservationTemplateOverride({
       >
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="break-words">
               {t("radiology_save_as_observation_template")}
+              {serviceRequestDetail?.title &&
+                ` (${serviceRequestDetail.title})`}
             </DialogTitle>
             <DialogDescription>
               {saveTemplateFor?.title || saveTemplateFor?.code?.display}
