@@ -25,6 +25,7 @@ export const toDicomStudies = (
     service_request: serviceRequest
       ? {
           id: serviceRequest.id,
+          title: serviceRequest.title ?? null,
           diagnostic_report_id:
             serviceRequest.diagnostic_reports?.[0]?.id ?? null,
         }
