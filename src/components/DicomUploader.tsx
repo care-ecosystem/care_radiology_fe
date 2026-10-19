@@ -62,15 +62,15 @@ function getAccessionError(error: unknown): AccessionErrorType | null {
 
 export default function DicomUploader({
   patientId,
-  facilityId,
+  encounterId,
   serviceRequestId,
   accessionNumber,
   onClose,
   onUploadSuccess,
 }: {
   patientId: string;
-  facilityId: string;
-  serviceRequestId: string;
+  encounterId: string;
+  serviceRequestId?: string;
   accessionNumber?: string | null;
   onClose: () => void;
   onUploadSuccess?: () => void;
@@ -122,6 +122,7 @@ export default function DicomUploader({
     setIsUploading(true);
     const counts = {
       success: 0,
+      linked: 0,
       failed: 0,
       duplicate: 0,
       linkConflict: 0,
@@ -138,15 +139,16 @@ export default function DicomUploader({
 
       const formData = new FormData();
       formData.append("file", file.file);
-      formData.append("filename", file.name);
-      formData.append("patient_id", patientId);
-      formData.append("facility_id", facilityId);
-      formData.append("service_request_id", serviceRequestId);
+      formData.append("encounter_id", encounterId);
+      if (serviceRequestId) {
+        formData.append("service_request_id", serviceRequestId);
+      }
 
       try {
-        const response = await apis.dicom.upload(formData);
+        const response = await apis.imagingStudy.upload(patientId, formData);
         const isSuccess = response.message.includes("success");
         counts[isSuccess ? "success" : "failed"] += 1;
+        if (isSuccess) counts.linked += 1;
         if (isSuccess && response.study_uid) {
           uploadedStudyUid = response.study_uid;
         }
@@ -216,6 +218,19 @@ export default function DicomUploader({
           success: counts.success,
         }),
       );
+    }
+
+    // Once the batch is done, mark the imaging study as in progress if any
+    // file was linked to this service request. Link conflicts belong to
+    // another request, so they don't count.
+    if (serviceRequestId && counts.linked > 0) {
+      try {
+        await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
+          status: "IN_PROGRESS",
+        });
+      } catch {
+        toast.error(t("dicom_status_update_failed"));
+      }
     }
 
     if (uploadedStudyUid) {

@@ -12,27 +12,57 @@ import {
   ActivityDefinitionListItem,
 } from "@/types/activityDefinition";
 import { DiagnosticReport } from "@/types/diagnosticReports";
-import { RadiologyServiceRequest } from "@/types/radiologyServiceRequest";
+import { ImagingStudy, ImagingStudyStatus } from "@/types/imagingStudy";
+import { Patient } from "@/types/patient";
 
 export const apis = {
-  dicom: {
-    fetchStudies: async (query?: {
-      encounter?: string;
-      serviceRequestId?: string;
-      includeArchived?: boolean;
-    }) => {
-      const params: Record<string, string> = {};
-      if (query?.serviceRequestId) params.serviceRequestId = query.serviceRequestId;
-      else if (query?.encounter) params.encounterId = query.encounter;
-      params.includeArchived = String(query?.includeArchived ?? false);
-      return await request<any>(
-        `/api/care_radiology/dicom/studies/${queryString(params)}`,
+  imagingStudy: {
+    list: async (
+      patientId: string,
+      query: { encounter: string; limit?: number; offset?: number },
+    ): Promise<PaginatedResponse<ImagingStudy>> => {
+      const params: Record<string, string | number> = {
+        encounter: query.encounter,
+      };
+      if (query.limit !== undefined) params.limit = query.limit;
+      if (query.offset !== undefined) params.offset = query.offset;
+      return await request<PaginatedResponse<ImagingStudy>>(
+        `/api/care_radiology/patient/${patientId}/imaging_study/${queryString(params)}`,
       );
     },
 
-    upload: async (payload: FormData): Promise<DicomUploadResponse> => {
+    retrieve: async (
+      patientId: string,
+      serviceRequestId: string,
+      query?: { include_archived?: boolean },
+    ): Promise<ImagingStudy> => {
+      return await request<ImagingStudy>(
+        `/api/care_radiology/patient/${patientId}/imaging_study/${serviceRequestId}/${queryString(
+          { include_archived: query?.include_archived ?? true },
+        )}`,
+      );
+    },
+
+    updateStatus: async (
+      patientId: string,
+      serviceRequestId: string,
+      payload: { status: ImagingStudyStatus },
+    ): Promise<ImagingStudy> => {
+      return await request<ImagingStudy>(
+        `/api/care_radiology/patient/${patientId}/imaging_study/${serviceRequestId}/`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        },
+      );
+    },
+
+    upload: async (
+      patientId: string,
+      payload: FormData,
+    ): Promise<DicomUploadResponse> => {
       return await request<DicomUploadResponse>(
-        "/api/care_radiology/dicom/upload/",
+        `/api/care_radiology/patient/${patientId}/imaging_study/upload/`,
         {
           body: payload,
           method: "POST",
@@ -44,11 +74,12 @@ export const apis = {
     },
 
     archive: async (
-      id: string,
+      patientId: string,
+      studyId: string,
       payload: { archive_reason: string },
     ): Promise<DicomStudyArchiveResponse> => {
       return await request<DicomStudyArchiveResponse>(
-        `/api/care_radiology/dicom/${id}/archive/`,
+        `/api/care_radiology/patient/${patientId}/imaging_study/${studyId}/archive/`,
         {
           body: JSON.stringify(payload),
           method: "POST",
@@ -66,6 +97,14 @@ export const apis = {
     },
   },
 
+  patient: {
+    retrieve: async (patientId: string): Promise<Patient> => {
+      return await request<Patient>(`/api/v1/patient/${patientId}/`, {
+        method: "GET",
+      });
+    },
+  },
+
   user: {
     current: async (): Promise<CurrentUser> => {
       return await request<CurrentUser>("/api/v1/users/getcurrentuser/", {
@@ -78,17 +117,6 @@ export const apis = {
     retrieve: async (facilityId: string, serviceRequestId: string) => {
       return await request<any>(
         `/api/v1/facility/${facilityId}/service_request/${serviceRequestId}/`,
-        { method: "GET" },
-      );
-    },
-  },
-
-  radiologyServiceRequest: {
-    retrieve: async (
-      serviceRequestId: string,
-    ): Promise<RadiologyServiceRequest> => {
-      return await request<RadiologyServiceRequest>(
-        `/api/care_radiology/radiology_service_request/${serviceRequestId}/`,
         { method: "GET" },
       );
     },
@@ -118,18 +146,28 @@ export const apis = {
   observationTemplate: {
     fetchAll: async (query: {
       facility: string;
-      observation_definition: string;
+      observation_definition?: string;
       activity_definition?: string;
+      created_by?: string;
       title?: string;
+      ordering?: string;
       limit?: number;
       offset?: number;
     }): Promise<PaginatedResponse<ObservationTemplate>> => {
       const params: Record<string, string | number> = {
         facility: query.facility,
-        observation_definition: query.observation_definition,
       };
+      if (query.observation_definition) {
+        params.observation_definition = query.observation_definition;
+      }
       if (query.activity_definition) {
         params.activity_definition = query.activity_definition;
+      }
+      if (query.created_by) {
+        params.created_by = query.created_by;
+      }
+      if (query.ordering) {
+        params.ordering = query.ordering;
       }
       if (query.title) {
         params.title = encodeURIComponent(query.title);
@@ -141,7 +179,7 @@ export const apis = {
         params.offset = query.offset;
       }
       return await request<PaginatedResponse<ObservationTemplate>>(
-        `/api/care_radiology/observation_template/${queryString(params)}`,
+        `/api/care_radiology/observation_result_template/${queryString(params)}`,
       );
     },
 
@@ -154,7 +192,7 @@ export const apis = {
       fields: ObservationTemplateField[];
     }): Promise<ObservationTemplate> => {
       return await request<ObservationTemplate>(
-        "/api/care_radiology/observation_template/",
+        "/api/care_radiology/observation_result_template/",
         {
           method: "POST",
           body: JSON.stringify(payload),
@@ -164,12 +202,10 @@ export const apis = {
 
     update: async (
       id: string,
-      payload: { facility: string; title: string; description?: string },
+      payload: { title?: string; description?: string },
     ): Promise<ObservationTemplate> => {
       return await request<ObservationTemplate>(
-        `/api/care_radiology/observation_template/${id}/${queryString({
-          facility: payload.facility,
-        })}`,
+        `/api/care_radiology/observation_result_template/${id}/`,
         {
           method: "PATCH",
           body: JSON.stringify(payload),
@@ -215,4 +251,5 @@ export const apis = {
 interface DicomUploadResponse {
   message: string;
   study_uid: string;
+  service_request_id?: string;
 }

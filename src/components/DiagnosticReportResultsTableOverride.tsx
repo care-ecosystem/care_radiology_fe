@@ -193,7 +193,10 @@ export function DiagnosticReportResultsTableOverride({
   const { data: serviceRequestDetail, isLoading: loadingServiceRequest } =
     useServiceRequestDetail(facilityId, serviceRequestId);
 
-  const { data: studies } = useRadiologyStudies(serviceRequestId);
+  const { data: studies } = useRadiologyStudies(
+    urlPatientId ?? serviceRequestDetail?.encounter?.patient?.id,
+    serviceRequestId,
+  );
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
