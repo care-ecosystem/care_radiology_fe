@@ -1,16 +1,19 @@
 import { FC, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import DicomUploader from "./DicomUploader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
 import { PlugConfigMeta } from "@/types/plugin";
-import { apis } from "@/apis";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
-import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
+import {
+  imagingStudyQueryKey,
+  useRadiologyStudies,
+} from "@/hooks/useRadiologyStudies";
 import { useHostSiblingsHidden } from "@/hooks/useHostSiblingsHidden";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+import { useImagingStudyCompletionSync } from "@/hooks/useImagingStudyCompletionSync";
 import { allowsDiagnosticReportWithoutActiveStudy } from "@/utils/pluginConfig";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -44,18 +47,6 @@ export const ServiceRequestView: FC<SRProps> = ({
     isError: isPermissionError,
   } = useRadiologyPermissions(facilityId);
 
-  const {
-    data: dicomStudies,
-    isSuccess: studiesLoaded,
-    isError: studiesLoadFailed,
-  } = useRadiologyStudies(serviceRequestId);
-
-  useEffect(() => {
-    if (studiesLoadFailed) {
-      toast.error(t("radiology_failed_to_load_studies"));
-    }
-  }, [studiesLoadFailed, t]);
-
   const { data: serviceRequestDetail } = useServiceRequestDetail(
     facilityId,
     serviceRequestId,
@@ -63,12 +54,30 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   const isRadiologyRequest =
     serviceRequestDetail?.category === SERVICE_REQUEST_OVERRIDE_CATEGORY;
+  const patientId = serviceRequestDetail?.encounter?.patient?.id;
+  const encounterId = serviceRequestDetail?.encounter?.id;
 
-  const { data: radiologyServiceRequest } = useQuery({
-    queryKey: ["radiologyServiceRequest", serviceRequestId],
-    queryFn: () => apis.radiologyServiceRequest.retrieve(serviceRequestId),
-    enabled: isRadiologyRequest,
+  const {
+    data: dicomStudies,
+    imagingStudy,
+    isSuccess: studiesLoaded,
+    isError: studiesLoadFailed,
+  } = useRadiologyStudies(
+    isRadiologyRequest ? patientId : undefined,
+    serviceRequestId,
+  );
+
+  useImagingStudyCompletionSync({
+    serviceRequest: serviceRequestDetail,
+    imagingStudy,
+    canWriteRadiology,
   });
+
+  useEffect(() => {
+    if (studiesLoadFailed) {
+      toast.error(t("radiology_failed_to_load_studies"));
+    }
+  }, [studiesLoadFailed, t]);
 
   const hasDiagnosticReports =
     (serviceRequestDetail?.diagnostic_reports?.length ?? 0) > 0;
@@ -117,13 +126,12 @@ export const ServiceRequestView: FC<SRProps> = ({
     return null;
   }
 
-  const patientId = serviceRequestDetail?.encounter?.patient?.id;
   const canUploadDicom =
     canWriteRadiology && isUploadStage && (studiesLoaded || !canReadRadiology);
 
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
-      queryKey: ["dicomStudies", serviceRequestId],
+      queryKey: imagingStudyQueryKey(patientId, serviceRequestId),
     });
   };
 
@@ -203,20 +211,20 @@ export const ServiceRequestView: FC<SRProps> = ({
         </Card>
       )}
 
-      {canUploadDicom && facilityId && patientId && (
+      {canUploadDicom && patientId && encounterId && (
         <Dialog
           open={showUploader}
           onOpenChange={(open) => !open && handleUploaderClose()}
         >
           <DialogContent
-            className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] overflow-auto gap-0 p-0"
+            className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden gap-0 p-0"
             hideCloseButton
           >
             <DicomUploader
               patientId={patientId}
-              facilityId={facilityId}
+              encounterId={encounterId}
               serviceRequestId={serviceRequestId}
-              accessionNumber={radiologyServiceRequest?.accession_number}
+              accessionNumber={imagingStudy?.accession_number}
               onClose={handleUploaderClose}
               onUploadSuccess={invalidateServiceRequestQueries}
             />

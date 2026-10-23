@@ -6,6 +6,8 @@ import { APIError } from "@/apis/request";
 import { PaginatedResponse } from "@/apis/types";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import { useRadiologyStudies } from "@/hooks/useRadiologyStudies";
+import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
+import { useImagingStudyCompletionSync } from "@/hooks/useImagingStudyCompletionSync";
 import {
   DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY,
   PLUGIN_SLUG,
@@ -193,7 +195,17 @@ export function DiagnosticReportResultsTableOverride({
   const { data: serviceRequestDetail, isLoading: loadingServiceRequest } =
     useServiceRequestDetail(facilityId, serviceRequestId);
 
-  const { data: studies } = useRadiologyStudies(serviceRequestId);
+  const { data: studies, imagingStudy } = useRadiologyStudies(
+    urlPatientId ?? serviceRequestDetail?.encounter?.patient?.id,
+    serviceRequestId,
+  );
+
+  const { canWriteRadiology } = useRadiologyPermissions(facilityId);
+  useImagingStudyCompletionSync({
+    serviceRequest: serviceRequestDetail,
+    imagingStudy,
+    canWriteRadiology,
+  });
 
   const [saveTemplateFor, setSaveTemplateFor] =
     useState<DiagnosticReportObservation | null>(null);
@@ -238,8 +250,12 @@ export function DiagnosticReportResultsTableOverride({
   }, [observations]);
 
   const hasStudies = !!studies?.length;
+  const serviceRequestTitle =
+    pathDiagnosticReportId && !isPrintPage
+      ? diagnosticReport?.service_request?.title
+      : undefined;
 
-  if (!observations?.length && !hasStudies) {
+  if (!observations?.length && !hasStudies && !serviceRequestTitle) {
     return null;
   }
 
@@ -287,6 +303,17 @@ export function DiagnosticReportResultsTableOverride({
 
   return (
     <div className="space-y-4">
+      {serviceRequestTitle && (
+        <div>
+          <div className="text-sm text-gray-500">
+            {t("radiology_service_request")}
+          </div>
+          <div className="text-sm font-medium text-gray-900">
+            {serviceRequestTitle}
+          </div>
+        </div>
+      )}
+
       {hasStudies &&
         (isPrintPage ? (
           <RadiologyStudyTable
@@ -384,8 +411,10 @@ export function DiagnosticReportResultsTableOverride({
       >
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="break-words">
               {t("radiology_save_as_observation_template")}
+              {serviceRequestDetail?.title &&
+                ` (${serviceRequestDetail.title})`}
             </DialogTitle>
             <DialogDescription>
               {saveTemplateFor?.observation_definition?.title ||

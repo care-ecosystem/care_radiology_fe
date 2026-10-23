@@ -79,7 +79,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
 
   const handleViewStudy = (study: DicomStudy) => {
     window.open(
-      `/facility/${facilityId}/service_requests/${study.service_request!.id}/radiology/view/${study.study_uid}`,
+      `/facility/${facilityId}/patient/${patientId}/encounter/${study.encounter_id}/radiology/view/${study.study_uid}`,
       "_blank",
       "noopener,noreferrer",
     );
@@ -95,7 +95,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   };
 
   const handleArchive = async () => {
-    if (!studyToArchive) return;
+    if (!studyToArchive || !patientId) return;
 
     const reason = archiveReason.trim();
     if (!reason) {
@@ -105,7 +105,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
 
     setIsArchiving(true);
     try {
-      await apis.dicom.archive(studyToArchive.external_id, {
+      await apis.imagingStudy.archive(patientId, studyToArchive.id, {
         archive_reason: reason,
       });
       toast.success(t("radiology_study_archived_successfully"));
@@ -134,6 +134,9 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                 {t("radiology_study_name")}
               </TableHead>
               <TableHead className="whitespace-nowrap">
+                {t("radiology_accession_number")}
+              </TableHead>
+              <TableHead className="whitespace-nowrap">
                 {t("radiology_study_date")}
               </TableHead>
               <TableHead className="whitespace-nowrap">
@@ -149,11 +152,14 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
           <TableBody className="bg-white">
             {studies?.map((study: DicomStudy) => (
               <TableRow
-                key={study.external_id}
+                key={study.id}
                 className="divide-x divide-gray-200"
               >
                 <TableCell className="font-medium">
                   {study.study_description || "—"}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {study.accession_number || "—"}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {(study.study_date
@@ -161,7 +167,14 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                     : null) || "—"}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {(study.study_modalities as string[])?.join(", ") || "—"}
+                  <div>
+                    {(study.study_modalities as string[])?.join(", ") || "—"}
+                  </div>
+                  {study.service_request?.title && (
+                    <div className="text-xs text-gray-500">
+                      {study.service_request.title}
+                    </div>
+                  )}
                 </TableCell>
                 {!hideActions && (
                   <TableCell>
@@ -170,17 +183,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                         <Badge variant="destructive">
                           {t("radiology_archived")}
                         </Badge>
-                      )}
-                      {!study.is_archived && study.service_request?.id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewStudy(study)}
-                          className="text-xs h-auto py-1 px-2"
-                        >
-                          <Eye size={16} className="mr-1" />
-                          {t("dicom_view_study")}
-                        </Button>
                       )}
                       {showViewReport &&
                         patientId &&
@@ -197,6 +199,19 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                           >
                             <FileText size={16} className="mr-1" />
                             {t("dicom_view_report")}
+                          </Button>
+                        )}
+                      {!study.is_archived &&
+                        patientId &&
+                        study.encounter_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewStudy(study)}
+                            className="text-xs h-auto py-1 px-2"
+                          >
+                            <Eye size={16} className="mr-1" />
+                            {t("dicom_view_study")}
                           </Button>
                         )}
                       <DropdownMenu modal={false}>
@@ -217,7 +232,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                             <Info size={16} />
                             {t("radiology_info")}
                           </DropdownMenuItem>
-                          {canArchive && !study.is_archived && (
+                          {canArchive && patientId && !study.is_archived && (
                             <DropdownMenuItem
                               onSelect={() => setStudyToArchive(study)}
                             >
