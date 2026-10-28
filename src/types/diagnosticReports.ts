@@ -34,6 +34,10 @@ export interface DiagnosticReportObservation {
 export interface DiagnosticReport {
   id: string;
   observations?: DiagnosticReportObservation[];
-  service_request?: { id: string; [key: string]: unknown } | null;
+  service_request?: {
+    id: string;
+    title?: string;
+    [key: string]: unknown;
+  } | null;
   [key: string]: unknown;
 }

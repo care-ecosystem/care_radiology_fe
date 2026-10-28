@@ -7,19 +7,22 @@ const ObservationTemplateSettings = lazy(
 );
 
 const routes = {
-  "/facility/:facilityId/service_requests/:serviceRequestId/radiology/view/:studyid":
+  "/facility/:facilityId/patient/:patientId/encounter/:encounterId/radiology/view/:studyid":
     ({
       facilityId,
-      serviceRequestId,
+      patientId,
+      encounterId,
       studyid,
     }: {
       facilityId: string;
-      serviceRequestId: string;
+      patientId: string;
+      encounterId: string;
       studyid: string;
     }) => (
       <DicomViewer
         facilityId={facilityId}
-        serviceRequestId={serviceRequestId}
+        patientId={patientId}
+        encounterId={encounterId}
         studyUid={studyid}
       ></DicomViewer>
     ),
