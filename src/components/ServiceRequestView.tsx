@@ -185,6 +185,14 @@ export const ServiceRequestView: FC<SRProps> = ({
                       {t("service_request_dicom_no_studies_found")}
                     </p>
                   )}
+                  {imagingStudy?.accession_number && (
+                    <p className="mt-2 text-sm text-gray-700">
+                      {t("radiology_accession_number")}:{" "}
+                      <span className="font-semibold text-gray-950">
+                        {imagingStudy.accession_number}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex justify-center">
                   <Button
