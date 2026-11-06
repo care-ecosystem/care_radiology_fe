@@ -137,7 +137,7 @@
   "radiology_modality_modality_scp": "Modality SCP",
   "radiology_modality_ae_title": "AE Title",
   "radiology_modality_port": "Port",
-  "radiology_modality_ip": "IP Address",
+  "radiology_modality_ip": "LAN IP Address",
   "radiology_dicom_enabler": "DICOM Enabler",
   "radiology_dicom_enabler_configuration": "DICOM Enabler Configuration",
   "radiology_dicom_enabler_configuration_description": "DICOM endpoints of the DICOM Enabler that the modalities in this room connect to",
@@ -149,7 +149,8 @@
   "radiology_modality_no_dicom_enablers_found": "No DICOM Enablers found",
   "radiology_modality_host": "Host",
   "radiology_field_required": "This field is required",
-  "radiology_modality_connection": "Connection",
-  "radiology_modality_connected": "Connected",
-  "radiology_modality_not_connected": "Not connected"
+  "radiology_modality_sync_status": "Sync Status",
+  "radiology_modality_synced": "Synced",
+  "radiology_modality_not_synced": "Pending sync",
+  "radiology_modality_last_synced": "Last Synced"
 }

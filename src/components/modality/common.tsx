@@ -18,6 +18,7 @@ import {
   AE_TITLE_PATTERN,
   CareDevice,
   DICOM_ENABLER_CARE_TYPE,
+  DicomEnablerDeviceMetadata,
   ModalityAssignmentStatus,
   PORT_PATTERN,
 } from "@/types/modalityDevice";
@@ -294,25 +295,21 @@ export function Field({
   );
 }
 
-// Green dot when the device is assigned, red when it is not
-export function ConnectionStatus({
-  status,
-}: {
-  status?: ModalityAssignmentStatus;
-}) {
+// Green dot when the device is assigned (synced), amber while it is waiting to be (pending sync)
+export function SyncStatus({ status }: { status?: ModalityAssignmentStatus }) {
   const { t } = useTranslation(PLUGIN_SLUG);
-  const isConnected = status === "assigned";
+  const isSynced = status === "assigned";
   return (
     <span className="inline-flex items-center gap-2">
       <span
         aria-hidden="true"
         className={`size-2.5 rounded-full ${
-          isConnected ? "bg-green-500" : "bg-red-500"
+          isSynced ? "bg-green-500" : "bg-amber-500"
         }`}
       />
-      {isConnected
-        ? t("radiology_modality_connected")
-        : t("radiology_modality_not_connected")}
+      {isSynced
+        ? t("radiology_modality_synced")
+        : t("radiology_modality_not_synced")}
     </span>
   );
 }
@@ -348,6 +345,9 @@ export function useDicomEnabler(facilityId: string, deviceId?: string | null) {
   });
 }
 
-export function dicomEnablerName(device: CareDevice) {
-  return device.user_friendly_name || device.registered_name;
+// Name with the IP, e.g. "CT Room Gateway (192.168.1.40)"; just the name when no IP is set
+export function dicomEnablerLabel(device: CareDevice) {
+  const name = device.user_friendly_name || device.registered_name;
+  const ip = (device.care_metadata as DicomEnablerDeviceMetadata).ip;
+  return ip ? `${name} (${ip})` : name;
 }

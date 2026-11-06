@@ -71,6 +71,7 @@ export interface DicomDeviceMetadata {
   // external_id of the DICOM Enabler of the same facility the machine connects to
   dicom_enabler?: string;
   assignment_status?: ModalityAssignmentStatus;
+  last_synced_at?: string | null;
 }
 
 // care_metadata of a device with care_type "dicom-enabler"
@@ -79,6 +80,7 @@ export interface DicomEnablerDeviceMetadata {
   store_scp?: Partial<DicomEndpoint>;
   modality_scp?: Partial<DicomEndpoint>;
   assignment_status?: ModalityAssignmentStatus;
+  last_synced_at?: string | null;
 }
 
 // Fields of the CARE device list response used by the plugin

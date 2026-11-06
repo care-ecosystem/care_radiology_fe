@@ -9,10 +9,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  ConnectionStatus,
   DeviceShowPageCardProps,
   Field,
+  SyncStatus,
 } from "@/components/modality/common";
+import { formatDateTime } from "@/utils/auditUtils";
 import {
   DicomEnablerDeviceMetadata,
   DicomEndpoint,
@@ -54,8 +55,11 @@ export default function DicomEnablerShowPageCard({
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Field label={t("radiology_modality_connection")}>
-            <ConnectionStatus status={meta.assignment_status} />
+          <Field label={t("radiology_modality_sync_status")}>
+            <SyncStatus status={meta.assignment_status} />
+          </Field>
+          <Field label={t("radiology_modality_last_synced")}>
+            {meta.last_synced_at ? formatDateTime(meta.last_synced_at) : "--"}
           </Field>
           <Field label={t("radiology_modality_ip")}>{meta.ip || "--"}</Field>
         </div>

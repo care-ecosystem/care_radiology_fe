@@ -6,7 +6,7 @@ import { ComboBox } from "@/components/ui/combobox";
 import {
   AeTitleField,
   DeviceConfigureFormProps,
-  dicomEnablerName,
+  dicomEnablerLabel,
   FormSection,
   SelectField,
   TextField,
@@ -16,6 +16,7 @@ import {
   withoutAssignmentStatus,
 } from "@/components/modality/common";
 import {
+  CareDevice,
   DicomDeviceMetadata,
   MachineEndpoint,
   MODALITY_CODES,
@@ -46,20 +47,19 @@ export default function DicomDeviceConfigureForm({
     meta.dicom_enabler,
   );
 
-  const enablerOptions = (enablers?.results ?? []).map((device) => ({
+  // The IP is part of the label so the selected DICOM Enabler shows it too
+  const toEnablerOption = (device: CareDevice) => ({
     value: device.id,
-    label: dicomEnablerName(device),
-  }));
+    label: dicomEnablerLabel(device),
+  });
+  const enablerOptions = (enablers?.results ?? []).map(toEnablerOption);
   // Keep the selected DICOM Enabler as an option so its name shows even when the search
   // results leave it out
   if (
     selectedEnabler &&
     !enablerOptions.some(({ value }) => value === selectedEnabler.id)
   ) {
-    enablerOptions.unshift({
-      value: selectedEnabler.id,
-      label: dicomEnablerName(selectedEnabler),
-    });
+    enablerOptions.unshift(toEnablerOption(selectedEnabler));
   }
 
   const emitChange = (next: DicomDeviceMetadata) =>

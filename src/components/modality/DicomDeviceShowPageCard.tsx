@@ -9,12 +9,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  ConnectionStatus,
   DeviceShowPageCardProps,
-  dicomEnablerName,
+  dicomEnablerLabel,
   Field,
+  SyncStatus,
   useDicomEnabler,
 } from "@/components/modality/common";
+import { formatDateTime } from "@/utils/auditUtils";
 import { DicomDeviceMetadata, MODALITY_CODES } from "@/types/modalityDevice";
 
 // care_metadata card of a DICOM device (care_type "dicom")
@@ -40,11 +41,14 @@ export default function DicomDeviceShowPageCard({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field label={t("radiology_modality_connection")}>
-            <ConnectionStatus status={meta.assignment_status} />
+          <Field label={t("radiology_modality_sync_status")}>
+            <SyncStatus status={meta.assignment_status} />
+          </Field>
+          <Field label={t("radiology_modality_last_synced")}>
+            {meta.last_synced_at ? formatDateTime(meta.last_synced_at) : "--"}
           </Field>
           <Field label={t("radiology_modality_dicom_enabler")}>
-            {enabler ? dicomEnablerName(enabler) : meta.dicom_enabler || "--"}
+            {enabler ? dicomEnablerLabel(enabler) : meta.dicom_enabler || "--"}
           </Field>
           <Field label={t("radiology_modality_ae_title")}>
             {meta.machine?.ae_title || "--"}
