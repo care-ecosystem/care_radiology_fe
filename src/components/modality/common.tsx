@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { PLUGIN_SLUG } from "@/constants";
@@ -104,22 +105,50 @@ function useRequiredError(
   };
 }
 
+function InfoTooltip({ label, text }: { label: string; text: string }) {
+  const tooltipId = useId();
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label={label}
+        aria-describedby={tooltipId}
+        className="rounded-full text-gray-400 hover:text-gray-600 focus-visible:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+      >
+        <Info aria-hidden="true" className="size-3" />
+      </button>
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className="invisible absolute bottom-full left-0 z-50 mb-2 w-64 max-w-[calc(100vw-2rem)] rounded-md bg-gray-900 px-3 py-2 text-xs font-normal text-white shadow-md group-focus-within:visible group-hover:visible"
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function FieldLabel({
   htmlFor,
   label,
   required,
   error,
+  tooltip,
 }: {
   htmlFor?: string;
   label: string;
   required?: boolean;
   error: boolean;
+  tooltip?: string;
 }) {
   return (
-    <Label htmlFor={htmlFor} className={error ? "text-red-500" : undefined}>
-      {label}
-      {required && <RequiredMark />}
-    </Label>
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={htmlFor} className={error ? "text-red-500" : undefined}>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
+      {tooltip && <InfoTooltip label={label} text={tooltip} />}
+    </div>
   );
 }
 
@@ -137,11 +166,13 @@ export function SelectField({
   label,
   required,
   isEmpty,
+  tooltip,
   children,
 }: {
   label: string;
   required?: boolean;
   isEmpty: boolean;
+  tooltip?: string;
   children: ReactNode;
 }) {
   const errorId = useId();
@@ -151,7 +182,12 @@ export function SelectField({
   );
   return (
     <div className="relative grid gap-2">
-      <FieldLabel label={label} required={required} error={error} />
+      <FieldLabel
+        label={label}
+        required={required}
+        error={error}
+        tooltip={tooltip}
+      />
       {children}
       <input
         ref={ref}
@@ -191,6 +227,7 @@ export function TextField({
   disabled,
   maxLength,
   invalidMessage,
+  tooltip,
 }: {
   label: string;
   value: string;
@@ -200,6 +237,7 @@ export function TextField({
   disabled?: boolean;
   maxLength?: number;
   invalidMessage?: string;
+  tooltip?: string;
 }) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -215,6 +253,7 @@ export function TextField({
         label={label}
         required={required}
         error={error}
+        tooltip={tooltip}
       />
       <Input
         ref={ref}
@@ -246,12 +285,14 @@ export function AeTitleField({
   onChange,
   required,
   placeholder,
+  tooltip,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   placeholder?: string;
+  tooltip?: string;
 }) {
   return (
     <TextField
@@ -259,6 +300,7 @@ export function AeTitleField({
       value={value}
       required={required}
       placeholder={placeholder}
+      tooltip={tooltip}
       maxLength={AE_TITLE_MAX_LENGTH}
       onChange={(next) => {
         if (AE_TITLE_PATTERN.test(next)) onChange(next);
@@ -273,11 +315,13 @@ export function Ipv4Field({
   value,
   onChange,
   placeholder,
+  tooltip,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  tooltip?: string;
 }) {
   const { t } = useTranslation(PLUGIN_SLUG);
   return (
@@ -286,6 +330,7 @@ export function Ipv4Field({
       value={value}
       required
       placeholder={placeholder}
+      tooltip={tooltip}
       maxLength={15}
       invalidMessage={
         isIpv4Address(value) ? undefined : t("radiology_invalid_ipv4")

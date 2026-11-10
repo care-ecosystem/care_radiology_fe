@@ -100,12 +100,14 @@ export default function DicomDeviceConfigureForm({
           label={t("radiology_modality_ae_title")}
           required
           placeholder="CT1"
+          tooltip={t("radiology_modality_machine_ae_title_tooltip")}
           value={meta.machine?.ae_title ?? ""}
           onChange={(value) => handleMachineChange("ae_title", value)}
         />
         <SelectField
           label={t("radiology_modality_code")}
           required
+          tooltip={t("radiology_modality_code_tooltip")}
           isEmpty={!meta.machine?.modality}
         >
           <ComboBox
@@ -122,6 +124,7 @@ export default function DicomDeviceConfigureForm({
         <Ipv4Field
           label={t("radiology_modality_ip")}
           placeholder="192.168.1.45"
+          tooltip={t("radiology_modality_machine_ip_tooltip")}
           value={meta.machine?.ip ?? ""}
           onChange={(value) => handleMachineChange("ip", value)}
         />

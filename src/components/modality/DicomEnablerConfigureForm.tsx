@@ -48,6 +48,7 @@ export default function DicomEnablerConfigureForm({
     section: ScpSection,
     title: string,
     aeTitlePlaceholder: string,
+    aeTitleTooltip: string,
     portPlaceholder: string,
   ) => (
     <FormSection title={title}>
@@ -55,6 +56,7 @@ export default function DicomEnablerConfigureForm({
         label={t("radiology_modality_ae_title")}
         required
         placeholder={aeTitlePlaceholder}
+        tooltip={aeTitleTooltip}
         value={meta[section]?.ae_title ?? ""}
         onChange={(value) => handleScpChange(section, "ae_title", value)}
       />
@@ -79,6 +81,7 @@ export default function DicomEnablerConfigureForm({
         <Ipv4Field
           label={t("radiology_modality_ip")}
           placeholder="192.168.1.40"
+          tooltip={t("radiology_dicom_enabler_ip_tooltip")}
           value={meta.ip ?? ""}
           onChange={(value) => emitChange({ ...meta, ip: value })}
         />
@@ -87,12 +90,14 @@ export default function DicomEnablerConfigureForm({
         "store_scp",
         t("radiology_modality_store_scp"),
         "STORESCP",
+        t("radiology_modality_store_scp_ae_title_tooltip"),
         "2007",
       )}
       {renderScpSection(
         "modality_scp",
         t("radiology_modality_modality_scp"),
         "MODALITYSCP",
+        t("radiology_modality_modality_scp_ae_title_tooltip"),
         "2008",
       )}
     </div>
