@@ -1,6 +1,11 @@
-import { lazy, Suspense } from "react";
+import { ComponentProps, lazy, Suspense } from "react";
 import routes from "./routes";
+import { Router, ScanHeart } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import {
+  DICOM_CARE_TYPE,
+  DICOM_ENABLER_CARE_TYPE,
+} from "@/types/modalityDevice";
 
 // Lazy load all pluggable components
 const ServiceRequestActionComponent = lazy(
@@ -17,6 +22,18 @@ const DiagnosticReportOverrideComponent = lazy(
 );
 const RadiologyEncounterTabComponent = lazy(
   () => import("@/components/RadiologyEncounterTab"),
+);
+const DicomDeviceConfigureFormComponent = lazy(
+  () => import("@/components/modality/DicomDeviceConfigureForm"),
+);
+const DicomDeviceShowPageCardComponent = lazy(
+  () => import("@/components/modality/DicomDeviceShowPageCard"),
+);
+const DicomEnablerConfigureFormComponent = lazy(
+  () => import("@/components/modality/DicomEnablerConfigureForm"),
+);
+const DicomEnablerShowPageCardComponent = lazy(
+  () => import("@/components/modality/DicomEnablerShowPageCard"),
 );
 
 // Loading fallback component
@@ -86,6 +103,50 @@ function RadiologyEncounterTabWrapper(props: any) {
   );
 }
 
+// Wrapper for the DICOM device configure form
+function DicomDeviceConfigureFormWrapper(props: ComponentProps<typeof DicomDeviceConfigureFormComponent>) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <DicomDeviceConfigureFormComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// Wrapper for the DICOM device show page card
+function DicomDeviceShowPageCardWrapper(props: ComponentProps<typeof DicomDeviceShowPageCardComponent>) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <DicomDeviceShowPageCardComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// Wrapper for the DICOM Enabler configure form
+function DicomEnablerConfigureFormWrapper(props: ComponentProps<typeof DicomEnablerConfigureFormComponent>) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <DicomEnablerConfigureFormComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// Wrapper for the DICOM Enabler show page card
+function DicomEnablerShowPageCardWrapper(props: ComponentProps<typeof DicomEnablerShowPageCardComponent>) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <DicomEnablerShowPageCardComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 const manifest = {
   plugin: "care_radiology_fe",
   routes,
@@ -105,6 +166,20 @@ const manifest = {
   encounterTabs: {
     radiology: RadiologyEncounterTabWrapper,
   },
+  devices: [
+    {
+      type: DICOM_ENABLER_CARE_TYPE,
+      icon: Router,
+      configureForm: DicomEnablerConfigureFormWrapper,
+      showPageCard: DicomEnablerShowPageCardWrapper,
+    },
+    {
+      type: DICOM_CARE_TYPE,
+      icon: ScanHeart,
+      configureForm: DicomDeviceConfigureFormWrapper,
+      showPageCard: DicomDeviceShowPageCardWrapper,
+    },
+  ],
 };
 
 export default manifest;
