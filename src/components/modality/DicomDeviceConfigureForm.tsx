@@ -8,8 +8,8 @@ import {
   DeviceConfigureFormProps,
   dicomEnablerLabel,
   FormSection,
+  Ipv4Field,
   SelectField,
-  TextField,
   useDicomEnabler,
   useDicomEnablers,
   useDropAssignmentStatus,
@@ -119,12 +119,11 @@ export default function DicomDeviceConfigureForm({
             emptyMessage={t("radiology_modality_no_codes_found")}
           />
         </SelectField>
-        <TextField
+        <Ipv4Field
           label={t("radiology_modality_ip")}
-          required
           placeholder="192.168.1.45"
           value={meta.machine?.ip ?? ""}
-          onChange={(value) => handleMachineChange("ip", value || null)}
+          onChange={(value) => handleMachineChange("ip", value)}
         />
       </FormSection>
     </div>

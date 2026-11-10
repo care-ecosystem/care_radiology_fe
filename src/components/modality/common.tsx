@@ -19,7 +19,10 @@ import {
   CareDevice,
   DICOM_ENABLER_CARE_TYPE,
   DicomEnablerDeviceMetadata,
+  isIpv4Address,
   ModalityAssignmentStatus,
+  PORT_MAX,
+  PORT_MIN,
   PORT_PATTERN,
 } from "@/types/modalityDevice";
 import { debounced } from "@/utils/query";
@@ -70,21 +73,29 @@ function RequiredMark() {
   return <span className="text-red-500">*</span>;
 }
 
-function useRequiredError(required: boolean | undefined, isEmpty: boolean) {
+function useRequiredError(
+  required: boolean | undefined,
+  isEmpty: boolean,
+  invalidMessage?: string,
+) {
   const { t } = useTranslation(PLUGIN_SLUG);
   const ref = useRef<HTMLInputElement>(null);
   const [shown, setShown] = useState(false);
-  const message = t("radiology_field_required");
   const isMissing = !!required && isEmpty;
+  const message = isMissing
+    ? t("radiology_field_required")
+    : isEmpty
+      ? ""
+      : (invalidMessage ?? "");
 
   useEffect(() => {
-    ref.current?.setCustomValidity(isMissing ? message : "");
-  }, [isMissing, message]);
+    ref.current?.setCustomValidity(message);
+  }, [message]);
 
   return {
     ref,
     message,
-    error: isMissing && shown,
+    error: !!message && shown,
     markTouched: () => setShown(true),
     onInvalid: (event: FormEvent<HTMLInputElement>) => {
       event.preventDefault();
@@ -179,6 +190,7 @@ export function TextField({
   placeholder,
   disabled,
   maxLength,
+  invalidMessage,
 }: {
   label: string;
   value: string;
@@ -187,12 +199,14 @@ export function TextField({
   placeholder?: string;
   disabled?: boolean;
   maxLength?: number;
+  invalidMessage?: string;
 }) {
   const id = useId();
   const errorId = `${id}-error`;
   const { ref, message, error, markTouched, onInvalid } = useRequiredError(
     required,
     !value.trim(),
+    invalidMessage,
   );
   return (
     <div className="grid gap-2">
@@ -253,6 +267,34 @@ export function AeTitleField({
   );
 }
 
+// IPv4 address, e.g. 192.168.1.40; spaces cannot be typed
+export function Ipv4Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const { t } = useTranslation(PLUGIN_SLUG);
+  return (
+    <TextField
+      label={label}
+      value={value}
+      required
+      placeholder={placeholder}
+      maxLength={15}
+      invalidMessage={
+        isIpv4Address(value) ? undefined : t("radiology_invalid_ipv4")
+      }
+      onChange={(next) => onChange(next.replace(/\s/g, ""))}
+    />
+  );
+}
+
 // Port is sent as an integer (1-65535); undefined while the field is empty
 export function PortField({
   label,
@@ -265,6 +307,8 @@ export function PortField({
   onChange: (value: number | undefined) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation(PLUGIN_SLUG);
+  const isValid = value === undefined || (value >= PORT_MIN && value <= PORT_MAX);
   return (
     <TextField
       label={label}
@@ -272,6 +316,7 @@ export function PortField({
       required
       placeholder={placeholder}
       maxLength={5}
+      invalidMessage={isValid ? undefined : t("radiology_invalid_port")}
       onChange={(next) => {
         if (PORT_PATTERN.test(next))
           onChange(next ? parseInt(next, 10) : undefined);

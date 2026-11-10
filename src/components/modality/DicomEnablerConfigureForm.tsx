@@ -5,8 +5,8 @@ import {
   AeTitleField,
   DeviceConfigureFormProps,
   FormSection,
+  Ipv4Field,
   PortField,
-  TextField,
   useDropAssignmentStatus,
   withoutAssignmentStatus,
 } from "@/components/modality/common";
@@ -76,9 +76,8 @@ export default function DicomEnablerConfigureForm({
   return (
     <div className="space-y-6">
       <FormSection title={t("radiology_dicom_enabler")}>
-        <TextField
+        <Ipv4Field
           label={t("radiology_modality_ip")}
-          required
           placeholder="192.168.1.40"
           value={meta.ip ?? ""}
           onChange={(value) => emitChange({ ...meta, ip: value })}

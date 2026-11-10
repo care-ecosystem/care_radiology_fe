@@ -55,7 +55,7 @@ export type ModalityAssignmentStatus =
 export interface MachineEndpoint {
   ae_title: string;
   modality: ModalityCode;
-  ip?: string | null;
+  ip: string;
 }
 
 // DicomEndpoint: an SCP of the DICOM Enabler
@@ -76,7 +76,7 @@ export interface DicomDeviceMetadata {
 
 // care_metadata of a device with care_type "dicom-enabler"
 export interface DicomEnablerDeviceMetadata {
-  ip?: string;
+  ip: string;
   store_scp?: Partial<DicomEndpoint>;
   modality_scp?: Partial<DicomEndpoint>;
   assignment_status?: ModalityAssignmentStatus;
@@ -99,3 +99,12 @@ export const AE_TITLE_PATTERN = /^[\x20-\x5B\x5D-\x7E]*$/;
 export const PORT_PATTERN = /^[0-9]{0,5}$/;
 export const PORT_MIN = 1;
 export const PORT_MAX = 65535;
+
+// IPv4 octet 0-255 without leading zeros, as the backend requires
+const IPV4_OCTET = "(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
+const IPV4_PATTERN = new RegExp(`^${IPV4_OCTET}(\\.${IPV4_OCTET}){3}$`);
+
+// Dotted IPv4 address, e.g. 192.168.1.40
+export function isIpv4Address(value: string) {
+  return IPV4_PATTERN.test(value);
+}

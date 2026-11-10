@@ -149,6 +149,8 @@
   "radiology_modality_no_dicom_enablers_found": "No DICOM Enablers found",
   "radiology_modality_host": "Host",
   "radiology_field_required": "This field is required",
+  "radiology_invalid_ipv4": "Enter a valid IPv4 address",
+  "radiology_invalid_port": "Enter a port from 1 to 65535",
   "radiology_modality_sync_status": "Sync Status",
   "radiology_modality_synced": "Synced",
   "radiology_modality_not_synced": "Pending sync",
