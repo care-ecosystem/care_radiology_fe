@@ -160,5 +160,13 @@
   "radiology_modality_sync_status": "Sync Status",
   "radiology_modality_synced": "Synced",
   "radiology_modality_not_synced": "Pending sync",
-  "radiology_modality_last_synced": "Last Synced"
+  "radiology_modality_last_synced": "Last Synced",
+  "radiology_modality_linking_inactive_device": "Linking an inactive device",
+  "radiology_modality_linking_unavailable_device": "Linking an unavailable device",
+  "radiology_modality_linking_inactive_unavailable_device": "Linking an inactive and unavailable device",
+  "radiology_device_status_inactive": "Inactive",
+  "radiology_device_status_entered_in_error": "Entered in error",
+  "radiology_device_availability_lost": "Lost",
+  "radiology_device_availability_damaged": "Damaged",
+  "radiology_device_availability_destroyed": "Destroyed"
 }

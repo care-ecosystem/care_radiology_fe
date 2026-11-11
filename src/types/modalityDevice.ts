@@ -83,12 +83,23 @@ export interface DicomEnablerDeviceMetadata {
   last_synced_at?: string | null;
 }
 
+// Core CARE device status values
+export type CareDeviceStatus = "active" | "inactive" | "entered_in_error";
+
+export type CareDeviceAvailabilityStatus =
+  | "lost"
+  | "damaged"
+  | "destroyed"
+  | "available";
+
 // Fields of the CARE device list response used by the plugin
 export interface CareDevice<TMetadata = Record<string, unknown>> {
   id: string;
   registered_name: string;
   user_friendly_name?: string | null;
   care_type?: string | null;
+  status?: CareDeviceStatus;
+  availability_status?: CareDeviceAvailabilityStatus;
   care_metadata: TMetadata;
 }
 

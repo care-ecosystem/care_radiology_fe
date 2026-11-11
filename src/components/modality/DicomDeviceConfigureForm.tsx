@@ -6,11 +6,13 @@ import { ComboBox } from "@/components/ui/combobox";
 import {
   AeTitleField,
   DeviceConfigureFormProps,
+  DeviceStatusWarning,
   dicomEnablerLabel,
   FormSection,
   Ipv4Field,
   SelectField,
   useDicomEnabler,
+  useDeviceStatusIssues,
   useDicomEnablers,
   useDropAssignmentStatus,
   withoutAssignmentStatus,
@@ -47,11 +49,16 @@ export default function DicomDeviceConfigureForm({
     meta.dicom_enabler,
   );
 
-  // The IP is part of the label so the selected DICOM Enabler shows it too
-  const toEnablerOption = (device: CareDevice) => ({
-    value: device.id,
-    label: dicomEnablerLabel(device),
-  });
+  const getStatusIssues = useDeviceStatusIssues();
+
+  const toEnablerOption = (device: CareDevice) => {
+    const issues = getStatusIssues(device);
+    return {
+      value: device.id,
+      label: dicomEnablerLabel(device),
+      description: issues.length ? issues.join(" · ") : undefined,
+    };
+  };
   const enablerOptions = (enablers?.results ?? []).map(toEnablerOption);
   // Keep the selected DICOM Enabler as an option so its name shows even when the search
   // results leave it out
@@ -61,6 +68,26 @@ export default function DicomDeviceConfigureForm({
   ) {
     enablerOptions.unshift(toEnablerOption(selectedEnabler));
   }
+
+  const linkedEnabler = meta.dicom_enabler
+    ? selectedEnabler?.id === meta.dicom_enabler
+      ? selectedEnabler
+      : enablers?.results.find(({ id }) => id === meta.dicom_enabler)
+    : undefined;
+  const linkedEnablerIssues = linkedEnabler
+    ? getStatusIssues(linkedEnabler)
+    : [];
+  const isInactive =
+    !!linkedEnabler?.status && linkedEnabler.status !== "active";
+  const isUnavailable =
+    !!linkedEnabler?.availability_status &&
+    linkedEnabler.availability_status !== "available";
+  const linkedEnablerWarning =
+    isInactive && isUnavailable
+      ? t("radiology_modality_linking_inactive_unavailable_device")
+      : isInactive
+        ? t("radiology_modality_linking_inactive_device")
+        : t("radiology_modality_linking_unavailable_device");
 
   const emitChange = (next: DicomDeviceMetadata) =>
     onChange(withoutAssignmentStatus(next));
@@ -93,6 +120,12 @@ export default function DicomDeviceConfigureForm({
             emptyMessage={t("radiology_modality_no_dicom_enablers_found")}
             loadingMessage={t("radiology_loading")}
           />
+          {linkedEnablerIssues.length > 0 && (
+            <DeviceStatusWarning
+              issues={linkedEnablerIssues}
+              message={linkedEnablerWarning}
+            />
+          )}
         </SelectField>
       </FormSection>
       <FormSection title={t("radiology_modality_machine")}>
