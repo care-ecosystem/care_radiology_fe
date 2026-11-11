@@ -7,11 +7,12 @@ import {
   useState,
 } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Info } from "lucide-react";
+import { Info, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { PLUGIN_SLUG } from "@/constants";
 import { apis } from "@/apis";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -433,6 +434,49 @@ export function useDicomEnabler(facilityId: string, deviceId?: string | null) {
     // A deleted DICOM Enabler returns 404; show its id instead of retrying
     retry: false,
   });
+}
+
+// Translated status labels of a device that is not active, or not available,
+export function useDeviceStatusIssues() {
+  const { t } = useTranslation(PLUGIN_SLUG);
+  return (device: CareDevice) => {
+    const issues: string[] = [];
+    if (device.status && device.status !== "active") {
+      issues.push(t(`radiology_device_status_${device.status}`));
+    }
+    if (
+      device.availability_status &&
+      device.availability_status !== "available"
+    ) {
+      issues.push(
+        t(`radiology_device_availability_${device.availability_status}`),
+      );
+    }
+    return issues;
+  };
+}
+
+export function DeviceStatusWarning({
+  issues,
+  message,
+}: {
+  issues: string[];
+  message: string;
+}) {
+  return (
+    <div
+      role="status"
+      className="flex flex-wrap items-center gap-1.5 text-xs text-amber-700"
+    >
+      <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+      {issues.map((issue) => (
+        <Badge key={issue} variant="yellow" size="xs" className="px-1.5">
+          {issue}
+        </Badge>
+      ))}
+      <span>{message}</span>
+    </div>
+  );
 }
 
 // Name with the IP, e.g. "CT Room Gateway (192.168.1.40)"; just the name when no IP is set
