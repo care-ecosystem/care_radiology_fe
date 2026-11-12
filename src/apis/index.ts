@@ -14,6 +14,7 @@ import {
 import { DiagnosticReport } from "@/types/diagnosticReports";
 import { ImagingStudy, ImagingStudyStatus } from "@/types/imagingStudy";
 import { Patient } from "@/types/patient";
+import { CareDevice } from "@/types/modalityDevice";
 
 export const apis = {
   imagingStudy: {
@@ -92,6 +93,37 @@ export const apis = {
     retrieve: async (facilityId: string): Promise<FacilityWithPermissions> => {
       return await request<FacilityWithPermissions>(
         `/api/v1/facility/${facilityId}/`,
+        { method: "GET" },
+      );
+    },
+  },
+
+  device: {
+    list: async (
+      facilityId: string,
+      query: {
+        care_type: string;
+        search_text?: string;
+        limit?: number;
+        offset?: number;
+      },
+    ): Promise<PaginatedResponse<CareDevice>> => {
+      return await request<PaginatedResponse<CareDevice>>(
+        `/api/v1/facility/${facilityId}/device/${queryString(
+          Object.fromEntries(
+            Object.entries(query).filter(([, value]) => value !== undefined),
+          ) as Record<string, string | number>,
+        )}`,
+        { method: "GET" },
+      );
+    },
+    // Core CARE device retrieve
+    retrieve: async (
+      facilityId: string,
+      deviceId: string,
+    ): Promise<CareDevice> => {
+      return await request<CareDevice>(
+        `/api/v1/facility/${facilityId}/device/${deviceId}/`,
         { method: "GET" },
       );
     },
