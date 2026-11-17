@@ -26,6 +26,11 @@ const RADIOLOGY_TAB_KEY = "radiology";
 const IMAGING_STUDIES_PAGE_SIZE = 14;
 const notifiedToasts = new Set<string>();
 
+const DICOM_UPLOAD_ALLOWED_ENCOUNTER_STATUSES = new Set([
+  "planned",
+  "in_progress",
+]);
+
 const isRadiologyTabOpen = () =>
   window.location.pathname.split("/").filter(Boolean).pop() ===
   RADIOLOGY_TAB_KEY;
@@ -83,6 +88,11 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   );
 
   const hasRadiologyAccess = canReadRadiology || canWriteRadiology;
+  const isUploadAllowedForEncounterStatus =
+    !!encounter.status &&
+    DICOM_UPLOAD_ALLOWED_ENCOUNTER_STATUSES.has(encounter.status);
+  const canUploadDicom =
+    canWriteRadiology && !!facilityId && isUploadAllowedForEncounterStatus;
 
   useEffect(() => {
     if (hasRadiologyAccess || isPermissionLoading) return;
@@ -102,11 +112,12 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     }
   }, [isError, t]);
 
+  const searchTerm = searchInput.trim().toLowerCase();
   const filteredStudies = dicomStudies?.filter((s: DicomStudy) => {
-    if (!searchInput) return true;
-    return (s?.study_description ?? ("" as string))
-      ?.toLowerCase()
-      .includes(searchInput);
+    if (!searchTerm) return true;
+    return [s.study_description, s.accession_number].some((value) =>
+      value?.toLowerCase().includes(searchTerm),
+    );
   });
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,14 +153,14 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4" />
             <Input
-              placeholder={t("dicom_search_records")}
+              placeholder={t("dicom_search_by_study_name_or_accession_number")}
               className="pl-10 focus-visible:ring-1"
               value={searchInput}
               onChange={handleSearch}
             />
           </div>
         )}
-        {canWriteRadiology && facilityId && (
+        {canUploadDicom && (
           <Button
             variant="primary"
             className="ml-auto"
@@ -161,7 +172,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
         )}
       </div>
 
-      {canWriteRadiology && facilityId && (
+      {canUploadDicom && (
         <EncounterDicomUploadDialog
           open={showUploader}
           onClose={() => setShowUploader(false)}
