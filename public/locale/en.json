@@ -5,7 +5,7 @@
   "dicom_view_study": "View Study",
   "dicom_view_report": "View Report",
   "dicom_upload_data": "Add DICOM Images",
-  "dicom_search_records": "Search Radiology Records",
+  "dicom_search_by_study_name_or_accession_number": "Search by study name or accession number",
   "dicom_upload_prompt": "Click 'Folder' or 'Files' to upload your DICOM files",
   "radiology_accession_number": "Accession Number",
   "dicom_accession_number_note": "The DICOM files you upload should be tagged with accession number",
