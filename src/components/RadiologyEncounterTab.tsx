@@ -184,7 +184,12 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
           ))}
         </div>
       ) : filteredStudies && filteredStudies.length > 0 ? (
-        <RadiologyStudyTable studies={filteredStudies} patientId={patient.id} />
+        <RadiologyStudyTable
+          studies={filteredStudies}
+          canArchive={canWriteRadiology}
+          onArchived={handleUploadSuccess}
+          patientId={patient.id}
+        />
       ) : (
         <Card className="col-span-full">
           <CardContent className="p-6 text-center text-gray-500">
