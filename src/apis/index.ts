@@ -20,13 +20,20 @@ export const apis = {
   imagingStudy: {
     list: async (
       patientId: string,
-      query: { encounter: string; limit?: number; offset?: number },
+      query: {
+        encounter: string;
+        limit?: number;
+        offset?: number;
+        is_archived?: boolean;
+      },
     ): Promise<PaginatedResponse<ImagingStudy>> => {
       const params: Record<string, string | number> = {
         encounter: query.encounter,
       };
       if (query.limit !== undefined) params.limit = query.limit;
       if (query.offset !== undefined) params.offset = query.offset;
+      if (query.is_archived !== undefined)
+        params.is_archived = String(query.is_archived);
       return await request<PaginatedResponse<ImagingStudy>>(
         `/api/care_radiology/patient/${patientId}/imaging_study/${queryString(params)}`,
       );

@@ -47,19 +47,28 @@ export function useEncounterImagingStudies(
     enabled = true,
     limit = ENCOUNTER_IMAGING_STUDY_LIMIT,
     offset = 0,
-  }: { enabled?: boolean; limit?: number; offset?: number } = {},
+    isArchived,
+  }: {
+    enabled?: boolean;
+    limit?: number;
+    offset?: number;
+    // undefined lists active and archived studies together.
+    isArchived?: boolean;
+  } = {},
 ) {
   return useQuery<PaginatedResponse<ImagingStudy>>({
     queryKey: [
       ...encounterImagingStudiesQueryKey(patientId, encounterId),
       limit,
       offset,
+      isArchived,
     ],
     queryFn: () =>
       apis.imagingStudy.list(patientId!, {
         encounter: encounterId!,
         limit,
         offset,
+        is_archived: isArchived,
       }),
     enabled: enabled && !!patientId && !!encounterId,
     placeholderData: keepPreviousData,
