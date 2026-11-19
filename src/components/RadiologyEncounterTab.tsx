@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/lib/utils";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import { DicomStudy } from "@/types/dicom";
+import { ArchiveState } from "@/types/imagingStudy";
 import { PLUGIN_SLUG } from "@/constants";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import {
@@ -79,7 +80,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(0);
   // undefined = no filter (all studies, no badge), like the Files tab.
-  const [archivedFilter, setArchivedFilter] = useState<boolean>();
+  const [archivedFilter, setArchivedFilter] = useState<ArchiveState>();
   const [showUploader, setShowUploader] = useState(false);
   const facilityId = encounter.facility?.id;
   const {
@@ -100,7 +101,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     enabled: canReadRadiology,
     limit: IMAGING_STUDIES_PAGE_SIZE,
     offset: page * IMAGING_STUDIES_PAGE_SIZE,
-    isArchived: archivedFilter,
+    archiveState: archivedFilter,
   });
   const totalImagingStudies = imagingStudies?.count ?? 0;
   const dicomStudies = imagingStudies?.results.flatMap(toDicomStudies);
@@ -206,20 +207,16 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-max">
-              {[false, true].map((archived) => (
+              {(["active", "archived"] as const).map((state) => (
                 <DropdownMenuItem
-                  key={String(archived)}
+                  key={state}
                   className="text-primary-900 whitespace-nowrap"
                   onSelect={() => {
-                    setArchivedFilter(archived);
+                    setArchivedFilter(state);
                     setPage(0);
                   }}
                 >
-                  {t(
-                    archived
-                      ? "radiology_archived_studies"
-                      : "radiology_active_studies",
-                  )}
+                  {t(`radiology_${state}_studies`)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -247,11 +244,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
               setPage(0);
             }}
           >
-            {t(
-              archivedFilter
-                ? "radiology_archived_studies"
-                : "radiology_active_studies",
-            )}
+            {t(`radiology_${archivedFilter}_studies`)}
             <CareIcon icon="l-times-circle" className="ml-1" />
           </Badge>
         </div>

@@ -12,7 +12,11 @@ import {
   ActivityDefinitionListItem,
 } from "@/types/activityDefinition";
 import { DiagnosticReport } from "@/types/diagnosticReports";
-import { ImagingStudy, ImagingStudyStatus } from "@/types/imagingStudy";
+import {
+  ArchiveState,
+  ImagingStudy,
+  ImagingStudyStatus,
+} from "@/types/imagingStudy";
 import { Patient } from "@/types/patient";
 import { CareDevice } from "@/types/modalityDevice";
 
@@ -24,7 +28,7 @@ export const apis = {
         encounter: string;
         limit?: number;
         offset?: number;
-        is_archived?: boolean;
+        archive_state?: ArchiveState;
       },
     ): Promise<PaginatedResponse<ImagingStudy>> => {
       const params: Record<string, string | number> = {
@@ -32,8 +36,7 @@ export const apis = {
       };
       if (query.limit !== undefined) params.limit = query.limit;
       if (query.offset !== undefined) params.offset = query.offset;
-      if (query.is_archived !== undefined)
-        params.is_archived = String(query.is_archived);
+      if (query.archive_state) params.archive_state = query.archive_state;
       return await request<PaginatedResponse<ImagingStudy>>(
         `/api/care_radiology/patient/${patientId}/imaging_study/${queryString(params)}`,
       );
@@ -42,11 +45,11 @@ export const apis = {
     retrieve: async (
       patientId: string,
       serviceRequestId: string,
-      query?: { include_archived?: boolean },
+      query?: { archive_state?: ArchiveState },
     ): Promise<ImagingStudy> => {
       return await request<ImagingStudy>(
         `/api/care_radiology/patient/${patientId}/imaging_study/${serviceRequestId}/${queryString(
-          { include_archived: query?.include_archived ?? true },
+          { archive_state: query?.archive_state ?? "all" },
         )}`,
       );
     },
