@@ -4,7 +4,7 @@ import { apis } from "@/apis";
 import { APIError } from "@/apis/request";
 import { PaginatedResponse } from "@/apis/types";
 import { DicomStudy } from "@/types/dicom";
-import { ImagingStudy } from "@/types/imagingStudy";
+import { ArchiveState, ImagingStudy } from "@/types/imagingStudy";
 
 export const imagingStudyQueryKey = (
   patientId?: string,
@@ -47,19 +47,28 @@ export function useEncounterImagingStudies(
     enabled = true,
     limit = ENCOUNTER_IMAGING_STUDY_LIMIT,
     offset = 0,
-  }: { enabled?: boolean; limit?: number; offset?: number } = {},
+    archiveState,
+  }: {
+    enabled?: boolean;
+    limit?: number;
+    offset?: number;
+    // undefined lets the API default apply (active and archived together).
+    archiveState?: ArchiveState;
+  } = {},
 ) {
   return useQuery<PaginatedResponse<ImagingStudy>>({
     queryKey: [
       ...encounterImagingStudiesQueryKey(patientId, encounterId),
       limit,
       offset,
+      archiveState,
     ],
     queryFn: () =>
       apis.imagingStudy.list(patientId!, {
         encounter: encounterId!,
         limit,
         offset,
+        archive_state: archiveState,
       }),
     enabled: enabled && !!patientId && !!encounterId,
     placeholderData: keepPreviousData,
@@ -81,7 +90,7 @@ export function useImagingStudy(
     queryFn: async () => {
       try {
         return await apis.imagingStudy.retrieve(patientId!, serviceRequestId!, {
-          include_archived: includeArchived,
+          archive_state: includeArchived ? undefined : "active",
         });
       } catch (error) {
         if (error instanceof APIError && error.status === 404) return null;
