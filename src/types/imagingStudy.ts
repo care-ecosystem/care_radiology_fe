@@ -1,10 +1,9 @@
 import { DicomStudy } from "./dicom";
 
 export type ImagingStudyStatus =
-  | "ACTIVE"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED";
+  "ACTIVE" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export type ArchiveState = "active" | "archived";
 
 export interface ImagingStudyServiceRequest {
   id: string;

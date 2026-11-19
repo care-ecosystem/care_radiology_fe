@@ -65,6 +65,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   const showViewReport = !hideActions && !hideViewReport;
 
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
+  const [archivedStudy, setArchivedStudy] = useState<DicomStudy | null>(null);
   const [studyToArchive, setStudyToArchive] = useState<DicomStudy | null>(null);
   const [archiveReason, setArchiveReason] = useState("");
   const [isArchiving, setIsArchiving] = useState(false);
@@ -86,8 +87,49 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   };
 
   const handleViewReport = (diagnosticReportId: string) => {
-    navigate(`/facility/${facilityId}/patient/${patientId}/diagnostic_reports/${diagnosticReportId}`);
+    navigate(
+      `/facility/${facilityId}/patient/${patientId}/diagnostic_reports/${diagnosticReportId}`,
+    );
   };
+
+  const renderArchiveDetails = (study: DicomStudy) => (
+    <div className="mb-4 rounded-lg border bg-gray-50 overflow-hidden">
+      <div className="flex items-center gap-1.5 border-b bg-gray-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
+        <Archive size={12} />
+        {t("radiology_archived")}
+      </div>
+      <dl className="flex flex-col gap-3 p-3 text-sm">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <dt className="text-xs font-semibold text-gray-700">
+              {t("radiology_archived_on")}
+            </dt>
+            <dd className="break-words text-gray-800">
+              {(study.archived_datetime
+                ? format(study.archived_datetime, "dd MMMM, yyyy")
+                : null) || "—"}
+            </dd>
+          </div>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <dt className="text-xs font-semibold text-gray-700">
+              {t("radiology_archived_by")}
+            </dt>
+            <dd className="break-words text-gray-800">
+              {formatUserName(study.archived_by)}
+            </dd>
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <dt className="text-xs font-semibold text-gray-700">
+            {t("radiology_archive_reason")}
+          </dt>
+          <dd className="break-words text-gray-800">
+            {study.archive_reason || "—"}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
 
   const closeArchiveDialog = () => {
     setStudyToArchive(null);
@@ -151,10 +193,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
           </TableHeader>
           <TableBody className="bg-white">
             {studies?.map((study: DicomStudy) => (
-              <TableRow
-                key={study.id}
-                className="divide-x divide-gray-200"
-              >
+              <TableRow key={study.id} className="divide-x divide-gray-200">
                 <TableCell className="font-medium">
                   {study.study_description || "—"}
                 </TableCell>
@@ -185,6 +224,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                         </Badge>
                       )}
                       {showViewReport &&
+                        !study.is_archived &&
                         patientId &&
                         study.service_request?.diagnostic_report_id && (
                           <Button
@@ -214,34 +254,46 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                             {t("dicom_view_study")}
                           </Button>
                         )}
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-auto py-1 px-2"
-                            aria-label={t("radiology_more_options")}
-                          >
-                            <MoreHorizontal size={16} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={() => setSelectedStudy(study)}
-                          >
-                            <Info size={16} />
-                            {t("radiology_info")}
-                          </DropdownMenuItem>
-                          {canArchive && patientId && !study.is_archived && (
-                            <DropdownMenuItem
-                              onSelect={() => setStudyToArchive(study)}
+                      {study.is_archived ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setArchivedStudy(study)}
+                          className="text-xs h-auto py-1 px-2"
+                        >
+                          <Eye size={16} className="mr-1" />
+                          {t("radiology_view")}
+                        </Button>
+                      ) : (
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-auto py-1 px-2"
+                              aria-label={t("radiology_more_options")}
                             >
-                              <Archive size={16} />
-                              {t("radiology_archive")}
+                              <MoreHorizontal size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={() => setSelectedStudy(study)}
+                            >
+                              <Info size={16} />
+                              {t("radiology_info")}
                             </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            {canArchive && patientId && !study.is_archived && (
+                              <DropdownMenuItem
+                                onSelect={() => setStudyToArchive(study)}
+                              >
+                                <Archive size={16} />
+                                {t("radiology_archive")}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </TableCell>
                 )}
@@ -301,47 +353,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                 </div>
               </div>
 
-              {selectedStudy.is_archived && (
-                <div className="mb-4 rounded-lg border bg-gray-50 overflow-hidden">
-                  <div className="flex items-center gap-1.5 border-b bg-gray-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
-                    <Archive size={12} />
-                    {t("radiology_archived")}
-                  </div>
-                  <dl className="flex flex-col gap-3 p-3 text-sm">
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8">
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <dt className="text-xs font-semibold text-gray-700">
-                          {t("radiology_archived_on")}
-                        </dt>
-                        <dd className="break-words text-gray-800">
-                          {(selectedStudy.archived_datetime
-                            ? format(
-                                selectedStudy.archived_datetime,
-                                "dd MMMM, yyyy",
-                              )
-                            : null) || "—"}
-                        </dd>
-                      </div>
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <dt className="text-xs font-semibold text-gray-700">
-                          {t("radiology_archived_by")}
-                        </dt>
-                        <dd className="break-words text-gray-800">
-                          {formatUserName(selectedStudy.archived_by)}
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <dt className="text-xs font-semibold text-gray-700">
-                        {t("radiology_archive_reason")}
-                      </dt>
-                      <dd className="break-words text-gray-800">
-                        {selectedStudy.archive_reason || "—"}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              )}
+              {selectedStudy.is_archived && renderArchiveDetails(selectedStudy)}
 
               <div className="border rounded-lg bg-gray-50 overflow-hidden">
                 <div className="flex justify-between gap-4 border-b bg-gray-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
@@ -370,6 +382,59 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                   )}
                 </div>
               </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!archivedStudy}
+        onOpenChange={(open) => !open && setArchivedStudy(null)}
+      >
+        <DialogContent className="mb-8 rounded-lg p-4 w-[calc(100vw-2.5rem)] sm:w-[calc(100%-2rem)] max-w-2xl">
+          {archivedStudy && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="break-words">
+                  {t("radiology_archived_study")}:{" "}
+                  {archivedStudy.study_description || "—"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2">
+                <div className="flex flex-col gap-1 bg-gray-100 p-4 rounded-md">
+                  <span className="text-sm text-gray-500">
+                    {t("radiology_archive_reason")}:
+                  </span>
+                  <span className="break-words">
+                    {archivedStudy.archive_reason || "—"}
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 justify-between text-sm bg-blue-100 text-blue-900 p-2 rounded-md">
+                  <span className="break-words">
+                    {t("radiology_archived_by")}:{" "}
+                    {formatUserName(archivedStudy.archived_by)}
+                  </span>
+                  <span className="whitespace-nowrap">
+                    {t("radiology_archived_on")}:{" "}
+                    {archivedStudy.archived_datetime
+                      ? format(
+                          archivedStudy.archived_datetime,
+                          "dd MMM yyyy, hh:mm a",
+                        )
+                      : "—"}
+                  </span>
+                </div>
+              </div>
+              <DialogFooter className="sm:justify-start">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="font-semibold"
+                  onClick={() => setArchivedStudy(null)}
+                >
+                  {t("radiology_close")}
+                </Button>
+              </DialogFooter>
             </>
           )}
         </DialogContent>

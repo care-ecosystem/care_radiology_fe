@@ -2,6 +2,13 @@ import { FC, useEffect, useState } from "react";
 import { EncounterTabProps } from "@/types/encounterTab";
 import { useTranslation } from "react-i18next";
 import { Plus, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/lib/utils";
 import RadiologyStudyTable from "./RadiologyStudyTable";
 import { DicomStudy } from "@/types/dicom";
+import { ArchiveState } from "@/types/imagingStudy";
 import { PLUGIN_SLUG } from "@/constants";
 import { useRadiologyPermissions } from "@/hooks/useRadiologyPermissions";
 import {
@@ -21,6 +29,28 @@ import {
   useEncounterImagingStudies,
 } from "@/hooks/useRadiologyStudies";
 import EncounterDicomUploadDialog from "./EncounterDicomUploadDialog";
+
+// Same Unicons paths the host's CareIcon uses for the Files tab filter.
+const CARE_ICON_PATHS = {
+  "l-filter":
+    "M19,2H5A3,3,0,0,0,2,5V6.17a3,3,0,0,0,.25,1.2l0,.06a2.81,2.81,0,0,0,.59.86L9,14.41V21a1,1,0,0,0,.47.85A1,1,0,0,0,10,22a1,1,0,0,0,.45-.11l4-2A1,1,0,0,0,15,19V14.41l6.12-6.12a2.81,2.81,0,0,0,.59-.86l0-.06A3,3,0,0,0,22,6.17V5A3,3,0,0,0,19,2ZM13.29,13.29A1,1,0,0,0,13,14v4.38l-2,1V14a1,1,0,0,0-.29-.71L5.41,8H18.59ZM20,6H4V5A1,1,0,0,1,5,4H19a1,1,0,0,1,1,1Z",
+  "l-times-circle":
+    "M15.71,8.29a1,1,0,0,0-1.42,0L12,10.59,9.71,8.29A1,1,0,0,0,8.29,9.71L10.59,12l-2.3,2.29a1,1,0,0,0,0,1.42,1,1,0,0,0,1.42,0L12,13.41l2.29,2.3a1,1,0,0,0,1.42,0,1,1,0,0,0,0-1.42L13.41,12l2.3-2.29A1,1,0,0,0,15.71,8.29Zm3.36-3.36A10,10,0,1,0,4.93,19.07,10,10,0,1,0,19.07,4.93ZM17.66,17.66A8,8,0,1,1,20,12,7.95,7.95,0,0,1,17.66,17.66Z",
+} as const;
+
+const CareIcon: FC<{
+  icon: keyof typeof CARE_ICON_PATHS;
+  className?: string;
+}> = ({ icon, className }) => (
+  <svg
+    className={`care-${icon} care-svg-icon__baseline ${className ?? ""}`.trim()}
+    role="img"
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+  >
+    <path d={CARE_ICON_PATHS[icon]} fill="currentColor" />
+  </svg>
+);
 
 const RADIOLOGY_TAB_KEY = "radiology";
 const IMAGING_STUDIES_PAGE_SIZE = 14;
@@ -49,6 +79,8 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(0);
+  // undefined = no filter (all studies, no badge), like the Files tab.
+  const [archivedFilter, setArchivedFilter] = useState<ArchiveState>();
   const [showUploader, setShowUploader] = useState(false);
   const facilityId = encounter.facility?.id;
   const {
@@ -69,6 +101,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     enabled: canReadRadiology,
     limit: IMAGING_STUDIES_PAGE_SIZE,
     offset: page * IMAGING_STUDIES_PAGE_SIZE,
+    archiveState: archivedFilter,
   });
   const totalImagingStudies = imagingStudies?.count ?? 0;
   const dicomStudies = imagingStudies?.results.flatMap(toDicomStudies);
@@ -160,6 +193,35 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
             />
           </div>
         )}
+        {canReadRadiology && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="secondary"
+                className="text-sm font-semibold text-secondary-800"
+              >
+                <span className="flex flex-row items-center gap-1">
+                  <CareIcon icon="l-filter" />
+                  <span>{t("radiology_filter")}</span>
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-max">
+              {(["active", "archived"] as const).map((state) => (
+                <DropdownMenuItem
+                  key={state}
+                  className="text-primary-900 whitespace-nowrap"
+                  onSelect={() => {
+                    setArchivedFilter(state);
+                    setPage(0);
+                  }}
+                >
+                  {t(`radiology_${state}_studies`)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {canUploadDicom && (
           <Button
             variant="primary"
@@ -171,6 +233,22 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
           </Button>
         )}
       </div>
+
+      {archivedFilter !== undefined && (
+        <div className="flex flex-row gap-2 mt-2 mx-2 mb-4">
+          <Badge
+            variant="outline"
+            className="cursor-pointer"
+            onClick={() => {
+              setArchivedFilter(undefined);
+              setPage(0);
+            }}
+          >
+            {t(`radiology_${archivedFilter}_studies`)}
+            <CareIcon icon="l-times-circle" className="ml-1" />
+          </Badge>
+        </div>
+      )}
 
       {canUploadDicom && (
         <EncounterDicomUploadDialog
