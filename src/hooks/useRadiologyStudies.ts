@@ -90,7 +90,7 @@ export function useImagingStudy(
     queryFn: async () => {
       try {
         return await apis.imagingStudy.retrieve(patientId!, serviceRequestId!, {
-          archive_state: includeArchived ? "all" : "active",
+          archive_state: includeArchived ? undefined : "active",
         });
       } catch (error) {
         if (error instanceof APIError && error.status === 404) return null;

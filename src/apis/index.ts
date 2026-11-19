@@ -49,7 +49,7 @@ export const apis = {
     ): Promise<ImagingStudy> => {
       return await request<ImagingStudy>(
         `/api/care_radiology/patient/${patientId}/imaging_study/${serviceRequestId}/${queryString(
-          { archive_state: query?.archive_state ?? "all" },
+          query?.archive_state ? { archive_state: query.archive_state } : {},
         )}`,
       );
     },
