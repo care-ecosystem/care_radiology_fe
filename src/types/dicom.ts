@@ -7,6 +7,17 @@ export interface DicomStudyUser {
   suffix?: string | null;
 }
 
+// Mirrors care-backend's DiagnosticReportStatusChoices (care_fe's enum isn't importable here).
+export const DiagnosticReportStatus = {
+  registered: "registered",
+  partial: "partial",
+  preliminary: "preliminary",
+  final: "final",
+} as const;
+
+export type DiagnosticReportStatus =
+  (typeof DiagnosticReportStatus)[keyof typeof DiagnosticReportStatus];
+
 export interface DicomStudy {
   id: string;
   study_uid: string;
@@ -28,6 +39,7 @@ export interface DicomStudy {
     id: string;
     title?: string | null;
     diagnostic_report_id: string | null;
+    diagnostic_report_status?: DiagnosticReportStatus | null;
   } | null;
 }
 

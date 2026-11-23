@@ -1,4 +1,4 @@
-import { DicomStudy } from "@/types/dicom";
+import { DicomStudy, DiagnosticReportStatus } from "@/types/dicom";
 import { FC, useMemo, useState } from "react";
 import {
   Table,
@@ -283,14 +283,19 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                               <Info size={16} />
                               {t("radiology_info")}
                             </DropdownMenuItem>
-                            {canArchive && patientId && !study.is_archived && (
-                              <DropdownMenuItem
-                                onSelect={() => setStudyToArchive(study)}
-                              >
-                                <Archive size={16} />
-                                {t("radiology_archive")}
-                              </DropdownMenuItem>
-                            )}
+                            {canArchive &&
+                              patientId &&
+                              !study.is_archived &&
+                              study.service_request
+                                ?.diagnostic_report_status !==
+                                DiagnosticReportStatus.final && (
+                                <DropdownMenuItem
+                                  onSelect={() => setStudyToArchive(study)}
+                                >
+                                  <Archive size={16} />
+                                  {t("radiology_archive")}
+                                </DropdownMenuItem>
+                              )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
