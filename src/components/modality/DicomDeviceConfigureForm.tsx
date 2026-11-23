@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PLUGIN_SLUG } from "@/constants";
@@ -19,6 +19,7 @@ import {
 } from "@/components/modality/common";
 import {
   CareDevice,
+  DEFAULT_STUDY_UID_ROOT,
   DicomDeviceMetadata,
   MachineEndpoint,
   MODALITY_CODES,
@@ -39,6 +40,16 @@ export default function DicomDeviceConfigureForm({
   const { t } = useTranslation(PLUGIN_SLUG);
   const meta = metadata as DicomDeviceMetadata;
   useDropAssignmentStatus(meta, onChange);
+  useEffect(() => {
+    if (!meta.study_uid_root) {
+      onChange(
+        withoutAssignmentStatus({
+          ...meta,
+          study_uid_root: DEFAULT_STUDY_UID_ROOT,
+        }),
+      );
+    }
+  }, [meta.study_uid_root]);
   const [enablerSearch, setEnablerSearch] = useState("");
   const { data: enablers, isLoading: enablersLoading } = useDicomEnablers(
     facilityId,
