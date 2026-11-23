@@ -19,12 +19,7 @@ import { toast } from "@/lib/utils";
 import { PLUGIN_SLUG } from "@/constants";
 
 type FileStatus =
-  | "pending"
-  | "uploading"
-  | "success"
-  | "failed"
-  | "duplicate"
-  | "rejected";
+  "pending" | "uploading" | "success" | "failed" | "duplicate" | "rejected";
 
 type AccessionErrorType =
   | "accession_number_missing"
@@ -45,12 +40,36 @@ interface DicomFile {
   study_uid?: string;
 }
 
-function getStudyLinkConflict(error: unknown): { study_uid?: string } | null {
-  if (!(error instanceof APIError) || error.status !== 409) return null;
+const STUDY_LINK_CONFLICT_REASONS: [prefix: string, key: string][] = [
+  [
+    "Study is already linked to another patient",
+    "dicom_study_linked_other_patient",
+  ],
+  [
+    "Study is already linked to this encounter without a service request",
+    "dicom_study_linked_this_encounter",
+  ],
+  [
+    "Study is already linked to a different encounter",
+    "dicom_study_linked_other_encounter",
+  ],
+  [
+    "Study is already linked to a different service request",
+    "dicom_study_already_linked",
+  ],
+];
+
+function getStudyLinkConflictKey(error: unknown): string | null {
+  if (!(error instanceof APIError)) return null;
+  if (error.status !== 400 && error.status !== 409) return null;
   const errors = (error.data as { errors?: unknown } | null)?.errors;
   const first = Array.isArray(errors) ? errors[0] : null;
-  if (first?.type !== "study_link_conflict" || !first?.uploaded) return null;
-  return first;
+  if (first?.type !== "study_link_conflict") return null;
+  const msg = typeof first.msg === "string" ? first.msg : "";
+  const reason = STUDY_LINK_CONFLICT_REASONS.find(([prefix]) =>
+    msg.startsWith(prefix),
+  );
+  return reason ? reason[1] : "dicom_study_already_linked";
 }
 
 function getAccessionError(error: unknown): AccessionErrorType | null {
@@ -120,6 +139,7 @@ export default function DicomUploader({
   const handleSave = async () => {
     if (files.length === 0 || isUploading) return;
     setIsUploading(true);
+    const linkConflictKeys = new Set<string>();
     const counts = {
       success: 0,
       failed: 0,
@@ -167,14 +187,11 @@ export default function DicomUploader({
           study_uid: response.study_uid,
         });
       } catch (error) {
-        const linkConflict = getStudyLinkConflict(error);
-        if (linkConflict) {
-          counts.success += 1;
+        const linkConflictKey = getStudyLinkConflictKey(error);
+        if (linkConflictKey) {
           counts.linkConflict += 1;
-          setFileStatus(i, {
-            status: "success",
-            study_uid: linkConflict.study_uid,
-          });
+          linkConflictKeys.add(linkConflictKey);
+          setFileStatus(i, { status: "rejected" });
           continue;
         }
         const accessionError = getAccessionError(error);
@@ -193,9 +210,7 @@ export default function DicomUploader({
       toast.error(t("dicom_duplicate_file"));
     }
 
-    if (counts.linkConflict) {
-      toast.warning(t("dicom_study_already_linked"));
-    }
+    linkConflictKeys.forEach((key) => toast.error(t(key)));
 
     if (counts.accession_number_missing) {
       toast.error(
@@ -238,6 +253,7 @@ export default function DicomUploader({
     if (
       counts.failed === 0 &&
       counts.duplicate === 0 &&
+      counts.linkConflict === 0 &&
       counts.accession_number_missing === 0 &&
       counts.accession_number_unreadable === 0 &&
       counts.accession_number_mismatch === 0
@@ -353,7 +369,9 @@ export default function DicomUploader({
               <div className="mb-4 shrink-0 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-700 font-bold">
                 {uploadedCount > 0 && (
                   <span className="text-green-600">
-                    {t("dicom_files_uploaded_count", { count: uploadedCount })}{" "}
+                    {t("dicom_files_uploaded_count", {
+                      count: uploadedCount,
+                    })}{" "}
                   </span>
                 )}
                 {failedCount > 0 && (
@@ -370,7 +388,9 @@ export default function DicomUploader({
                 )}
                 {rejectedCount > 0 && (
                   <span className="text-red-500">
-                    {t("dicom_files_rejected_count", { count: rejectedCount })}{" "}
+                    {t("dicom_files_rejected_count", {
+                      count: rejectedCount,
+                    })}{" "}
                   </span>
                 )}
                 {pendingCount > 0 && !isUploading && (

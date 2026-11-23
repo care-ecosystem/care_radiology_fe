@@ -1,16 +1,19 @@
-import { DicomStudy } from "./dicom";
+import { DiagnosticReportStatus, DicomStudy } from "./dicom";
 
 export type ImagingStudyStatus =
-  | "ACTIVE"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED";
+  "ACTIVE" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export type ArchiveState = "active" | "archived";
 
 export interface ImagingStudyServiceRequest {
   id: string;
   title?: string;
   status?: string;
-  diagnostic_reports?: { id: string; [key: string]: unknown }[];
+  diagnostic_reports?: {
+    id: string;
+    status?: DiagnosticReportStatus;
+    [key: string]: unknown;
+  }[];
   [key: string]: unknown;
 }
 

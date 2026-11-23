@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@radix-ui/react-label";
 import { PlugConfigMeta } from "@/types/plugin";
+import { EncounterStatus } from "@/types/encounter";
 import { useServiceRequestDetail } from "@/hooks/useServiceRequestDetail";
 import {
   imagingStudyQueryKey,
@@ -129,6 +130,10 @@ export const ServiceRequestView: FC<SRProps> = ({
   const canUploadDicom =
     canWriteRadiology && isUploadStage && (studiesLoaded || !canReadRadiology);
 
+  const canArchive =
+    canWriteRadiology &&
+    serviceRequestDetail?.encounter?.status !== EncounterStatus.completed;
+
   const invalidateServiceRequestQueries = () => {
     queryClient.invalidateQueries({
       queryKey: imagingStudyQueryKey(patientId, serviceRequestId),
@@ -162,7 +167,7 @@ export const ServiceRequestView: FC<SRProps> = ({
               </div>
               <RadiologyStudyTable
                 studies={dicomStudies}
-                canArchive={canUploadDicom}
+                canArchive={canArchive}
                 onArchived={invalidateServiceRequestQueries}
                 patientId={patientId}
               />

@@ -68,6 +68,8 @@ export interface DicomEndpoint {
 // care_metadata of a device with care_type "dicom"
 export interface DicomDeviceMetadata {
   machine?: Partial<MachineEndpoint>;
+  // DICOM UID root the machine builds its Study Instance UIDs under (<root>.<suffix>)
+  study_uid_root?: string | null;
   // external_id of the DICOM Enabler of the same facility the machine connects to
   dicom_enabler?: string;
   assignment_status?: ModalityAssignmentStatus;
@@ -110,6 +112,9 @@ export const AE_TITLE_PATTERN = /^[\x20-\x5B\x5D-\x7E]*$/;
 export const PORT_PATTERN = /^[0-9]{0,5}$/;
 export const PORT_MIN = 1;
 export const PORT_MAX = 65535;
+
+// Study UID root filled in for a new device, or one saved before the field existed
+export const DEFAULT_STUDY_UID_ROOT = "1.3.6.1.4.1.67747";
 
 // IPv4 octet 0-255 without leading zeros, as the backend requires
 const IPV4_OCTET = "(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
