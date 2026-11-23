@@ -65,7 +65,6 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   const showViewReport = !hideActions && !hideViewReport;
 
   const [selectedStudy, setSelectedStudy] = useState<DicomStudy | null>(null);
-  const [archivedStudy, setArchivedStudy] = useState<DicomStudy | null>(null);
   const [studyToArchive, setStudyToArchive] = useState<DicomStudy | null>(null);
   const [archiveReason, setArchiveReason] = useState("");
   const [isArchiving, setIsArchiving] = useState(false);
@@ -93,37 +92,37 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
   };
 
   const renderArchiveDetails = (study: DicomStudy) => (
-    <div className="mb-4 rounded-lg border bg-gray-50 overflow-hidden">
-      <div className="flex items-center gap-1.5 border-b bg-gray-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
+    <div className="rounded-lg border border-red-200 bg-red-50 overflow-hidden">
+      <div className="flex items-center gap-1.5 border-b border-red-200 bg-red-100 px-3 py-2 text-sm font-semibold text-red-900">
         <Archive size={12} />
         {t("radiology_archived")}
       </div>
       <dl className="flex flex-col gap-3 p-3 text-sm">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <dt className="text-xs font-semibold text-gray-700">
+            <dt className="text-sm font-semibold text-red-900">
               {t("radiology_archived_on")}
             </dt>
-            <dd className="break-words text-gray-800">
+            <dd className="break-words text-gray-900">
               {(study.archived_datetime
-                ? format(study.archived_datetime, "dd MMMM, yyyy")
+                ? format(study.archived_datetime, "dd MMM yyyy, hh:mm a")
                 : null) || "—"}
             </dd>
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <dt className="text-xs font-semibold text-gray-700">
+            <dt className="text-sm font-semibold text-red-900">
               {t("radiology_archived_by")}
             </dt>
-            <dd className="break-words text-gray-800">
+            <dd className="break-words text-gray-900">
               {formatUserName(study.archived_by)}
             </dd>
           </div>
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <dt className="text-xs font-semibold text-gray-700">
+          <dt className="text-sm font-semibold text-red-900">
             {t("radiology_archive_reason")}
           </dt>
-          <dd className="break-words text-gray-800">
+          <dd className="break-words text-gray-900">
             {study.archive_reason || "—"}
           </dd>
         </div>
@@ -258,11 +257,11 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setArchivedStudy(study)}
+                          onClick={() => setSelectedStudy(study)}
                           className="text-xs h-auto py-1 px-2"
                         >
-                          <Eye size={16} className="mr-1" />
-                          {t("radiology_view")}
+                          <Info size={16} className="mr-1" />
+                          {t("radiology_info")}
                         </Button>
                       ) : (
                         <DropdownMenu modal={false}>
@@ -312,7 +311,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
         open={!!selectedStudy}
         onOpenChange={(open) => !open && setSelectedStudy(null)}
       >
-        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-sm">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
           {selectedStudy && (
             <>
               <DialogHeader>
@@ -323,7 +322,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
 
               <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-4">
                 <div className="flex flex-col items-start gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700">
                     {t("radiology_study_date")}
                   </span>
                   <span className="text-sm text-gray-700">
@@ -333,7 +332,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col items-start gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700">
                     {t("radiology_study_modality")}
                   </span>
                   <span className="text-sm text-gray-700">
@@ -341,7 +340,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col items-start gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700">
                     {t("radiology_created_by")}
                   </span>
                   <span className="text-sm text-gray-700">
@@ -349,7 +348,7 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col items-start gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700">
                     {t("radiology_updated_by")}
                   </span>
                   <span className="text-sm text-gray-700">
@@ -358,10 +357,10 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                 </div>
               </div>
 
-              {selectedStudy.is_archived && renderArchiveDetails(selectedStudy)}
-
-              <div className="border rounded-lg bg-gray-50 overflow-hidden">
-                <div className="flex justify-between gap-4 border-b bg-gray-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
+              <div
+                className={`border rounded-lg bg-gray-50 overflow-hidden ${selectedStudy.is_archived ? "mb-4" : ""}`}
+              >
+                <div className="flex justify-between gap-4 border-b bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
                   <span>{t("radiology_series_description")}</span>
                   <span>{t("radiology_instance_count")}</span>
                 </div>
@@ -387,59 +386,8 @@ export const RadiologyStudyTable: FC<RadiologyStudyTableProps> = ({
                   )}
                 </div>
               </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      <Dialog
-        open={!!archivedStudy}
-        onOpenChange={(open) => !open && setArchivedStudy(null)}
-      >
-        <DialogContent className="mb-8 rounded-lg p-4 w-[calc(100vw-2.5rem)] sm:w-[calc(100%-2rem)] max-w-2xl">
-          {archivedStudy && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="break-words">
-                  {t("radiology_archived_study")}:{" "}
-                  {archivedStudy.study_description || "—"}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2">
-                <div className="flex flex-col gap-1 bg-gray-100 p-4 rounded-md">
-                  <span className="text-sm text-gray-500">
-                    {t("radiology_archive_reason")}:
-                  </span>
-                  <span className="break-words">
-                    {archivedStudy.archive_reason || "—"}
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 justify-between text-sm bg-blue-100 text-blue-900 p-2 rounded-md">
-                  <span className="break-words">
-                    {t("radiology_archived_by")}:{" "}
-                    {formatUserName(archivedStudy.archived_by)}
-                  </span>
-                  <span className="whitespace-nowrap">
-                    {t("radiology_archived_on")}:{" "}
-                    {archivedStudy.archived_datetime
-                      ? format(
-                          archivedStudy.archived_datetime,
-                          "dd MMM yyyy, hh:mm a",
-                        )
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-              <DialogFooter className="sm:justify-start">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="font-semibold"
-                  onClick={() => setArchivedStudy(null)}
-                >
-                  {t("radiology_close")}
-                </Button>
-              </DialogFooter>
+              {selectedStudy.is_archived && renderArchiveDetails(selectedStudy)}
             </>
           )}
         </DialogContent>
