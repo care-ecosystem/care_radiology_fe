@@ -28,6 +28,8 @@ export const toDicomStudies = (
           title: serviceRequest.title ?? null,
           diagnostic_report_id:
             serviceRequest.diagnostic_reports?.[0]?.id ?? null,
+          diagnostic_report_status:
+            serviceRequest.diagnostic_reports?.[0]?.status ?? null,
         }
       : null,
   }));

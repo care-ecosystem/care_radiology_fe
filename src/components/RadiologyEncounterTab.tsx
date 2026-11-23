@@ -1,5 +1,6 @@
 import { FC, useEffect, useState } from "react";
 import { EncounterTabProps } from "@/types/encounterTab";
+import { EncounterStatus } from "@/types/encounter";
 import { useTranslation } from "react-i18next";
 import { Plus, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +57,9 @@ const RADIOLOGY_TAB_KEY = "radiology";
 const IMAGING_STUDIES_PAGE_SIZE = 14;
 const notifiedToasts = new Set<string>();
 
-const DICOM_UPLOAD_ALLOWED_ENCOUNTER_STATUSES = new Set([
-  "planned",
-  "in_progress",
+const DICOM_UPLOAD_ALLOWED_ENCOUNTER_STATUSES = new Set<EncounterStatus>([
+  EncounterStatus.planned,
+  EncounterStatus.in_progress,
 ]);
 
 const isRadiologyTabOpen = () =>
@@ -126,6 +127,8 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
     DICOM_UPLOAD_ALLOWED_ENCOUNTER_STATUSES.has(encounter.status);
   const canUploadDicom =
     canWriteRadiology && !!facilityId && isUploadAllowedForEncounterStatus;
+  const canArchive =
+    canWriteRadiology && encounter.status !== EncounterStatus.completed;
 
   useEffect(() => {
     if (hasRadiologyAccess || isPermissionLoading) return;
@@ -275,7 +278,7 @@ export const RadiologyEncounterTab: FC<EncounterTabProps> = ({
       ) : filteredStudies && filteredStudies.length > 0 ? (
         <RadiologyStudyTable
           studies={filteredStudies}
-          canArchive={canWriteRadiology}
+          canArchive={canArchive}
           onArchived={handleUploadSuccess}
           patientId={patient.id}
         />
