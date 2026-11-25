@@ -132,6 +132,7 @@ export const ServiceRequestView: FC<SRProps> = ({
 
   const canArchive =
     canWriteRadiology &&
+    serviceRequestDetail?.status !== "completed" &&
     serviceRequestDetail?.encounter?.status !== EncounterStatus.completed;
 
   const invalidateServiceRequestQueries = () => {

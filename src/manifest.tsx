@@ -20,6 +20,9 @@ const DiagnosticReportResultsTableOverrideComponent = lazy(
 const DiagnosticReportOverrideComponent = lazy(
   () => import("@/components/ObservationTemplateOverride"),
 );
+const ServiceRequestReportWorkflowOverrideComponent = lazy(
+  () => import("@/components/ServiceRequestReportWorkflowOverride"),
+);
 const RadiologyEncounterTabComponent = lazy(
   () => import("@/components/RadiologyEncounterTab"),
 );
@@ -147,6 +150,17 @@ function DicomEnablerShowPageCardWrapper(props: ComponentProps<typeof DicomEnabl
   );
 }
 
+// Wrapper for the service request report workflow override.
+function ServiceRequestReportWorkflowOverrideWrapper(props: ComponentProps<typeof ServiceRequestReportWorkflowOverrideComponent>) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <ServiceRequestReportWorkflowOverrideComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 const manifest = {
   plugin: "care_radiology_fe",
   routes,
@@ -160,6 +174,12 @@ const manifest = {
     {
       component: "DiagnosticReportResultsTable",
       replacement: DiagnosticReportResultsTableOverrideWrapper,
+    },
+    {
+      component: "ServiceRequestReportWorkflow",
+      replacement: ServiceRequestReportWorkflowOverrideWrapper,
+      description:
+        "Keeps radiology studies visible on a service request completed without a diagnostic report",
     },
   ],
   navItems: [],
