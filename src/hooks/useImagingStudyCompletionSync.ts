@@ -8,7 +8,7 @@ import { imagingStudyQueryKey } from "@/hooks/useRadiologyStudies";
 import { ServiceRequest } from "@/types/serviceRequest";
 import { toast } from "@/lib/utils";
 
-//  Marks the imaging study COMPLETED once its service request is completed.
+//  Marks the imaging study completed once its service request is completed.
 
 export function useImagingStudyCompletionSync({
   serviceRequest,
@@ -30,8 +30,8 @@ export function useImagingStudyCompletionSync({
     serviceRequest?.category === SERVICE_REQUEST_OVERRIDE_CATEGORY &&
     serviceRequest?.status === "completed" &&
     !!imagingStudy &&
-    imagingStudy.status !== "COMPLETED" &&
-    imagingStudy.status !== "CANCELLED";
+    imagingStudy.status !== "completed" &&
+    imagingStudy.status !== "cancelled";
 
   useEffect(() => {
     if (!shouldComplete || !patientId || !serviceRequestId) return;
@@ -39,7 +39,7 @@ export function useImagingStudyCompletionSync({
     attemptedFor.current = serviceRequestId;
 
     apis.imagingStudy
-      .updateStatus(patientId, serviceRequestId, { status: "COMPLETED" })
+      .updateStatus(patientId, serviceRequestId, { status: "completed" })
       .then(() =>
         queryClient.invalidateQueries({
           queryKey: imagingStudyQueryKey(patientId, serviceRequestId),
