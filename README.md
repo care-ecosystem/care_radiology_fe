@@ -5,9 +5,9 @@ and radiology report templates to Care's service request, encounter and facility
 settings pages.
 
 **In one paragraph:** the plugin is a Vite module-federation remote
-(`remoteEntry.js`) that care_fe loads at runtime. It contributes only *additive*
-pieces — pluggable slots, an encounter tab and its own routes — and declares no
-component `overrides[]`, so it never shadows another plugin. Its own API calls
+(`remoteEntry.js`) that care_fe loads at runtime. It contributes pluggable
+slots, two component `overrides[]`, an encounter tab, DICOM device forms and its
+own routes. Its own API calls
 go to `/api/care_radiology/*`, served by the `care_radiology` backend plug.
 Runtime behaviour is driven by the `PlugConfig` row for slug
 `care_radiology_fe`.
@@ -17,7 +17,9 @@ Runtime behaviour is driven by the `PlugConfig` row for slug
 Care offers two extension mechanisms: **component overrides** (`overrides[]`,
 priority-ranked, only the single highest-priority one renders) and **pluggable
 slots** (`components{}`, additive, every plugin filling a slot shows up). This
-plugin uses slots only.
+plugin uses both. Each overridden component name must also be **appended** to
+the deployment's `REACT_MFE_REGISTERED_COMPONENTS` allowlist — assigning over
+that list drops the other plugins' overrides.
 
 `src/manifest.tsx`:
 
@@ -26,16 +28,17 @@ plugin uses slots only.
 | `components{}` | `ServiceRequestAction` | `ServiceRequestView` — study table, DICOM upload dialog and the report-creation gate; rendered by the host inside `DiagnosticReportForm` |
 | `components{}` | `FacilityHomeActions` | Entry into the report template manager, in Settings → General → Configurations |
 | `components{}` | `DiagnosticReportOverride` | `ObservationTemplateOverride` — applies a saved observation template to the report form |
-| `components{}` | `DiagnosticReportResultsOverride` | Template-driven results entry (see [Gotchas](#gotchas) — needs host support) |
+| `overrides[]` | `DiagnosticReportResultsTable` | `DiagnosticReportResultsTableOverride` — template-driven results entry |
+| `overrides[]` | `ServiceRequestReportWorkflow` | `ServiceRequestReportWorkflowOverride` — keeps the study table visible on an imaging service request that was completed without a report; core hides its own results section (and the `ServiceRequestAction` slot inside it) in that state |
 | `encounterTabs{}` | `radiology` | Encounter-level study list; its tab label is the `ENCOUNTER_TAB__radiology` translation key |
+| `devices[]` | `DICOM_CARE_TYPE`, `DICOM_ENABLER_CARE_TYPE` | Configure forms and show-page cards for both device types |
 | `routes` | — | The DICOM viewer route and the report-templates settings page |
-| `diagnosticReportResultsOverrideCategory` | — | `"imaging"` — scopes the results override to imaging reports |
 
 Routes (`src/routes.tsx`):
 
 | Path | Component |
 |------|-----------|
-| `/facility/:facilityId/service_requests/:serviceRequestId/radiology/view/:studyid` | `DicomViewer` — iframes the OHIF viewer at `meta.radiologyViewerBaseUrl` |
+| `/facility/:facilityId/patient/:patientId/encounter/:encounterId/radiology/view/:studyid` | `DicomViewer` — iframes the OHIF viewer at `meta.radiologyViewerBaseUrl` |
 | `/facility/:facilityId/settings/general/report_templates` | `ObservationTemplateSettings`. Nested under `settings/general/` so the host's settings sidebar keeps **General** highlighted.  |
 
 ## Configuration
@@ -114,19 +117,21 @@ per-facility scoping: the row is global to the deployment.
 ### The report category (`imaging`)
 
 Nearly everything the plugin renders is scoped to one category value, and it is
-read in four places:
+read in three places:
 
 | Site | What it gates |
 |------|---------------|
-| `src/components/DiagnosticReportResultsOverride.tsx:152` | Skips any observation whose `observation_definition.category` is not the category |
-| `src/components/ObservationTemplateOverride.tsx:397` | Scopes the templates offered inside the host's report form |
-| `src/pages/ObservationTemplateSettings.tsx:104` | Filters the observation definitions a template can be built from |
-| `src/manifest.tsx:106` | Published to the host as the `diagnosticReportResultsOverrideCategory` manifest field |
+| `src/components/DiagnosticReportResultsTableOverride.tsx` | Skips any observation whose `observation_definition.category` is not the category |
+| `src/components/ObservationTemplateOverride.tsx` | Scopes the templates offered inside the host's report form |
+| `src/pages/ObservationTemplateSettings.tsx` | Filters the observation definitions a template can be built from |
 
-All four import `DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY` from
-`src/constants.ts`, where it is hardcoded to `"imaging"`. A sibling constant,
-`SERVICE_REQUEST_OVERRIDE_CATEGORY`, holds the same value and gates
-`ServiceRequestView`; the two are not linked.
+All three import `DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY` from
+`src/constants.ts`, where it is hardcoded to `"imaging"`. Two sibling constants
+hold the same value for different fields: `SERVICE_REQUEST_OVERRIDE_CATEGORY`
+(the service request's `category`, gating `ServiceRequestView`) and
+`ACTIVITY_DEFINITION_IMAGING_CLASSIFICATION` (the activity definition's
+`classification`, gating the `ServiceRequestReportWorkflow` override). None of
+the three are linked.
 
 **This is compile-time, not configuration.** Putting
 `"diagnosticReportResultsOverrideCategory": "imaging"` in `meta.config` has no
@@ -190,24 +195,28 @@ Only `en` ships today; adding a language means adding `public/locale/<lang>.json
 
 | File | Role |
 |------|------|
-| `src/manifest.tsx` | Registers the slots, the encounter tab and the routes; every entry is lazy + `ErrorBoundary` wrapped |
+| `src/manifest.tsx` | Registers the slots, overrides, encounter tab, devices and routes; every entry is lazy + `Suspense`, and `ErrorBoundary` wrapped except where that would swallow core's errors |
 | `src/routes.tsx` | Viewer route and report-templates settings route |
 | `src/constants.ts` | Slug, category constants, access-token key |
 | `src/utils/pluginConfig.ts` | `meta` / `meta.config` accessors, including the flag above |
 | `src/types/plugin.ts` | Re-declared host meta types + `window` globals |
-| `src/components/ServiceRequestView.tsx` | Study table, upload entry point, report-creation gate |
+| `src/components/ServiceRequestView.tsx` | Study table, upload entry point, report-creation gate; archiving is blocked once the service request or its encounter is completed |
+| `src/components/ServiceRequestReportWorkflowOverride.tsx` | Keeps the study table on an imaging service request completed without a report |
 | `src/components/DicomUploader.tsx` | Upload dialog; links the uploaded study to the service request |
-| `src/components/RadiologyStudyTable.tsx` | Study rows, archive action, viewer/report links |
+| `src/components/RadiologyStudyTable.tsx` | Study rows, archive action (shown only when `canArchive`), viewer/report links |
+| `src/components/EncounterDicomUploadDialog.tsx` | Encounter-level upload dialog |
 | `src/components/DicomViewer.tsx` | OHIF hand-off at `meta.radiologyViewerBaseUrl` |
 | `src/components/RadiologyEncounterTab.tsx` | Encounter-level study list |
 | `src/components/ObservationTemplateOverride.tsx` | Applies a saved template inside the host's report form |
-| `src/components/DiagnosticReportResultsOverride.tsx` | Template-driven results entry |
+| `src/components/DiagnosticReportResultsTableOverride.tsx` | Template-driven results entry |
+| `src/components/modality/` | Configure forms and show-page cards for the two DICOM device types |
 | `src/components/FacilityHomeActions.tsx` | Settings → General entry to the template manager |
 | `src/pages/ObservationTemplateSettings.tsx` | Template create/list/update page |
 | `src/utils/observationTemplateFields.ts` | Derives a template's fields from an observation definition; shared by the settings page and `ObservationTemplateOverride` |
 | `src/components/ui/combobox.tsx` | Searchable select (local or server-side search); this plug has no popover/command primitive |
 | `src/components/ui/pagination.tsx` | Port of care_fe's `Common/Pagination`, so lists page like the host |
 | `src/hooks/useHostSiblingsHidden.ts` | Hides the host's sibling nodes below our root (the report-creation gate) |
+| `src/hooks/` | Studies, permissions, service request detail, completion sync, viewer base URL |
 | `src/apis/` | Endpoint definitions, `fetch` wrapper, `APIError` |
 
 ## Gotchas
@@ -217,23 +226,30 @@ Only `en` ships today; adding a language means adding `public/locale/<lang>.json
   the inline `display` on cleanup. It is positional: if care_fe reorders that
   form, the wrong nodes get hidden. This is the most fragile part of the plugin
   — treat "the report form looks wrong" as a DOM problem first.
-- **The two `"imaging"` constants are separate.**
-  `SERVICE_REQUEST_OVERRIDE_CATEGORY` and
-  `DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY` happen to hold the same value
-  but are not linked; a typo in either yields no type error, just a component
-  that renders nothing.
+- **The three `"imaging"` constants are separate.**
+  `SERVICE_REQUEST_OVERRIDE_CATEGORY`,
+  `DIAGNOSTIC_REPORT_RESULTS_OVERRIDE_CATEGORY` and
+  `ACTIVITY_DEFINITION_IMAGING_CLASSIFICATION` happen to hold the same value but
+  read three different fields and are not linked; a typo in any yields no type
+  error, just a component that renders nothing.
 - **`RadiologyPluginConfig` declares a key nothing reads.**
   `diagnosticReportResultsOverrideCategory` is typed on the config interface
   (`src/types/plugin.ts`) but has no accessor and no caller — the category comes
   from the constant. Either wire it up through `pluginConfig.ts` or drop it from
   the type; as it stands it invites a `meta.config` entry that silently does
   nothing.
-- **`DiagnosticReportResultsOverride` needs host support.** The slot and the
-  `diagnosticReportResultsOverrideCategory` manifest field are only honoured by
-  a care_fe that renders them — the slot is absent from
-  `SupportedPluginComponents` in the care_fe this was checked against, so both
-  are currently inert and the category only affects the plugin's own filtering.
-  Verify against the care_fe version you deploy against.
+- **An override is inert until the deployment allowlists it.** Both entries in
+  `overrides[]` only take effect if the component name is in the deployment's
+  `REACT_MFE_REGISTERED_COMPONENTS`, and the name must match the one core
+  registers. A missing entry fails silently — core just renders its own
+  component.
+- **An override wraps a core component, so its blast radius is core's.** care_fe
+  renders an override inside its own `OverrideErrorBoundary`, which on a throw
+  shows a small error line **instead of** the base component — it does not fall
+  back to it. `ServiceRequestReportWorkflowOverride` therefore keeps its own
+  `ErrorBoundary` around just the plugin's subtree, and the manifest wrapper
+  gives it `Suspense` only, so an error in core's workflow is not swallowed by
+  the plugin.
 - **Route order matters.** The settings route is matched ahead of core's
   `/facility/:facilityId/settings*` layout because care_fe merges plugin routes
   before app routes (`{...pluginRoutes, ...Routes}`, and raviger takes the first
