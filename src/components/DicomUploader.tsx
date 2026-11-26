@@ -176,7 +176,7 @@ export default function DicomUploader({
           statusMarked = true;
           try {
             await apis.imagingStudy.updateStatus(patientId, serviceRequestId, {
-              status: "IN_PROGRESS",
+              status: "in_progress",
             });
           } catch {
             toast.error(t("dicom_status_update_failed"));

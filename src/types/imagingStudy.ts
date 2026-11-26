@@ -1,7 +1,7 @@
 import { DiagnosticReportStatus, DicomStudy } from "./dicom";
 
 export type ImagingStudyStatus =
-  "ACTIVE" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  "active" | "in_progress" | "completed" | "cancelled";
 
 export type ArchiveState = "active" | "archived";
 
